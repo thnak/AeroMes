@@ -1,0 +1,27 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.DotSettings
+TestResults/
+
+# Secrets - never commit
+**/appsettings.*.json
+!**/appsettings.Development.json
+
+# Node / Frontend
+web/node_modules/
+web/dist/
+web/.env
+web/.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Rider / VS Code
+.idea/
+.vscode/
+*.editorconfig
