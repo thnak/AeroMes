@@ -1,34 +1,31 @@
-using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Entities;
+using AeroMes.Domain.Production;
+using AeroMes.Domain.Production.Repositories;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace AeroMes.Application.WorkOrders.Queries.GetWorkOrders;
 
-public class GetWorkOrdersHandler(IApplicationDbContext db)
+public class GetWorkOrdersHandler(IWorkOrderRepository workOrderRepo)
     : IRequestHandler<GetWorkOrdersQuery, List<WorkOrderDto>>
 {
     public async Task<List<WorkOrderDto>> Handle(GetWorkOrdersQuery query, CancellationToken ct)
     {
-        var q = db.WorkOrders.Include(x => x.WorkCenter).AsNoTracking();
-
+        WorkOrderStatus? status = null;
         if (!string.IsNullOrEmpty(query.Status) &&
-            Enum.TryParse<WorkOrderStatus>(query.Status, ignoreCase: true, out var status))
-            q = q.Where(x => x.Status == status);
+            Enum.TryParse<WorkOrderStatus>(query.Status, ignoreCase: true, out var parsed))
+            status = parsed;
 
-        if (query.WorkCenterId.HasValue)
-            q = q.Where(x => x.WorkCenterID == query.WorkCenterId.Value);
+        var workOrders = await workOrderRepo.GetFilteredAsync(status, query.WorkCenterId, ct);
 
-        return await q.Select(x => new WorkOrderDto(
-            x.WorkOrderID,
-            x.WorkOrderNo,
-            x.ProductCode,
-            x.ProductName,
-            x.TargetQuantity,
-            x.ActualQtyOK,
-            x.ActualQtyNG,
-            x.Status.ToString().ToUpperInvariant(),
-            x.WorkCenter.WorkCenterCode
-        )).ToListAsync(ct);
+        return workOrders.Select(wo => new WorkOrderDto(
+            wo.WorkOrderID,
+            wo.WorkOrderNo,
+            wo.ProductCode,
+            wo.ProductName,
+            wo.PlannedQty.Value,
+            wo.ActualQtyOK.Value,
+            wo.ActualQtyNG.Value,
+            wo.Status.ToString().ToUpperInvariant(),
+            wo.WorkCenter?.WorkCenterCode ?? string.Empty
+        )).ToList();
     }
 }

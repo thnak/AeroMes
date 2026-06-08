@@ -1,70 +1,56 @@
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Entities;
+using AeroMes.Domain.Exceptions;
+using AeroMes.Domain.Production;
+using AeroMes.Domain.Production.Repositories;
+using AeroMes.Domain.Quality.Repositories;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace AeroMes.Application.Production.Commands.SubmitOutput;
 
-public class SubmitOutputHandler(IApplicationDbContext db)
+public class SubmitOutputHandler(
+    IWorkOrderRepository workOrderRepo,
+    IProductionLogRepository productionLogRepo,
+    IDefectCodeRepository defectCodeRepo,
+    IUnitOfWork uow)
     : IRequestHandler<SubmitOutputCommand, SubmitOutputResult>
 {
     public async Task<SubmitOutputResult> Handle(SubmitOutputCommand cmd, CancellationToken ct)
     {
-        var workOrder = await db.WorkOrders
-            .FirstOrDefaultAsync(x => x.WorkOrderID == cmd.WorkOrderId, ct)
-            ?? throw new KeyNotFoundException($"WorkOrder {cmd.WorkOrderId} not found.");
-
-        if (workOrder.Status != WorkOrderStatus.Running)
-            throw new InvalidOperationException(
-                $"WorkOrder {workOrder.WorkOrderNo} is not in RUNNING state.");
-
-        var log = new ProductionLog
+        // Idempotency guard — skip duplicate requests
+        if (cmd.IdempotencyKey is not null &&
+            await productionLogRepo.ExistsByIdempotencyKeyAsync(cmd.IdempotencyKey, ct))
         {
-            WorkOrderID = cmd.WorkOrderId,
-            Timestamp = cmd.Timestamp,
-            QtyOK = cmd.QtyOk,
-            QtyNG = cmd.QtyNg,
-            OperatorID = cmd.OperatorId,
-            MachineCode = cmd.MachineCode,
-            ShiftCode = cmd.ShiftCode,
-            IdempotencyKey = cmd.IdempotencyKey
-        };
-        db.ProductionLogs.Add(log);
+            var wo = await workOrderRepo.GetByIdAsync(cmd.WorkOrderId, ct);
+            return new SubmitOutputResult(
+                -1, wo?.ActualQtyOK.Value ?? -1, wo?.ActualQtyNG.Value ?? -1, IsDuplicate: true);
+        }
+
+        var workOrder = await workOrderRepo.GetByIdAsync(cmd.WorkOrderId, ct)
+            ?? throw new EntityNotFoundException(nameof(WorkOrder), cmd.WorkOrderId);
+
+        workOrder.RecordOutput(cmd.QtyOk, cmd.QtyNg, cmd.OperatorId);
+
+        var log = ProductionLog.Create(
+            cmd.WorkOrderId, cmd.QtyOk, cmd.QtyNg, cmd.OperatorId,
+            cmd.MachineCode, cmd.ShiftCode, cmd.IdempotencyKey, cmd.Timestamp);
 
         if (cmd.QtyNg > 0 && cmd.Defects.Count > 0)
         {
-            var defectCodes = await db.DefectCodes
-                .Where(x => cmd.Defects.Select(d => d.DefectCode).Contains(x.Code))
-                .ToDictionaryAsync(x => x.Code, ct);
+            var codes = await defectCodeRepo.GetByCodesAsync(
+                cmd.Defects.Select(d => d.DefectCode), ct);
 
             foreach (var entry in cmd.Defects)
             {
-                if (!defectCodes.TryGetValue(entry.DefectCode, out var code))
-                    throw new KeyNotFoundException($"DefectCode '{entry.DefectCode}' not found.");
-
-                log.DefectDetails.Add(new DefectDetail
-                {
-                    DefectCodeID = code.DefectCodeID,
-                    Quantity = entry.Qty
-                });
+                if (!codes.TryGetValue(entry.DefectCode, out var defectCode))
+                    throw new EntityNotFoundException("DefectCode", entry.DefectCode);
+                log.AddDefect(defectCode.DefectCodeID, entry.Qty);
             }
         }
 
-        // Atomic increment using raw SQL to prevent race conditions (per design doc §5.3)
-        await db.WorkOrders
-            .Where(x => x.WorkOrderID == cmd.WorkOrderId)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(x => x.ActualQtyOK, x => x.ActualQtyOK + cmd.QtyOk)
-                .SetProperty(x => x.ActualQtyNG, x => x.ActualQtyNG + cmd.QtyNg)
-                .SetProperty(x => x.UpdatedAt, DateTime.UtcNow), ct);
+        await productionLogRepo.AddAsync(log, ct);
+        await uow.SaveChangesAsync(ct);
 
-        await db.SaveChangesAsync(ct);
-
-        var updated = await db.WorkOrders
-            .AsNoTracking()
-            .Select(x => new { x.WorkOrderID, x.ActualQtyOK, x.ActualQtyNG })
-            .FirstAsync(x => x.WorkOrderID == cmd.WorkOrderId, ct);
-
-        return new SubmitOutputResult(log.LogID, updated.ActualQtyOK, updated.ActualQtyNG);
+        return new SubmitOutputResult(
+            log.LogID, workOrder.ActualQtyOK.Value, workOrder.ActualQtyNG.Value);
     }
 }

@@ -1,50 +1,33 @@
-using AeroMes.Application.Interfaces;
+using AeroMes.Domain.Equipment.Repositories;
+using AeroMes.Domain.Production.Repositories;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace AeroMes.Application.Production.Queries.GetOee;
 
-public class GetOeeHandler(IApplicationDbContext db)
+public class GetOeeHandler(
+    IProductionLogRepository productionLogRepo,
+    IDowntimeLogRepository downtimeLogRepo)
     : IRequestHandler<GetOeeQuery, OeeResult>
 {
     public async Task<OeeResult> Handle(GetOeeQuery q, CancellationToken ct)
     {
         var totalPlanned = (q.ShiftEnd - q.ShiftStart).TotalMinutes;
 
-        var downtimeLogs = await db.DowntimeLogs
-            .Where(x =>
-                x.WorkCenterID == q.WorkCenterId &&
-                x.MachineCode == q.MachineCode &&
-                x.StartTime >= q.ShiftStart &&
-                (x.EndTime == null || x.EndTime <= q.ShiftEnd))
-            .Select(x => new { x.StartTime, x.EndTime })
-            .ToListAsync(ct);
+        var downtimeMinutes = await downtimeLogRepo.GetTotalDowntimeMinutesAsync(
+            q.WorkCenterId, q.MachineCode, q.ShiftStart, q.ShiftEnd, ct);
 
-        var downtimeMinutes = downtimeLogs.Sum(x =>
-            x.EndTime.HasValue ? (x.EndTime.Value - x.StartTime).TotalMinutes : 0);
+        var (ok, ng) = await productionLogRepo.GetTotalOutputByMachineAsync(
+            q.MachineCode, q.ShiftStart, q.ShiftEnd, ct);
 
-        var production = await db.ProductionLogs
-            .Where(x =>
-                x.MachineCode == q.MachineCode &&
-                x.Timestamp >= q.ShiftStart &&
-                x.Timestamp <= q.ShiftEnd)
-            .GroupBy(_ => 1)
-            .Select(g => new { TotalOk = g.Sum(x => x.QtyOK), TotalNg = g.Sum(x => x.QtyNG) })
-            .FirstOrDefaultAsync(ct);
-
-        var ok = production?.TotalOk ?? 0;
-        var ng = production?.TotalNg ?? 0;
         var total = ok + ng;
 
         var availability = totalPlanned > 0
             ? (totalPlanned - downtimeMinutes) / totalPlanned
             : 0;
-
         var actualRunSeconds = (totalPlanned - downtimeMinutes) * 60;
         var performance = actualRunSeconds > 0
             ? Math.Min(1.0, (total * q.DesignedCycleTimeSeconds) / actualRunSeconds)
             : 0;
-
         var quality = total > 0 ? (double)ok / total : 0;
         var oee = availability * performance * quality;
 

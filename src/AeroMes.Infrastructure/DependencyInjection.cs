@@ -1,6 +1,10 @@
 using AeroMes.Application.Interfaces;
+using AeroMes.Domain.Equipment.Repositories;
+using AeroMes.Domain.Production.Repositories;
+using AeroMes.Domain.Quality.Repositories;
 using AeroMes.Infrastructure.Data;
 using AeroMes.Infrastructure.Identity;
+using AeroMes.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -19,7 +23,16 @@ public static class DependencyInjection
                 configuration.GetConnectionString("DefaultConnection"),
                 sql => sql.EnableRetryOnFailure(3)));
 
-        services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+        // IUnitOfWork is fulfilled by AppDbContext
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
+
+        // Repositories
+        services.AddScoped<IWorkOrderRepository, WorkOrderRepository>();
+        services.AddScoped<IProductionLogRepository, ProductionLogRepository>();
+        services.AddScoped<IDefectCodeRepository, DefectCodeRepository>();
+        services.AddScoped<IWorkCenterRepository, WorkCenterRepository>();
+        services.AddScoped<IDowntimeLogRepository, DowntimeLogRepository>();
+
         services.AddMemoryCache();
         services.AddSingleton<IdempotencyStore>();
 

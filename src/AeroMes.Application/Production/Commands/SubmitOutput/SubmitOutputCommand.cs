@@ -16,4 +16,8 @@ public record SubmitOutputCommand(
 
 public record DefectEntry(string DefectCode, int Qty);
 
-public record SubmitOutputResult(long LogId, int CurrentWorkOrderActualOk, int CurrentWorkOrderActualNg);
+public record SubmitOutputResult(
+    long LogId,
+    int CurrentWorkOrderActualOk,
+    int CurrentWorkOrderActualNg,
+    bool IsDuplicate = false);

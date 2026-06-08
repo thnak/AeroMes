@@ -1,30 +1,28 @@
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Entities;
+using AeroMes.Domain.Equipment;
+using AeroMes.Domain.Equipment.Repositories;
+using AeroMes.Domain.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace AeroMes.Application.Downtime.Commands.StartDowntime;
 
-public class StartDowntimeHandler(IApplicationDbContext db)
+public class StartDowntimeHandler(
+    IWorkCenterRepository workCenterRepo,
+    IDowntimeLogRepository downtimeRepo,
+    IUnitOfWork uow)
     : IRequestHandler<StartDowntimeCommand, long>
 {
     public async Task<long> Handle(StartDowntimeCommand cmd, CancellationToken ct)
     {
-        var exists = await db.WorkCenters.AnyAsync(x => x.WorkCenterID == cmd.WorkCenterId, ct);
-        if (!exists)
-            throw new KeyNotFoundException($"WorkCenter {cmd.WorkCenterId} not found.");
+        if (!await workCenterRepo.ExistsAsync(cmd.WorkCenterId, ct))
+            throw new EntityNotFoundException(nameof(WorkCenter), cmd.WorkCenterId);
 
-        var log = new DowntimeLog
-        {
-            WorkCenterID = cmd.WorkCenterId,
-            MachineCode = cmd.MachineCode,
-            ReasonCode = cmd.ReasonCode,
-            ReasonName = cmd.ReasonName,
-            StartTime = cmd.StartTime,
-            OperatorID = cmd.OperatorId
-        };
-        db.DowntimeLogs.Add(log);
-        await db.SaveChangesAsync(ct);
+        var log = DowntimeLog.Create(
+            cmd.WorkCenterId, cmd.MachineCode, cmd.ReasonCode,
+            cmd.ReasonName, cmd.StartTime, cmd.OperatorId);
+
+        await downtimeRepo.AddAsync(log, ct);
+        await uow.SaveChangesAsync(ct);
 
         return log.DowntimeLogID;
     }

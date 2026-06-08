@@ -1,24 +1,24 @@
 using AeroMes.Application.Interfaces;
+using AeroMes.Domain.Equipment;
+using AeroMes.Domain.Equipment.Repositories;
+using AeroMes.Domain.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace AeroMes.Application.Downtime.Commands.EndDowntime;
 
-public class EndDowntimeHandler(IApplicationDbContext db)
+public class EndDowntimeHandler(
+    IDowntimeLogRepository downtimeRepo,
+    IUnitOfWork uow)
     : IRequestHandler<EndDowntimeCommand, EndDowntimeResult>
 {
     public async Task<EndDowntimeResult> Handle(EndDowntimeCommand cmd, CancellationToken ct)
     {
-        var log = await db.DowntimeLogs
-            .FirstOrDefaultAsync(x => x.DowntimeLogID == cmd.DowntimeLogId, ct)
-            ?? throw new KeyNotFoundException($"DowntimeLog {cmd.DowntimeLogId} not found.");
+        var log = await downtimeRepo.GetByIdAsync(cmd.DowntimeLogId, ct)
+            ?? throw new EntityNotFoundException(nameof(DowntimeLog), cmd.DowntimeLogId);
 
-        if (log.EndTime.HasValue)
-            throw new InvalidOperationException($"DowntimeLog {cmd.DowntimeLogId} is already closed.");
+        log.End(cmd.EndTime);
+        await uow.SaveChangesAsync(ct);
 
-        log.EndTime = cmd.EndTime;
-        await db.SaveChangesAsync(ct);
-
-        return new EndDowntimeResult(log.DowntimeLogID, log.DurationMinutes ?? 0);
+        return new EndDowntimeResult(log.DowntimeLogID, log.DurationMinutes!.Value);
     }
 }
