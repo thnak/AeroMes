@@ -1,11 +1,13 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Entities;
+using AeroMes.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace AeroMes.Infrastructure.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options)
-    : DbContext(options), IApplicationDbContext
+    : IdentityDbContext<ApplicationUser>(options), IApplicationDbContext
 {
     public DbSet<WorkCenter> WorkCenters => Set<WorkCenter>();
     public DbSet<WorkOrder> WorkOrders => Set<WorkOrder>();
