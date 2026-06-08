@@ -2,17 +2,15 @@ using MediatR;
 
 namespace AeroMes.Application.WorkOrders.Queries.GetWorkOrders;
 
-public record GetWorkOrdersQuery(string? Status = null, int? WorkCenterId = null)
-    : IRequest<List<WorkOrderDto>>;
+public record GetWorkOrdersQuery(string? Status) : IRequest<IReadOnlyList<WorkOrderDto>>;
 
 public record WorkOrderDto(
-    int WorkOrderId,
-    string WorkOrderNo,
-    string ProductCode,
-    string ProductName,
-    int TargetQuantity,
-    int ActualQtyOK,
-    int ActualQtyNG,
-    string Status,
-    string WorkCenterCode
-);
+    int WOID,
+    string WOCode,
+    int POID,
+    int WorkCenterID,
+    string? WorkCenterName,
+    int TargetQty,
+    int ActualOK,
+    int ActualNG,
+    string Status);

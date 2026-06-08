@@ -7,25 +7,21 @@ namespace AeroMes.Infrastructure.Repositories;
 
 public class WorkOrderRepository(AppDbContext db) : IWorkOrderRepository
 {
-    public async Task<WorkOrder?> GetByIdAsync(int id, CancellationToken ct = default)
-        => await db.WorkOrders.FirstOrDefaultAsync(x => x.WorkOrderID == id, ct);
+    public Task<WorkOrder?> GetByIdAsync(int id, CancellationToken ct) =>
+        db.WorkOrders.FirstOrDefaultAsync(x => x.WOID == id, ct);
 
-    public async Task<List<WorkOrder>> GetFilteredAsync(
-        WorkOrderStatus? status,
-        int? workCenterId,
-        CancellationToken ct = default)
+    public Task<WorkOrder?> GetByCodeAsync(string woCode, CancellationToken ct) =>
+        db.WorkOrders.FirstOrDefaultAsync(x => x.WOCode == woCode, ct);
+
+    public async Task<IReadOnlyList<WorkOrder>> GetByStatusAsync(WorkOrderStatus status, CancellationToken ct) =>
+        await db.WorkOrders
+            .Where(x => x.Status == status)
+            .Include(x => x.WorkCenter)
+            .ToListAsync(ct);
+
+    public Task AddAsync(WorkOrder entity, CancellationToken ct)
     {
-        var query = db.WorkOrders.Include(x => x.WorkCenter).AsNoTracking();
-
-        if (status.HasValue)
-            query = query.Where(x => x.Status == status.Value);
-
-        if (workCenterId.HasValue)
-            query = query.Where(x => x.WorkCenterID == workCenterId.Value);
-
-        return await query.ToListAsync(ct);
+        db.WorkOrders.Add(entity);
+        return Task.CompletedTask;
     }
-
-    public async Task AddAsync(WorkOrder workOrder, CancellationToken ct = default)
-        => await db.WorkOrders.AddAsync(workOrder, ct);
 }

@@ -5,27 +5,26 @@ using MediatR;
 namespace AeroMes.Application.WorkOrders.Queries.GetWorkOrders;
 
 public class GetWorkOrdersHandler(IWorkOrderRepository workOrderRepo)
-    : IRequestHandler<GetWorkOrdersQuery, List<WorkOrderDto>>
+    : IRequestHandler<GetWorkOrdersQuery, IReadOnlyList<WorkOrderDto>>
 {
-    public async Task<List<WorkOrderDto>> Handle(GetWorkOrdersQuery query, CancellationToken ct)
+    public async Task<IReadOnlyList<WorkOrderDto>> Handle(GetWorkOrdersQuery q, CancellationToken ct)
     {
-        WorkOrderStatus? status = null;
-        if (!string.IsNullOrEmpty(query.Status) &&
-            Enum.TryParse<WorkOrderStatus>(query.Status, ignoreCase: true, out var parsed))
-            status = parsed;
+        var status = Enum.TryParse<WorkOrderStatus>(q.Status, ignoreCase: true, out var parsed)
+            ? parsed
+            : WorkOrderStatus.Prepared;
 
-        var workOrders = await workOrderRepo.GetFilteredAsync(status, query.WorkCenterId, ct);
+        var orders = await workOrderRepo.GetByStatusAsync(status, ct);
 
-        return workOrders.Select(wo => new WorkOrderDto(
-            wo.WorkOrderID,
-            wo.WorkOrderNo,
-            wo.ProductCode,
-            wo.ProductName,
-            wo.PlannedQty.Value,
-            wo.ActualQtyOK.Value,
-            wo.ActualQtyNG.Value,
-            wo.Status.ToString().ToUpperInvariant(),
-            wo.WorkCenter?.WorkCenterCode ?? string.Empty
-        )).ToList();
+        return orders.Select(w => new WorkOrderDto(
+            w.WOID,
+            w.WOCode,
+            w.POID,
+            w.WorkCenterID,
+            w.WorkCenter?.WorkCenterName,
+            w.TargetQuantity.Value,
+            w.ActualQtyOK.Value,
+            w.ActualQtyNG.Value,
+            w.Status.ToString().ToUpperInvariant()))
+            .ToList();
     }
 }

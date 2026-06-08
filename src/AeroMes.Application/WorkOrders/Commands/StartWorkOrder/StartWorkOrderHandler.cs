@@ -20,8 +20,8 @@ public class StartWorkOrderHandler(
         await uow.SaveChangesAsync(ct);
 
         return new StartWorkOrderResult(
-            workOrder.WorkOrderID,
+            workOrder.WOID,
             workOrder.Status.ToString().ToUpperInvariant(),
-            workOrder.ActualStart!.Value);
+            workOrder.ActualStartDate!.Value);
     }
 }

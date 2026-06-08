@@ -13,13 +13,12 @@ namespace AeroMes.Api.Controllers;
 public class WorkOrdersController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<List<WorkOrderDto>>>> GetAll(
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<WorkOrderDto>>>> GetAll(
         [FromQuery] string? status,
-        [FromQuery] int? workCenterId,
         CancellationToken ct)
     {
-        var result = await mediator.Send(new GetWorkOrdersQuery(status, workCenterId), ct);
-        return Ok(new ApiResponse<List<WorkOrderDto>>(true, "OK", result));
+        var result = await mediator.Send(new GetWorkOrdersQuery(status), ct);
+        return Ok(new ApiResponse<IReadOnlyList<WorkOrderDto>>(true, "OK", result));
     }
 
     [HttpPost("{id:int}/start")]
@@ -29,10 +28,9 @@ public class WorkOrdersController(IMediator mediator) : ControllerBase
         CancellationToken ct)
     {
         var result = await mediator.Send(
-            new StartWorkOrderCommand(id, request.OperatorId, request.MachineCode, request.Timestamp), ct);
-        return Ok(new ApiResponse<StartWorkOrderResult>(true,
-            $"Work Order started successfully.", result));
+            new StartWorkOrderCommand(id, request.OperatorId, request.Timestamp), ct);
+        return Ok(new ApiResponse<StartWorkOrderResult>(true, "Work Order started successfully.", result));
     }
 }
 
-public record StartWorkOrderRequest(string OperatorId, string MachineCode, DateTime Timestamp);
+public record StartWorkOrderRequest(string OperatorId, DateTime? Timestamp);

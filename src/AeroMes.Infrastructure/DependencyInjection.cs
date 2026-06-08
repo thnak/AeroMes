@@ -1,5 +1,6 @@
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Equipment.Repositories;
+using AeroMes.Domain.Integration.Repositories;
+using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production.Repositories;
 using AeroMes.Domain.Quality.Repositories;
 using AeroMes.Infrastructure.Data;
@@ -23,15 +24,28 @@ public static class DependencyInjection
                 configuration.GetConnectionString("DefaultConnection"),
                 sql => sql.EnableRetryOnFailure(3)));
 
-        // IUnitOfWork is fulfilled by AppDbContext
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
 
-        // Repositories
-        services.AddScoped<IWorkOrderRepository, WorkOrderRepository>();
-        services.AddScoped<IProductionLogRepository, ProductionLogRepository>();
-        services.AddScoped<IDefectCodeRepository, DefectCodeRepository>();
+        // master repositories
         services.AddScoped<IWorkCenterRepository, WorkCenterRepository>();
+        services.AddScoped<IMachineRepository, MachineRepository>();
+        services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IOperationRepository, OperationRepository>();
+        services.AddScoped<IBomItemRepository, BomItemRepository>();
+        services.AddScoped<IStorageLocationRepository, StorageLocationRepository>();
+        services.AddScoped<IRoutingRepository, RoutingRepository>();
+
+        // integration repositories
+        services.AddScoped<IProductionOrderRepository, ProductionOrderRepository>();
+
+        // prod repositories
+        services.AddScoped<IWorkOrderRepository, WorkOrderRepository>();
+        services.AddScoped<IJobRepository, JobRepository>();
+        services.AddScoped<IProductionLogRepository, ProductionLogRepository>();
         services.AddScoped<IDowntimeLogRepository, DowntimeLogRepository>();
+
+        // qual repositories
+        services.AddScoped<IDefectCodeRepository, DefectCodeRepository>();
 
         services.AddMemoryCache();
         services.AddSingleton<IdempotencyStore>();

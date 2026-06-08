@@ -7,32 +7,25 @@ namespace AeroMes.Infrastructure.Repositories;
 
 public class ProductionLogRepository(AppDbContext db) : IProductionLogRepository
 {
-    public async Task<bool> ExistsByIdempotencyKeyAsync(string key, CancellationToken ct = default)
-        => await db.ProductionLogs.AnyAsync(x => x.IdempotencyKey == key, ct);
+    public Task<bool> ExistsByIdempotencyKeyAsync(string key, CancellationToken ct) =>
+        db.ProductionLogs.AnyAsync(x => x.IdempotencyKey == key, ct);
 
-    public async Task<ProductionLog?> GetByIdAsync(long id, CancellationToken ct = default)
-        => await db.ProductionLogs
-            .Include(x => x.DefectDetails)
-            .FirstOrDefaultAsync(x => x.LogID == id, ct);
-
-    public async Task AddAsync(ProductionLog log, CancellationToken ct = default)
-        => await db.ProductionLogs.AddAsync(log, ct);
-
-    public async Task<(int TotalOk, int TotalNg)> GetTotalOutputByMachineAsync(
-        string machineCode,
-        DateTime from,
-        DateTime to,
-        CancellationToken ct = default)
+    public async Task<(int ok, int ng)> GetTotalOutputByMachineAsync(
+        string machineCode, DateTime from, DateTime to, CancellationToken ct)
     {
         var result = await db.ProductionLogs
-            .Where(x => x.MachineCode == machineCode
-                && x.Timestamp >= from
-                && x.Timestamp <= to)
+            .Where(l => l.Timestamp >= from && l.Timestamp <= to
+                        && l.Job!.MachineCode == machineCode)
             .GroupBy(_ => 1)
-            .Select(g => new { Ok = g.Sum(x => x.QtyOK), Ng = g.Sum(x => x.QtyNG) })
-            .AsNoTracking()
+            .Select(g => new { ok = g.Sum(l => l.QtyOK), ng = g.Sum(l => l.QtyNG) })
             .FirstOrDefaultAsync(ct);
 
-        return result is null ? (0, 0) : (result.Ok, result.Ng);
+        return result is null ? (0, 0) : (result.ok, result.ng);
+    }
+
+    public Task AddAsync(ProductionLog entity, CancellationToken ct)
+    {
+        db.ProductionLogs.Add(entity);
+        return Task.CompletedTask;
     }
 }

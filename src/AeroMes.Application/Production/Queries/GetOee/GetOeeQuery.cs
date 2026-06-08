@@ -3,12 +3,10 @@ using MediatR;
 namespace AeroMes.Application.Production.Queries.GetOee;
 
 public record GetOeeQuery(
-    int WorkCenterId,
     string MachineCode,
     DateTime ShiftStart,
     DateTime ShiftEnd,
-    double DesignedCycleTimeSeconds
-) : IRequest<OeeResult>;
+    double DesignedCycleTimeSeconds) : IRequest<OeeResult>;
 
 public record OeeResult(
     string MachineCode,
@@ -20,5 +18,4 @@ public record OeeResult(
     double AvailabilityPercent,
     double PerformancePercent,
     double QualityPercent,
-    double OeePercent
-);
+    double OeePercent);

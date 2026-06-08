@@ -8,6 +8,7 @@ using MediatR;
 namespace AeroMes.Application.Production.Commands.SubmitOutput;
 
 public class SubmitOutputHandler(
+    IJobRepository jobRepo,
     IWorkOrderRepository workOrderRepo,
     IProductionLogRepository productionLogRepo,
     IDefectCodeRepository defectCodeRepo,
@@ -16,23 +17,27 @@ public class SubmitOutputHandler(
 {
     public async Task<SubmitOutputResult> Handle(SubmitOutputCommand cmd, CancellationToken ct)
     {
-        // Idempotency guard — skip duplicate requests
+        // Idempotency guard
         if (cmd.IdempotencyKey is not null &&
             await productionLogRepo.ExistsByIdempotencyKeyAsync(cmd.IdempotencyKey, ct))
         {
-            var wo = await workOrderRepo.GetByIdAsync(cmd.WorkOrderId, ct);
-            return new SubmitOutputResult(
-                -1, wo?.ActualQtyOK.Value ?? -1, wo?.ActualQtyNG.Value ?? -1, IsDuplicate: true);
+            return new SubmitOutputResult(-1, -1, -1, IsDuplicate: true);
         }
 
-        var workOrder = await workOrderRepo.GetByIdAsync(cmd.WorkOrderId, ct)
-            ?? throw new EntityNotFoundException(nameof(WorkOrder), cmd.WorkOrderId);
+        var job = await jobRepo.GetByIdAsync(cmd.JobId, ct)
+            ?? throw new EntityNotFoundException(nameof(Job), cmd.JobId);
 
-        workOrder.RecordOutput(cmd.QtyOk, cmd.QtyNg, cmd.OperatorId);
+        if (job.Status != JobStatus.Active)
+            throw new DomainException($"Job {job.JobID} must be Active to submit output. Current: {job.Status}.");
+
+        var workOrder = await workOrderRepo.GetByIdAsync(job.WOID, ct)
+            ?? throw new EntityNotFoundException(nameof(WorkOrder), job.WOID);
+
+        workOrder.AccumulateOutput(cmd.QtyOk, cmd.QtyNg, job.OperatorID);
 
         var log = ProductionLog.Create(
-            cmd.WorkOrderId, cmd.QtyOk, cmd.QtyNg, cmd.OperatorId,
-            cmd.MachineCode, cmd.ShiftCode, cmd.IdempotencyKey, cmd.Timestamp);
+            cmd.JobId, cmd.QtyOk, cmd.QtyNg,
+            cmd.DeviceIp, cmd.IdempotencyKey, cmd.Notes, cmd.Timestamp);
 
         if (cmd.QtyNg > 0 && cmd.Defects.Count > 0)
         {

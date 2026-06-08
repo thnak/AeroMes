@@ -18,12 +18,12 @@ public class DowntimeController(IMediator mediator) : ControllerBase
         CancellationToken ct)
     {
         var id = await mediator.Send(new StartDowntimeCommand(
-            request.WorkCenterId,
             request.MachineCode,
             request.ReasonCode,
             request.ReasonName,
             request.StartTime,
-            request.OperatorId), ct);
+            request.OperatorId,
+            request.Notes), ct);
 
         return StatusCode(201, new ApiResponse<object>(true, "Downtime started.",
             new { DowntimeLogId = id, Status = "DOWNTIME_ACTIVE" }));
@@ -36,7 +36,7 @@ public class DowntimeController(IMediator mediator) : ControllerBase
         CancellationToken ct)
     {
         var result = await mediator.Send(
-            new EndDowntimeCommand(downtimeLogId, request.EndTime, request.OperatorId), ct);
+            new EndDowntimeCommand(downtimeLogId, request.EndTime, request.Notes), ct);
 
         return Ok(new ApiResponse<object>(true, "Downtime resolved.",
             new { result.DowntimeLogId, result.DurationMinutes, Status = "RESOLVED" }));
@@ -44,12 +44,11 @@ public class DowntimeController(IMediator mediator) : ControllerBase
 }
 
 public record StartDowntimeRequest(
-    int WorkCenterId,
     string MachineCode,
     string ReasonCode,
     string? ReasonName,
     DateTime StartTime,
-    string OperatorId
-);
+    string OperatorId,
+    string? Notes = null);
 
-public record EndDowntimeRequest(DateTime EndTime, string OperatorId);
+public record EndDowntimeRequest(DateTime EndTime, string? Notes = null);

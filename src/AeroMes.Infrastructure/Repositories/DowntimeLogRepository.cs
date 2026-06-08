@@ -1,5 +1,5 @@
-using AeroMes.Domain.Equipment;
-using AeroMes.Domain.Equipment.Repositories;
+using AeroMes.Domain.Production;
+using AeroMes.Domain.Production.Repositories;
 using AeroMes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,29 +7,29 @@ namespace AeroMes.Infrastructure.Repositories;
 
 public class DowntimeLogRepository(AppDbContext db) : IDowntimeLogRepository
 {
-    public async Task<DowntimeLog?> GetByIdAsync(long id, CancellationToken ct = default)
-        => await db.DowntimeLogs.FirstOrDefaultAsync(x => x.DowntimeLogID == id, ct);
-
-    public async Task AddAsync(DowntimeLog log, CancellationToken ct = default)
-        => await db.DowntimeLogs.AddAsync(log, ct);
+    public Task<DowntimeLog?> GetByIdAsync(long id, CancellationToken ct) =>
+        db.DowntimeLogs.FirstOrDefaultAsync(x => x.DowntimeLogID == id, ct);
 
     public async Task<double> GetTotalDowntimeMinutesAsync(
-        int workCenterId,
-        string machineCode,
-        DateTime from,
-        DateTime to,
-        CancellationToken ct = default)
+        string machineCode, DateTime from, DateTime to, CancellationToken ct)
     {
-        var entries = await db.DowntimeLogs
-            .Where(x => x.WorkCenterID == workCenterId
-                && x.MachineCode == machineCode
-                && x.StartTime >= from
-                && x.EndTime != null
-                && x.EndTime <= to)
-            .Select(x => new { x.StartTime, EndTime = x.EndTime!.Value })
-            .AsNoTracking()
+        var logs = await db.DowntimeLogs
+            .Where(d => d.MachineCode == machineCode
+                        && d.StartTime >= from
+                        && (d.EndTime == null || d.EndTime <= to))
+            .Select(d => new
+            {
+                Start = d.StartTime,
+                End = d.EndTime ?? to,
+            })
             .ToListAsync(ct);
 
-        return entries.Sum(x => (x.EndTime - x.StartTime).TotalMinutes);
+        return logs.Sum(l => (l.End - l.Start).TotalMinutes);
+    }
+
+    public Task AddAsync(DowntimeLog entity, CancellationToken ct)
+    {
+        db.DowntimeLogs.Add(entity);
+        return Task.CompletedTask;
     }
 }

@@ -1,6 +1,7 @@
 using AeroMes.Api.Identity;
+using AeroMes.Api.Middleware;
+using AeroMes.Application;
 using AeroMes.Application.Interfaces;
-using AeroMes.Application.WorkOrders.Commands.StartWorkOrder;
 using AeroMes.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -11,18 +12,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails();
 
+builder.Services.AddApplication();        // MediatR + FluentValidation + ValidationBehavior
 builder.Services.AddInfrastructure(builder.Configuration);
-
-builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssembly(typeof(StartWorkOrderHandler).Assembly));
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Jwt:Key is not configured.");
 
-// Support both Cookie (browser) and JWT Bearer (tablet/mobile/API)
 builder.Services
     .AddAuthentication(options =>
     {
@@ -46,8 +45,7 @@ builder.Services
         opts.Cookie.SameSite = SameSiteMode.Lax;
         opts.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         opts.SlidingExpiration = true;
-        opts.ExpireTimeSpan = TimeSpan.FromHours(8); // one full shift
-        // Return 401/403 instead of redirecting for API clients
+        opts.ExpireTimeSpan = TimeSpan.FromHours(8);
         opts.Events.OnRedirectToLogin = ctx =>
         {
             ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -88,6 +86,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
+app.UseMiddleware<ExceptionMiddleware>();   // must be first — catches all downstream exceptions
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();

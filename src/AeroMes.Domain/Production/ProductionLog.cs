@@ -1,44 +1,47 @@
 using AeroMes.Domain.Common;
 using AeroMes.Domain.Exceptions;
+using AeroMes.Domain.Quality; // DefectDetail lives in qual schema
 
 namespace AeroMes.Domain.Production;
 
 public class ProductionLog : Entity
 {
     public long LogID { get; private set; }
-    public int WorkOrderID { get; private set; }
+    public long JobID { get; private set; }
     public DateTime Timestamp { get; private set; }
     public int QtyOK { get; private set; }
     public int QtyNG { get; private set; }
-    public string OperatorID { get; private set; } = string.Empty;
-    public string? MachineCode { get; private set; }
-    public string? ShiftCode { get; private set; }
+    public string? DeviceIP { get; private set; }
     public string? Notes { get; private set; }
     public string? IdempotencyKey { get; private set; }
 
     private readonly List<DefectDetail> _defectDetails = [];
     public IReadOnlyCollection<DefectDetail> DefectDetails => _defectDetails.AsReadOnly();
 
-    private ProductionLog() { } // EF constructor
+    // EF navigation
+    public Job? Job { get; private set; }
+
+    private ProductionLog() { }
 
     public static ProductionLog Create(
-        int workOrderId,
+        long jobId,
         int qtyOk,
         int qtyNg,
-        string operatorId,
-        string? machineCode,
-        string? shiftCode,
-        string? idempotencyKey,
+        string? deviceIp = null,
+        string? idempotencyKey = null,
+        string? notes = null,
         DateTime? timestamp = null)
     {
+        if (qtyOk < 0) throw new DomainException($"QtyOK cannot be negative. Got: {qtyOk}.");
+        if (qtyNg < 0) throw new DomainException($"QtyNG cannot be negative. Got: {qtyNg}.");
+
         return new ProductionLog
         {
-            WorkOrderID = workOrderId,
+            JobID = jobId,
             QtyOK = qtyOk,
             QtyNG = qtyNg,
-            OperatorID = operatorId,
-            MachineCode = machineCode,
-            ShiftCode = shiftCode,
+            DeviceIP = deviceIp,
+            Notes = notes,
             IdempotencyKey = idempotencyKey,
             Timestamp = timestamp ?? DateTime.UtcNow,
         };

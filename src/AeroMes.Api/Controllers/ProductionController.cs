@@ -12,6 +12,9 @@ namespace AeroMes.Api.Controllers;
 [Authorize]
 public class ProductionController(IMediator mediator) : ControllerBase
 {
+    /// <summary>
+    /// Submit output (OK + NG) for an active Job. Idempotent via X-Idempotency-Key header.
+    /// </summary>
     [HttpPost("submit-output")]
     public async Task<ActionResult<ApiResponse<SubmitOutputResult>>> SubmitOutput(
         [FromHeader(Name = "X-Idempotency-Key")] string? idempotencyKey,
@@ -19,24 +22,25 @@ public class ProductionController(IMediator mediator) : ControllerBase
         CancellationToken ct)
     {
         var cmd = new SubmitOutputCommand(
-            request.WorkOrderId,
-            request.OperatorId,
-            request.MachineCode,
-            request.ShiftCode,
+            request.JobId,
             request.QtyOk,
             request.QtyNg,
+            request.DeviceIp,
+            request.Notes,
+            idempotencyKey,
             request.Timestamp,
-            request.Defects.Select(d => new DefectEntry(d.DefectCode, d.Qty)).ToList(),
-            idempotencyKey);
+            request.Defects.Select(d => new DefectEntry(d.DefectCode, d.Qty)).ToList());
 
         var result = await mediator.Send(cmd, ct);
         return StatusCode(201, new ApiResponse<SubmitOutputResult>(true,
             "Production output recorded successfully.", result));
     }
 
+    /// <summary>
+    /// Get OEE metrics for a machine within a shift window.
+    /// </summary>
     [HttpGet("oee")]
     public async Task<ActionResult<ApiResponse<OeeResult>>> GetOee(
-        [FromQuery] int workCenterId,
         [FromQuery] string machineCode,
         [FromQuery] DateTime shiftStart,
         [FromQuery] DateTime shiftEnd,
@@ -44,20 +48,18 @@ public class ProductionController(IMediator mediator) : ControllerBase
         CancellationToken ct)
     {
         var result = await mediator.Send(
-            new GetOeeQuery(workCenterId, machineCode, shiftStart, shiftEnd, cycleTimeSeconds), ct);
+            new GetOeeQuery(machineCode, shiftStart, shiftEnd, cycleTimeSeconds), ct);
         return Ok(new ApiResponse<OeeResult>(true, "OK", result));
     }
 }
 
 public record SubmitOutputRequest(
-    int WorkOrderId,
-    string OperatorId,
-    string MachineCode,
-    string ShiftCode,
+    long JobId,
     int QtyOk,
     int QtyNg,
-    DateTime Timestamp,
-    List<SubmitDefectEntry> Defects
-);
+    string? DeviceIp,
+    string? Notes,
+    DateTime? Timestamp,
+    List<SubmitDefectEntry> Defects);
 
 public record SubmitDefectEntry(string DefectCode, int Qty);

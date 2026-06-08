@@ -1,10 +1,3 @@
 namespace AeroMes.Domain.Production;
 
-public enum WorkOrderStatus
-{
-    Released,
-    Running,
-    Paused,
-    Completed,
-    Cancelled
-}
+public enum WorkOrderStatus { Prepared, Running, Paused, Completed, Cancelled }

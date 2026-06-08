@@ -1,0 +1,9 @@
+namespace AeroMes.Domain.Integration.Repositories;
+
+public interface IProductionOrderRepository
+{
+    Task<ProductionOrder?> GetByIdAsync(int id, CancellationToken ct = default);
+    Task<ProductionOrder?> GetByCodeAsync(string poCode, CancellationToken ct = default);
+    Task<bool> ExistsAsync(int id, CancellationToken ct = default);
+    Task AddAsync(ProductionOrder entity, CancellationToken ct = default);
+}

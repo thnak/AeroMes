@@ -1,5 +1,5 @@
-using AeroMes.Domain.Equipment;
-using AeroMes.Domain.Equipment.Repositories;
+using AeroMes.Domain.Master;
+using AeroMes.Domain.Master.Repositories;
 using AeroMes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,12 +7,25 @@ namespace AeroMes.Infrastructure.Repositories;
 
 public class WorkCenterRepository(AppDbContext db) : IWorkCenterRepository
 {
-    public async Task<bool> ExistsAsync(int id, CancellationToken ct = default)
-        => await db.WorkCenters.AnyAsync(x => x.WorkCenterID == id, ct);
+    public Task<WorkCenter?> GetByIdAsync(int id, CancellationToken ct) =>
+        db.WorkCenters.FirstOrDefaultAsync(x => x.WorkCenterID == id, ct);
 
-    public async Task<WorkCenter?> GetByIdAsync(int id, CancellationToken ct = default)
-        => await db.WorkCenters.FirstOrDefaultAsync(x => x.WorkCenterID == id, ct);
+    public async Task<IReadOnlyList<WorkCenter>> GetAllAsync(bool activeOnly = true, CancellationToken ct = default)
+    {
+        var q = db.WorkCenters.AsQueryable();
+        if (activeOnly) q = q.Where(x => x.IsActive);
+        return await q.OrderBy(x => x.WorkCenterCode).ToListAsync(ct);
+    }
 
-    public async Task AddAsync(WorkCenter workCenter, CancellationToken ct = default)
-        => await db.WorkCenters.AddAsync(workCenter, ct);
+    public Task<bool> ExistsAsync(int id, CancellationToken ct) =>
+        db.WorkCenters.AnyAsync(x => x.WorkCenterID == id, ct);
+
+    public Task<bool> CodeExistsAsync(string code, CancellationToken ct) =>
+        db.WorkCenters.AnyAsync(x => x.WorkCenterCode == code.ToUpperInvariant(), ct);
+
+    public Task AddAsync(WorkCenter entity, CancellationToken ct)
+    {
+        db.WorkCenters.Add(entity);
+        return Task.CompletedTask;
+    }
 }
