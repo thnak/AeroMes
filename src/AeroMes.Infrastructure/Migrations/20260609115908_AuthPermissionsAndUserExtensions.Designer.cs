@@ -4,6 +4,7 @@ using AeroMes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AeroMes.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260609115908_AuthPermissionsAndUserExtensions")]
+    partial class AuthPermissionsAndUserExtensions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -60,59 +63,6 @@ namespace AeroMes.Infrastructure.Migrations
                     b.ToTable("Permissions", "auth");
                 });
 
-            modelBuilder.Entity("AeroMes.Domain.Auth.RefreshToken", b =>
-                {
-                    b.Property<long>("TokenId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("TokenId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeviceInfo")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("FamilyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("IpAddress")
-                        .HasMaxLength(45)
-                        .HasColumnType("nvarchar(45)");
-
-                    b.Property<long?>("ReplacedByTokenId")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("TokenHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("TokenId");
-
-                    b.HasIndex("FamilyId");
-
-                    b.HasIndex("TokenHash")
-                        .IsUnique();
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("RefreshTokens", "auth");
-                });
-
             modelBuilder.Entity("AeroMes.Domain.Auth.RolePermission", b =>
                 {
                     b.Property<string>("RoleId")
@@ -127,72 +77,6 @@ namespace AeroMes.Infrastructure.Migrations
                     b.HasIndex("PermissionId");
 
                     b.ToTable("RolePermissions", "auth");
-                });
-
-            modelBuilder.Entity("AeroMes.Domain.Auth.SecurityAuditLog", b =>
-                {
-                    b.Property<long>("AuditId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("AuditId"));
-
-                    b.Property<string>("ActorId")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ActorIp")
-                        .HasMaxLength(45)
-                        .HasColumnType("nvarchar(45)");
-
-                    b.Property<string>("ActorType")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("ActorUserAgent")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("FailureReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("NewValues")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("OldValues")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Outcome")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<string>("TargetId")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("TargetType")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("AuditId");
-
-                    b.HasIndex("ActorId", "OccurredAt");
-
-                    b.HasIndex("EventType", "OccurredAt");
-
-                    b.HasIndex("TargetType", "TargetId", "OccurredAt");
-
-                    b.ToTable("SecurityAuditLog", "auth");
                 });
 
             modelBuilder.Entity("AeroMes.Domain.Auth.UserPermissionOverride", b =>
@@ -1216,15 +1100,6 @@ namespace AeroMes.Infrastructure.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
-                });
-
-            modelBuilder.Entity("AeroMes.Domain.Auth.RefreshToken", b =>
-                {
-                    b.HasOne("AeroMes.Infrastructure.Identity.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("AeroMes.Domain.Auth.RolePermission", b =>

@@ -1,5 +1,7 @@
 using AeroMes.Application.Interfaces;
+using AeroMes.Domain.Auth;
 using AeroMes.Domain.Common;
+using Microsoft.AspNetCore.Identity;
 using AeroMes.Domain.Integration;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Production;
@@ -15,6 +17,13 @@ namespace AeroMes.Infrastructure.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options, IPublisher publisher)
     : IdentityDbContext<ApplicationUser>(options), IUnitOfWork
 {
+    // auth schema
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<UserPermissionOverride> UserPermissionOverrides => Set<UserPermissionOverride>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<SecurityAuditLog> SecurityAuditLogs => Set<SecurityAuditLog>();
+
     // master schema
     public DbSet<WorkCenter> WorkCenters => Set<WorkCenter>();
     public DbSet<Machine> Machines => Set<Machine>();
@@ -64,10 +73,107 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IPublisher pub
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
+        ConfigureAuthSchema(b);
         ConfigureMasterSchema(b);
         ConfigureIntegrationSchema(b);
         ConfigureProdSchema(b);
         ConfigureQualSchema(b);
+    }
+
+    // ── auth ──────────────────────────────────────────────────────────────
+    private static void ConfigureAuthSchema(ModelBuilder b)
+    {
+        b.Entity<Permission>(e =>
+        {
+            e.ToTable("Permissions", "auth");
+            e.HasKey(x => x.PermissionId);
+            e.Property(x => x.Resource).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Action).HasMaxLength(30).IsRequired();
+            e.Property(x => x.PermissionCode).HasMaxLength(82).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(200);
+            e.HasIndex(x => x.PermissionCode).IsUnique();
+            e.HasIndex(x => new { x.Resource, x.Action }).IsUnique();
+        });
+
+        b.Entity<RolePermission>(e =>
+        {
+            e.ToTable("RolePermissions", "auth");
+            e.HasKey(x => new { x.RoleId, x.PermissionId });
+            e.Property(x => x.RoleId).HasMaxLength(450);
+            e.HasOne<IdentityRole>()
+                .WithMany()
+                .HasForeignKey(x => x.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Permission>()
+                .WithMany()
+                .HasForeignKey(x => x.PermissionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<UserPermissionOverride>(e =>
+        {
+            e.ToTable("UserPermissionOverrides", "auth");
+            e.HasKey(x => x.OverrideId);
+            e.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+            e.Property(x => x.GrantedBy).HasMaxLength(450).IsRequired();
+            e.Property(x => x.Effect).HasConversion<string>().HasMaxLength(10);
+            e.HasOne(x => x.Permission)
+                .WithMany()
+                .HasForeignKey(x => x.PermissionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.UserId, x.PermissionId });
+        });
+
+        b.Entity<ApplicationUser>(e =>
+        {
+            e.Property(x => x.EmployeeCode).HasMaxLength(50);
+            e.Property(x => x.Department).HasMaxLength(100);
+            e.Property(x => x.PreferredLanguage).HasMaxLength(10);
+            e.Property(x => x.AvatarUrl).HasMaxLength(500);
+        });
+
+        b.Entity<RefreshToken>(e =>
+        {
+            e.ToTable("RefreshTokens", "auth");
+            e.HasKey(x => x.TokenId);
+            e.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+            e.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+            e.Property(x => x.DeviceInfo).HasMaxLength(200);
+            e.Property(x => x.IpAddress).HasMaxLength(45);
+            e.Ignore(x => x.IsActive);
+            e.HasIndex(x => x.TokenHash).IsUnique();
+            e.HasIndex(x => x.UserId);
+            e.HasIndex(x => x.FamilyId);
+            e.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<SecurityAuditLog>(e =>
+        {
+            e.ToTable("SecurityAuditLog", "auth");
+            e.HasKey(x => x.AuditId);
+            e.Property(x => x.AuditId).UseIdentityColumn();
+            e.Property(x => x.EventType).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ActorId).HasMaxLength(450);
+            e.Property(x => x.ActorType).HasMaxLength(20);
+            e.Property(x => x.ActorIp).HasMaxLength(45);
+            e.Property(x => x.ActorUserAgent).HasMaxLength(500);
+            e.Property(x => x.TargetType).HasMaxLength(50);
+            e.Property(x => x.TargetId).HasMaxLength(200);
+            e.Property(x => x.Outcome).HasMaxLength(10).IsRequired();
+            e.Property(x => x.FailureReason).HasMaxLength(500);
+            e.HasIndex(x => new { x.ActorId, x.OccurredAt });
+            e.HasIndex(x => new { x.EventType, x.OccurredAt });
+            e.HasIndex(x => new { x.TargetType, x.TargetId, x.OccurredAt });
+            // Append-only: prevent EF from generating UPDATE/DELETE for this entity
+            e.ToTable(t => t.ExcludeFromMigrations(false));
+        });
     }
 
     // ── master ────────────────────────────────────────────────────────────

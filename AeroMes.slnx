@@ -5,4 +5,7 @@
     <Project Path="src/AeroMes.Domain/AeroMes.Domain.csproj" />
     <Project Path="src/AeroMes.Infrastructure/AeroMes.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AeroMes.IntegrationTests/AeroMes.IntegrationTests.csproj" />
+  </Folder>
 </Solution>

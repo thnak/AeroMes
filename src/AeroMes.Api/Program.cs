@@ -1,9 +1,13 @@
+using AeroMes.Api.Auth;
 using AeroMes.Api.Identity;
 using AeroMes.Api.Middleware;
 using AeroMes.Application;
 using AeroMes.Application.Interfaces;
 using AeroMes.Infrastructure;
+using AeroMes.Infrastructure.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -18,6 +22,22 @@ builder.Services.AddApplication();        // MediatR + FluentValidation + Valida
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddHttpContextAccessor();
+
+// Permission-based authorization
+builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+
+var allPermissions = AeroMes.Api.Auth.Permissions.All;
+builder.Services.AddAuthorizationBuilder()
+    .AddDefaultPolicy("default", p => p.RequireAuthenticatedUser());
+
+// Register one policy per permission code
+builder.Services.AddAuthorization(opts =>
+{
+    foreach (var code in allPermissions)
+        opts.AddPolicy($"permission:{code}",
+            p => p.AddRequirements(new PermissionRequirement(code)));
+});
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Jwt:Key is not configured.");
@@ -72,8 +92,6 @@ builder.Services
         };
     });
 
-builder.Services.AddAuthorization();
-
 builder.Services.AddCors(opts =>
     opts.AddPolicy("AllowFrontend", p =>
         p.WithOrigins(builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? [])
@@ -83,6 +101,16 @@ builder.Services.AddCors(opts =>
 
 var app = builder.Build();
 
+// Migrate + seed on startup (idempotent — safe for auto-deploy)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AeroMes.Infrastructure.Data.AppDbContext>();
+    await db.Database.MigrateAsync();
+
+    var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+    await seeder.SeedAsync();
+}
+
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
@@ -90,6 +118,9 @@ app.UseMiddleware<ExceptionMiddleware>();   // must be first — catches all dow
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<ForcePasswordChangeMiddleware>();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

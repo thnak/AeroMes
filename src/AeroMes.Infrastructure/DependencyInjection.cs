@@ -65,6 +65,13 @@ public static class DependencyInjection
         .AddSignInManager()
         .AddDefaultTokenProviders();
 
+        services.AddScoped<IPermissionService, PermissionService>();
+        services.AddScoped<DatabaseSeeder>();
+
+        services.AddSingleton<DbAuditLogger>();
+        services.AddSingleton<IAuditLogger>(sp => sp.GetRequiredService<DbAuditLogger>());
+        services.AddHostedService(sp => sp.GetRequiredService<DbAuditLogger>());
+
         return services;
     }
 }

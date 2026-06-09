@@ -1,0 +1,191 @@
+# **ĐẶC TẢ YÊU CẦU TÍNH NĂNG & KIẾN TRÚC MES CẤU HÌNH ĐỘNG**
+
+## **(CONFIGURABLE MES \- FEATURE REQUIREMENTS & ARCHITECTURAL BLUEPRINT)**
+
+Tài liệu này mô tả chi tiết các yêu cầu tính năng phân tầng và đề xuất kiến trúc hệ thống cho giải pháp MES cấu hình động (Configuration-driven). Hệ thống được thiết kế để phục vụ nhiều ngành kinh doanh khác nhau trên một bộ mã nguồn duy nhất (**Single Codebase**).
+
+## **1\. Ma Trận Yêu Cầu Tính Năng Theo Ngành (Feature Matrix)**
+
+Để hệ thống có khả năng đóng gói thương mại hóa, các tính năng được phân rã thành các phân hệ Lõi (Core \- luôn bật) và các phân hệ Đặc thù có thể bật/tắt bằng cấu hình (**Feature Toggle**).
+
+| Phân hệ (Module) | Tính năng Lõi (Core \- Luôn bật) | Đặc thù Ngành Nhựa (Discrete) | Đặc thù Ngành Sữa (Process) |
+| :---- | :---- | :---- | :---- |
+| **Quản lý Lệnh (WO/Job)** | \- Tiếp nhận PO từ ERP. \- Rã lệnh WO tự động. \- Giao việc (Job dispatching). | \- Xếp lịch sản xuất dựa trên **Mã khuôn** để giảm thiểu thời gian gá đặt. | \- Xếp lịch dựa trên **Mã công thức (Recipe)** và thể tích bồn chứa. |
+| **Thực thi & Sản lượng** | \- Quét ghi nhận sản lượng đạt/lỗi (OK/NG). \- Khóa chéo công đoạn (Validation). | \- Đếm số lần ép (Shot count) để tính toán tuổi thọ khuôn. | \- Ghi nhận thông số mẻ (Nhiệt độ, Áp suất, Thời gian tiệt trùng). |
+| **Quản lý Kho (WIP)** | \- Cấp phát vật tư theo BOM. \- Chuyển kho nội bộ xưởng. | \- Quản lý hạt nhựa bọc theo Pallet/Thùng hàng. \- Quản lý nhựa tái chế. | \- Quản lý bồn chứa (Silo/Tank) động. \- Kiểm soát hạn sử dụng (FEFO). |
+| **Chất lượng (QA/QC)** | \- Khai báo mã lỗi chi tiết. \- Phân tích Pareto nguồn lỗi. | \- Kiểm tra ngoại quan sản phẩm (Lỗi xước, thiếu liệu, thừa bavia). | \- Kiểm tra chỉ số hóa lý mẫu sữa (Độ béo, vi sinh, độ pH). |
+| **Tích hợp & Bảo trì** | \- Ghi nhận dừng máy (Downtime). \- Tính toán hiệu suất OEE. | \- Lập lịch bảo trì khuôn dựa trên hạn mức Shot đạt ngưỡng. | \- Ghi nhận sự kiện vệ sinh đường ống tự động (CIP) để đổi trạng thái bồn. |
+
+## **2\. Tầm Nhìn Dài Hạn: Đối Mặt Với Các Ngành Đặc Thù Khác**
+
+Mặc dù mục tiêu hiện tại là tập trung triển khai cho ngành **Nhựa** và **Sữa**, việc nghiên cứu cấu trúc của các ngành đặc thù khác sẽ giúp chúng ta xây dựng một "Bộ khung Core" vững chắc, tránh việc phải đập đi xây lại khi phát sinh các yêu cầu phức tạp từ chính khách hàng ngành Nhựa và Sữa.
+
+### **2.1. Ngành Dệt may & Giày da (Fashion & Apparel)**
+
+* **Đặc thù:** Quản lý biến thể bùng nổ theo Ma trận Màu sắc/Kích cỡ (Color/Size Matrix).  
+* **Giá trị chéo cho ngành chính:** \* Trong ngành Sữa, một loại sữa có thể đóng gói vào hộp ![][image1], ![][image2], hộp giấy, hoặc chai nhựa.  
+  * Trong ngành Nhựa, một cái rổ nhựa có thể được ép ra với màu Đỏ, Xanh, Vàng.  
+  * Nếu chúng ta áp dụng tư duy quản lý **Variant Matrix** của ngành may mặc vào Core, chúng ta sẽ giải quyết triệt để bài toán biến thể bao bì của ngành Sữa và biến thể màu hạt nhựa của ngành Nhựa mà không cần nhân bản vô tội vạ các mã sản phẩm (SKU) độc lập trong cơ sở dữ liệu.
+
+### **2.2. Ngành Lắp ráp Điện tử (High-Tech & Assembly)**
+
+* **Đặc thù:** Quản lý Số sê-ri cá thể (Serial Number \- SN) nghiêm ngặt từ linh kiện đầu vào đến thành phẩm cuối cùng; thiết lập cơ chế chống sót lỗi cứng (Poka-Yoke/Interlock).  
+* **Giá trị chéo cho ngành chính:**  
+  * Khách hàng ngành Nhựa kỹ thuật cao (ví dụ: linh kiện nhựa cho xe hơi, thiết bị y tế) yêu cầu truy vết chính xác chiếc nắp nhựa này được ép từ mẻ nhựa nào, do máy nào ép vào giờ nào.  
+  * Ngành Sữa bột cao cấp yêu cầu quét mã QR độc nhất trên từng lon sữa để chống hàng giả và kiểm soát phân vùng đại lý xuất xưởng.  
+  * Việc tích hợp sẵn cơ chế **Serial-level tracking** và **Interlock** (khóa trạm kiểm tra nếu bước trước báo lỗi) từ ngành điện tử vào Core giúp hệ thống MES của bạn dễ dàng nâng cấp lên các tiêu chuẩn chất lượng khắt khe nhất (như ISO 13485 cho y tế, IATF 16949 cho ô tô).
+
+### **2.3. Ngành Thép, Tôn & Giấy cuộn (Metal, Roll & Coil-based)**
+
+* **Đặc thù:** Quản lý đơn vị tính kép (Dual UOM \- ví dụ: Nhập 1 Cuộn nhưng tiêu hao tính bằng Tấn/Mét) và bài toán chia tách vật tư (Split/Merge/Cutting Stock).  
+* **Giá trị chéo cho ngành chính:**  
+  * Ngành Nhựa nhập nguyên liệu đầu vào là các Cuộn màng nhựa lớn để chạy máy thổi màng bọc, cần quản lý cả số Mét dài và số Kg thực tế của cuộn.  
+  * Ngành Sữa nhập khẩu nguyên liệu bột sữa theo Bao lớn (![][image3]), nhưng khi đưa vào bồn trộn thì cân đo chính xác đến gram.  
+  * Việc giải quyết bài toán **Đơn vị tính kép (Dual UOM)** và cơ chế **Split/Merge lô kho** của ngành thép sẽ giúp hệ thống MES xử lý trơn tru các trường hợp dung sai trọng lượng và quy đổi nguyên vật liệu phức tạp dưới xưởng của cả ngành Nhựa lẫn Sữa.
+
+## **3\. Giải Pháp Đơn Giản Hóa Thuộc Tính Động (Dynamic Attributes)**
+
+### **Thách thức của mô hình EAV truyền thống:**
+
+Mô hình EAV (Entity-Attribute-Value) yêu cầu tách thành nhiều bảng liên kết. Để lấy ra thông tin của một chiếc máy kèm các thông số động, hệ thống phải thực hiện nhiều câu lệnh JOIN phức tạp, làm chậm hiệu năng của SQL Server khi dữ liệu lên tới hàng triệu dòng log.
+
+### **Giải pháp tối ưu: Lưu trữ dữ liệu động dạng JSON (SQL Server Native JSON)**
+
+Chúng ta sẽ thay thế hoàn toàn mô hình EAV phức tạp bằng một cột duy nhất tên là CustomAttributes và ProcessParameters kiểu dữ liệu NVARCHAR(MAX) hỗ trợ định dạng JSON gốc nằm ngay trong bảng chính.
+
+       MÔ HÌNH EAV (PHỨC TẠP)                     MÔ HÌNH JSON (TINH GỌN)    
+ ┌────────────────────────────────┐            ┌────────────────────────────┐    
+ │  Bảng Machines                 │            │  Bảng master.Machines      │    
+ ├────────────────────────────────┤            ├────────────────────────────┤    
+ │  MachineCode (PK)              │            │  MachineCode (PK)          │    
+ └──────────────┬─────────────────┘            │  MachineName               │    
+                │ (1)                          │  CustomAttributes (JSON)   │    
+                ▼ (N)                          └────────────────────────────┘    
+ ┌────────────────────────────────┐               \- Lưu thẳng chuỗi JSON:    
+ │  Bảng MachineAttributeValues   │               {"force": 250, "opening": 50}    
+ ├────────────────────────────────┤               \- Hoặc:    
+ │  MachineCode (FK)              │               {"volume": 5000, "pressure": 3}    
+ │  AttributeCode (FK)            │    
+ │  Value                         │    
+ └────────────────────────────────┘
+
+#### **Ưu điểm:**
+
+1. **Database siêu sạch:** Không cần tạo thêm bảng phụ, không cần JOIN.  
+2. **Code Kotlin cực kỳ nhàn:** Thực thể Entity chỉ cần định nghĩa trường dạng String. Khi nhận từ API, bạn sử dụng thư viện Jackson hoặc Kotlinx.Serialization để parse thẳng thành một Map\<String, Any\> để xử lý động trên giao diện và lưu trực tiếp chuỗi JSON vào DB.  
+3. **Hiệu năng cao:** SQL Server hỗ trợ hàm JSON\_VALUE để lọc, truy vấn trực tiếp vào trong chuỗi JSON và có thể tạo cột ảo (Computed Column) để đánh Index.
+
+## **4\. Đặc Tả Schema Cơ Sở Dữ Liệu Tinh Chỉnh (JSON-based & Future-proof)**
+
+Dưới đây là thiết kế chi tiết một số bảng lõi áp dụng giải pháp lưu trữ thuộc tính động bằng JSON, hỗ trợ sẵn sàng cơ chế Quản lý Lô/Serial (TrackingMethod) và Đơn vị tính kép (Dual UOM).
+
+CREATE SCHEMA master;  
+GO  
+CREATE SCHEMA prod;  
+GO
+
+\-- 1\. BẢNG DANH MỤC SẢN PHẨM HỖ TRỢ PHƯƠNG THỨC TRUY VẾT DÒNG CHẢY  
+CREATE TABLE master.Products (  
+    ProductCode VARCHAR(50) PRIMARY KEY,  
+    ProductName NVARCHAR(200) NOT NULL,  
+    PrimaryUnit NVARCHAR(20) NOT NULL,                  \-- Đơn vị tính chính (Cái, Lít, Cuộn)  
+    SecondaryUnit NVARCHAR(20) NULL,                    \-- Đơn vị tính phụ nếu có (Kg, Mét)  
+      
+    \-- Phương thức truy vết:   
+    \-- 'NONE': Không quản lý (Ốc vít, nước lã)  
+    \-- 'LOT': Quản lý theo Lô (Sữa nguyên liệu, Hạt nhựa mẻ)  
+    \-- 'SERIAL': Quản lý theo từng số Sê-ri cá thể (Bo mạch, Khách hàng VIP)  
+    TrackingMethod VARCHAR(20) DEFAULT 'NONE' NOT NULL,   
+      
+    IsActive BIT DEFAULT 1 NOT NULL,  
+    CreatedAt DATETIME DEFAULT GETDATE() NOT NULL  
+);
+
+\-- 2\. BẢNG DANH MỤC THIẾT BỊ (MÁY MÓC / BỒN CHỨA)  
+CREATE TABLE master.Machines (  
+    MachineCode VARCHAR(50) PRIMARY KEY,  
+    MachineName NVARCHAR(100) NOT NULL,  
+    WorkCenterID INT NOT NULL,  
+    MachineType VARCHAR(20) NOT NULL,                  \-- VD: INJECTION\_MOLD (Nhựa), SILO\_TANK (Sữa)  
+      
+    \-- Cột lưu trữ các thông số kỹ thuật đặc thù của từng loại máy dưới dạng JSON  
+    \-- Ngành nhựa:  {"clamping\_force\_tons": 250, "max\_shot\_weight\_g": 350}  
+    \-- Ngành sữa:   {"capacity\_liters": 10000, "is\_sterile": true}  
+    CustomAttributes NVARCHAR(MAX) NULL,                   
+      
+    IsActive BIT DEFAULT 1 NOT NULL,  
+    CreatedAt DATETIME DEFAULT GETDATE() NOT NULL,  
+      
+    \-- Ràng buộc kiểm tra định dạng dữ liệu có phải là JSON hợp lệ hay không  
+    CONSTRAINT CHK\_Machines\_Attributes\_JSON CHECK (ISJSON(CustomAttributes) \= 1\)  
+);
+
+\-- 3\. BẢNG NHẬT KÝ SẢN XUẤT (PRODUCTION LOGS) \- HỖ TRỢ ĐƠN VỊ TÍNH KÉP & THÔNG SỐ ĐỘNG  
+CREATE TABLE prod.ProductionLogs (  
+    LogID BIGINT IDENTITY(1,1) PRIMARY KEY,  
+    JobID BIGINT NOT NULL,  
+    Timestamp DATETIME DEFAULT GETDATE() NOT NULL,  
+      
+    \-- Đơn vị tính kép (Dual UOM)  
+    PrimaryQty NUMERIC(18,4) NOT NULL,                 \-- Số lượng theo Đơn vị chính (vd: 1 Cuộn màng)  
+    SecondaryQty NUMERIC(18,4) NULL,                   \-- Số lượng theo Đơn vị phụ nếu có (vd: 152.5 Kg)  
+      
+    \-- Số định danh cá thể (Chỉ dùng nếu Product có TrackingMethod \= 'SERIAL')  
+    SerialNumber VARCHAR(100) NULL,   
+      
+    \-- Lưu trữ các thông số chất lượng, nhiệt độ, áp suất real-time khi công nhân báo cáo  
+    \-- Ngành nhựa:  {"cavities\_used": 4, "injection\_pressure\_bar": 120}  
+    \-- Ngành sữa:   {"temperature\_c": 137.5, "holding\_time\_seconds": 4}  
+    ProcessParameters NVARCHAR(MAX) NULL,                   
+      
+    CONSTRAINT CHK\_ProductionLogs\_Params\_JSON CHECK (ISJSON(ProcessParameters) \= 1\)  
+);
+
+## **5\. Hướng Dẫn Truy Vấn Dữ Liệu JSON Trên SQL Server**
+
+Nhờ tích hợp công cụ xử lý JSON gốc, việc viết các câu lệnh SQL để truy vấn báo cáo hoặc tính toán chỉ số trên cột dữ liệu động cực kỳ dễ dàng và hiệu năng cao.
+
+### **Ví dụ 1: Tìm tất cả các bồn chứa trong nhà máy sữa có dung tích \> 5000 lít**
+
+Sử dụng hàm JSON\_VALUE để trích xuất giá trị từ chuỗi JSON và so sánh:
+
+SELECT   
+    MachineCode,   
+    MachineName,  
+    \-- Trích xuất và ép kiểu dữ liệu về dạng số để so sánh  
+    CAST(JSON\_VALUE(CustomAttributes, '$.capacity\_liters') AS INT) AS CapacityLiters  
+FROM master.Machines  
+WHERE MachineType \= 'SILO\_TANK'  
+  AND CAST(JSON\_VALUE(CustomAttributes, '$.capacity\_liters') AS INT) \> 5000;
+
+### **Ví dụ 2: Lấy ra nhiệt độ trung bình của các mẻ hấp sữa trong ngày hôm nay**
+
+Hữu ích cho việc vẽ biểu đồ kiểm soát chất lượng thời gian thực (SPC):
+
+SELECT   
+    JobID,  
+    AVG(CAST(JSON\_VALUE(ProcessParameters, '$.temperature\_c') AS FLOAT)) AS AvgTemperature  
+FROM prod.ProductionLogs  
+WHERE Timestamp \>= CAST(GETDATE() AS DATE)  
+  AND JSON\_VALUE(ProcessParameters, '$.temperature\_c') IS NOT NULL  
+GROUP BY JobID;
+
+### **Ví dụ 3: Tạo Index trên thuộc tính JSON để tăng tốc tối đa truy vấn**
+
+Nếu hệ thống của bạn cần tìm kiếm liên tục theo lực ép khuôn của máy nhựa, bạn có thể tạo một cột ảo (Computed Column) trích xuất từ JSON và tạo Index trên đó để truy xuất tức thời:
+
+\-- 1\. Tạo cột ảo trích xuất lực ép từ JSON  
+ALTER TABLE master.Machines  
+ADD ClampingForceTons AS CAST(JSON\_VALUE(CustomAttributes, '$.clamping\_force\_tons') AS INT);
+
+\-- 2\. Tạo Index trên cột ảo này để tìm kiếm mất 0ms  
+CREATE NONCLUSTERED INDEX IX\_Machines\_ClampingForce  
+ON master.Machines(ClampingForceTons)  
+WHERE ClampingForceTons IS NOT NULL;  
+
+
+[image1]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADcAAAAaCAYAAAAT6cSuAAADP0lEQVR4Xu2WT0hUURjFR8bAKOivDTk6bxyhkIIWUi1s0SIxF7WoIMF2LYpoW2G0aNMikBYmLSKQVm3aREghLVxGuqhFBYFgUMwiVBIMVHL6Hee7w+3OHwdt1ztwePee77zv3e++e+97iUSMGDFi1IdkR0fHvmw2ezKTyVwIg2XA1I15nOutMCZEUdQH5+Fj4zK8VsE3CX+Sq5/rM673u7q6toS+zUD52tvbU+QvwHwYL4HgAzgHf8tco7g8A73o+rQH0VZ8Ty6X24E2z4OPmdRAf5WcN9X2vf8CVtxEqJcB0374tVJxFnsS6hT4VDG1rbC38Jzvof+81qRtFK2trWnlbWtrOxvGylBHcf4bERo18JaWlr3qcF8X/UXY53ncBBTgmK9vFjzvFDnzXHNhrAy1ihNsgAUG+463dID2NHzl4rpPcRXp3+d0OKu+9gvtT3qWJos3sJv2PL7X5htSfj3HtF9RsBqINaGNwXu+XhXR+sUN2cPFVXibgW118TqKW7R+Tzqd3qMBw49wyuWh/Rku4flCAb3mP4E2o2XoctqSnKlrSQrR+sXdgcs89IUNVlx28XqKsxNuCrkBfZT2S3+ComKxBcWdRgFH0WZhp9Nczubm5u1Oq4modnHaXyvwfKI4sB4bsIo5JEM9xdFN6q2h7YqKn4wB3ysPXAi0AXl1j6dpSWoS6kNUvbi1WQ4HDZL4H+pB2gPEz+iBmmnfhDYsHU57mgasiSgNOFH8bEgb9Xzt8Bv5T3s+6Zro6t+3ENWK06tHn1Dc1wW0TvgmlUptY8kdob2gIn1PpdNSBUhLeMtPp675Sm8zW/wRKGg5y6tJlG6+CR1OOpCcvyo0+KhCcQJJr8LBRPAhxnsJ9rg+91+HIwnPR38G/sjY8jVNy2/tgHEg/5WofPnl4arF+7U/bd+qOB1II+h3S0lC2JtRYTfgEuZxrn36dyOclMc+0PqDuezuw9dLf45mo9PMt8gAu9W3Y19L7a8/FBvcpOsrZm9z2NPcxHynIC7RB2laJZZT2+A92+Cwf89GoWWRjYr/lY90MIQGQxLbcfOVJsMHgz0Y/m9avrJfNHLtDE9FtCZtA1+LESNGjBgx/if8AZlrGYkOKqB/AAAAAElFTkSuQmCC>
+
+[image2]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADcAAAAaCAYAAAAT6cSuAAACt0lEQVR4Xu2WP2gUQRTGNxyCouDf8/D+zf0BRRQsDrWIRQpFr9BCLAIpLWxsNa2NhSAWIZVNsLKxk4BYpRSTQgsVBOEE5QqJwcAJQUz8fbmZYzJ7FyN7SeN+8Nid7337dt7sm7cTRSlSpEixNWTq9frRSqUyVi6Xb4TOGBCNIn7JdTL0OTQajV3SGGPWQp8DvnnsB7pxrk+5PtBzoS4JFK9areY0D6wd+nvA+Qj7jv2WeFByVqNg6xb6hVqtth/fEi8+Z6kRxqvEvKt7XzsM2LnMhXwMiI5hnwcl5yBNv+RsYq+w6z7P+Jn0f4v7rygWiwXFLZVK10JfDEmT47kGfAdr+jxl+UR6bNbnk4L3XSRmm2st9MUwhOQm7Rdq9OOxRY21X7h/rzgqX77AIe6X0L2wuodUwXEW5bXlfpqgGvDthpvF7vv8QJjtT65jx5cKhcJhTRh7hy2Q4B75uP+AraD5SAKXrf4CXEtl6GLakmxtqSSFnUjOdrgF6BH4Ge6fu8QE001WsXvNhwTOwi1iJx3nYmaz2X2O2xQ7kRzDjL4a3EHT/WVM+FppsOWAm5BWz3icSjI2h4EYQnJXxWulfR5uSjz2yeM0YS1Eb8JR97chbsbTVbEvlOgVTyf+l9ns/xYiaXKU3Bn4ZSXp8/26pS3JDeWXz+ePWF3va9qDwJrKWVo1EvFWN6fmpIbk9ANhEiYnwN/GpiNv0oxb2DfinvI4ld96g3Fg4rdMvPza2Kr1j2t/eicTNaRp+Hu9ICG0KU03sTvYSqV7vGrq7IY743TS4BuTxgZvsn+Kvsb+yDtMcFRj2/ZVahtOKPb5eTeWz37NKY9zC/OVhLiYt+JyudxeG1Pb4A3b4LT/zHYjwyKc58WPsZuhU2CyJ8LzphpN5C2AA7EOhF1R5alt4HMpUqRIkSLF/4Q/jbgBOciMtCUAAAAASUVORK5CYII=>
+
+[image3]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFIAAAAaCAYAAAAkJwuaAAAE50lEQVR4Xu1XS2hWRxS+ISlYtA+rMc3rzp8HhlIpyl8LSYVuKrQERWoXlrjShS6ysIG24CpFBMGdLV0UQVsoLqogqDUtIqGLGHFjpDZiG2hFDQghREgQQ/z7fXfO3Jz/5AYjhmjb+8HhznznzOvMzDlzoyhHjhw5nh8459pbW1tftvx/Ci0tLWuw0No4jj/G9w2rXwyg34P4VEi1or6+flVjY+M6jqntlhQ1NTXLMYFjmNwFyCCkBJmIZieaANwYdbC9RUF5hnWoqrRdU1NTTaFQ2AbdFBa3UesWA+j7A/Q9oKhK2bxkfopfWmDwbyEXVf0HceZ2Y5dMVMkMHPq5tgmArgtyva6ubrXVPS246XBmr+Ux3jTnaPklQ3CM4Q4K36W4q1hEUdtlATYrYXsFi91jdYsB9N1fXV29wtBVMt8jhl86BEdi4csUxxPFa/yF4hbqyCJsJ/HdZHVPi4aGhhfRd3cGX8/5IpRstbpnCu6snRgdifrbcNBxlG9AOkBXqmYJJN6msVP6ugsZhe5NY079MGQKcg9ynuPA7l1rR8jGlsXkwLMffH+GnGZfOBjrtU1zc/Na8JcgZyF/Qjohg9qG4GsA/GHIHefD3EPIZ9busWCy4KQgvzGIBx713yFDkN2xz8glyI+6rdhdp45lLOZ1lHfBvpkcvluUaQW4bsgpnKjXsNBXnE947PcjZZdA9DrJBPBan2Q7jPclCfTXivowsnlDMEJ9EvpfWS4Wiy/IOHOSE9tBxiNJtih/lWX3WLATyIzl4YTNXLCqb4LdNLOotpMJjkDfB3mfnGTx73VsQ/0PO0HnQ8oVtFupedHxZH9t+TAPp55aHEfmcVTK/dI2fYmI/rZug3n+Au5EpE59PBuqkrUsCDiNjo0gnVZnwYlDxjDAsUi96WSCD5y/+vNC7HSWrWBf4I4qLgX4Ibtpwvewr7a2tpcCJ7eKJ/Q7yA6W6XDTjuOfC/VgZ8fgEw78lLlN88P5Z9BIqHOHwgmSazWDQT5V9rWQv53KorJ703JKvpHJbghtVFtuAnV8WCdQO5+V0KoKGU8ewqlQEgDbPeQY4/EdEX16GnnlwT3Sp0zZlcVg2dwSE5rmMyExY4gnMnDOB9oeljkgO6NN0MtkbkMu8FEvbdL3Y7hSsWR+/n0U5GUgTmN/aSwMi4+zrzWvSrvlCec3876iQswclpNJfZmjZT1/0TkMV7L+OXYE+xG+7AdlDmC03fnrzBOp5X44HXIi+ezQMYaJggtPMjEd4NT7Ed9XwV2O5UpAd4bPF5blGVOCfCjdMSSEP6Uy0BZ99Fk+wPn4N6rqB9gPnaP0ab9w7jvO54HkNuB7MvLOP2HHl1DHeZX9nGTC+fReyhDuUK2y4/NFX4WypORmY2YSi3j6UD/HNrIRZZmYbSEXeWpge0jG1CcrAf+hwQ9bPgBt90L/KPKbXCn9pq8JjL+TfQfHon7T+bXtl1uTzAvfDZBxZnzWMa+3OK5bQL54YvB6On9aj4SJKVTyrWa4xMFYbMHyBiFJzUk04AbQfIflLWDXgfFjywdAX6ufc9xArkfbELTDeO9lrO/5B2OqODL9JQ3Aoq4tKND/38BTR6eF+Ms4xOsGh+2ztnRwIePJkyNKTlgvHYnvJ7H/Q5qgRBlZkU7MyuI5ngDyz/uT5XPkyJEjx78L/wB9d5lADa36jAAAAABJRU5ErkJggg==>

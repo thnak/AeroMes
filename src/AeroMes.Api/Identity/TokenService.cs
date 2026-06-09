@@ -9,7 +9,7 @@ namespace AeroMes.Api.Identity;
 
 public class TokenService(IConfiguration configuration) : ITokenService
 {
-    public string CreateToken(string userId, string email, IEnumerable<string> roles)
+    public string CreateToken(string userId, string email, IEnumerable<string> roles, int? workCenterId = null)
     {
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(configuration["Jwt:Key"]
@@ -22,6 +22,9 @@ public class TokenService(IConfiguration configuration) : ITokenService
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
         claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+
+        if (workCenterId.HasValue)
+            claims.Add(new Claim("wc_scope", workCenterId.Value.ToString()));
 
         var expiryMinutes = int.TryParse(configuration["Jwt:ExpiryMinutes"], out var m) ? m : 480;
         var token = new JwtSecurityToken(
