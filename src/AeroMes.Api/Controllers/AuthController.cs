@@ -1,13 +1,12 @@
 using AeroMes.Application.Auth;
+using AeroMes.Application.Auth.Sessions;
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Auth;
-using AeroMes.Infrastructure.Data;
 using AeroMes.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -19,9 +18,10 @@ public class AuthController(
     SignInManager<ApplicationUser> signInManager,
     UserManager<ApplicationUser> userManager,
     ITokenService tokenService,
-    AppDbContext db,
+    IRefreshTokenRepository refreshTokens,
     IAuditLogger auditLogger,
     IEmailSender emailSender,
+    IUnitOfWork uow,
     IConfiguration configuration) : ControllerBase
 {
     private const string RefreshTokenCookie = "refresh_token";
@@ -95,11 +95,11 @@ public class AuthController(
         var accessToken = tokenService.CreateToken(user.Id, user.Email!, roles, user.DefaultWorkCenterId);
 
         var (rawRefresh, refreshEntity) = CreateRefreshToken(user.Id, ua, ip);
-        db.RefreshTokens.Add(refreshEntity);
+        refreshTokens.Add(refreshEntity);
 
         user.LastLoginAt = DateTimeOffset.UtcNow;
         await userManager.UpdateAsync(user);
-        await db.SaveChangesAsync();
+        await uow.SaveChangesAsync();
 
         SetRefreshCookie(rawRefresh, refreshEntity.ExpiresAt);
 
@@ -126,7 +126,7 @@ public class AuthController(
         if (raw is null) return Unauthorized(new MessageResult("No refresh token."));
 
         var hash = HashToken(raw);
-        var stored = await db.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == hash);
+        var stored = await refreshTokens.GetByHashAsync(hash);
 
         if (stored is null)
             return Unauthorized(new MessageResult("Invalid refresh token."));
@@ -160,11 +160,11 @@ public class AuthController(
 
         var (rawRefresh, newEntity) = CreateRefreshToken(user.Id,
             Request.Headers.UserAgent.ToString(), ip, stored.FamilyId);
-        db.RefreshTokens.Add(newEntity);
-        await db.SaveChangesAsync();
+        refreshTokens.Add(newEntity);
+        await uow.SaveChangesAsync();
 
         stored.Revoke(newEntity.TokenId);
-        await db.SaveChangesAsync();
+        await uow.SaveChangesAsync();
 
         SetRefreshCookie(rawRefresh, newEntity.ExpiresAt);
 
@@ -187,11 +187,11 @@ public class AuthController(
         if (raw is not null)
         {
             var hash = HashToken(raw);
-            var stored = await db.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == hash);
+            var stored = await refreshTokens.GetByHashAsync(hash);
             if (stored is { RevokedAt: null })
             {
                 stored.Revoke();
-                await db.SaveChangesAsync();
+                await uow.SaveChangesAsync();
             }
         }
 
@@ -215,12 +215,10 @@ public class AuthController(
     public async Task<IActionResult> LogoutAll()
     {
         var userId = userManager.GetUserId(User)!;
-        var tokens = await db.RefreshTokens
-            .Where(t => t.UserId == userId && t.RevokedAt == null)
-            .ToListAsync();
+        var tokens = await refreshTokens.GetActiveByUserIdAsync(userId);
 
         foreach (var t in tokens) t.Revoke();
-        await db.SaveChangesAsync();
+        await uow.SaveChangesAsync();
 
         await signInManager.SignOutAsync();
         DeleteRefreshCookie();
@@ -237,15 +235,14 @@ public class AuthController(
         var currentHash = Request.Cookies.TryGetValue(RefreshTokenCookie, out var raw)
             ? HashToken(raw) : null;
 
-        var sessions = await db.RefreshTokens
-            .AsNoTracking()
-            .Where(t => t.UserId == userId && t.RevokedAt == null && t.ExpiresAt > DateTime.UtcNow)
+        var rawTokens = await refreshTokens.GetActiveByUserIdAsync(userId);
+        var sessions = rawTokens
             .OrderByDescending(t => t.CreatedAt)
             .Select(t => new SessionDto(
                 t.TokenId, t.DeviceInfo, t.IpAddress,
                 t.CreatedAt, t.ExpiresAt,
                 t.TokenHash == currentHash))
-            .ToListAsync();
+            .ToList();
 
         return Ok(sessions);
     }
@@ -258,12 +255,11 @@ public class AuthController(
     public async Task<IActionResult> RevokeSession(long tokenId)
     {
         var userId = userManager.GetUserId(User)!;
-        var token = await db.RefreshTokens
-            .FirstOrDefaultAsync(t => t.TokenId == tokenId && t.UserId == userId);
+        var token = await refreshTokens.GetActiveByTokenIdAndUserAsync(tokenId, userId);
 
         if (token is null) return NotFound();
         token.Revoke();
-        await db.SaveChangesAsync();
+        await uow.SaveChangesAsync();
         return NoContent();
     }
 
@@ -424,11 +420,9 @@ public class AuthController(
 
     private async Task RevokeFamily(Guid familyId)
     {
-        var family = await db.RefreshTokens
-            .Where(t => t.FamilyId == familyId && t.RevokedAt == null)
-            .ToListAsync();
+        var family = await refreshTokens.GetActiveFamilyAsync(familyId);
         foreach (var t in family) t.Revoke();
-        await db.SaveChangesAsync();
+        await uow.SaveChangesAsync();
     }
 }
 
@@ -446,5 +440,3 @@ public record UserProfileResult(
     int? DefaultWorkCenterId, string[] Roles);
 public record UpdateMeRequest(string? FullName, string? PreferredLanguage, string? AvatarUrl);
 public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
-public record SessionDto(long TokenId, string? DeviceInfo, string? IpAddress,
-    DateTime CreatedAt, DateTime ExpiresAt, bool IsCurrent);

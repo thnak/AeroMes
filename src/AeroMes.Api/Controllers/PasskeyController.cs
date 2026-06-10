@@ -2,7 +2,6 @@ using AeroMes.Application.Auth;
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Auth;
-using AeroMes.Infrastructure.Data;
 using AeroMes.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -18,7 +17,8 @@ public class PasskeyController(
     UserManager<ApplicationUser> userManager,
     IPasskeyHandler<ApplicationUser> passkeyHandler,
     ITokenService tokenService,
-    AppDbContext db,
+    IRefreshTokenRepository refreshTokens,
+    IUnitOfWork uow,
     IAuditLogger auditLogger,
     IConfiguration configuration) : ControllerBase
 {
@@ -133,10 +133,10 @@ public class PasskeyController(
             user.Id, user.Email!, roles, user.DefaultWorkCenterId, mfaVerified: true);
 
         var (rawRefresh, refreshEntity) = CreateRefreshToken(user.Id, ua, ip);
-        db.RefreshTokens.Add(refreshEntity);
+        refreshTokens.Add(refreshEntity);
         user.LastLoginAt = DateTimeOffset.UtcNow;
         await userManager.UpdateAsync(user);
-        await db.SaveChangesAsync();
+        await uow.SaveChangesAsync();
 
         SetRefreshCookie(rawRefresh, refreshEntity.ExpiresAt);
 

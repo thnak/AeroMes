@@ -79,6 +79,13 @@ public static class DependencyInjection
         services.AddScoped<DatabaseSeeder>();
         services.AddScoped<IEmailSender, LoggingEmailSender>();
 
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IPermissionRepository, PermissionRepository>();
+        services.AddScoped<IPermissionOverrideRepository, PermissionOverrideRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
+
         services.AddSingleton<DbAuditLogger>();
         services.AddSingleton<IAuditLogger>(sp => sp.GetRequiredService<DbAuditLogger>());
         services.AddHostedService(sp => sp.GetRequiredService<DbAuditLogger>());

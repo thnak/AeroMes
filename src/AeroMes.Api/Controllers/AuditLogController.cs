@@ -1,11 +1,11 @@
 using AeroMes.Api.Auth;
-using AeroMes.Application.Common;
+using AeroMes.Application.AuditLog.Queries.ExportAuditLog;
+using AeroMes.Application.AuditLog.Queries.GetAuditLogByUser;
+using AeroMes.Application.AuditLog.Queries.QueryAuditLog;
 using AeroMes.Domain.Auth;
-using AeroMes.Infrastructure.Data;
-
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Text;
 
 namespace AeroMes.Api.Controllers;
@@ -13,11 +13,11 @@ namespace AeroMes.Api.Controllers;
 [ApiController]
 [Route("api/v1/audit-log")]
 [Authorize]
-public class AuditLogController(AppDbContext db) : ControllerBase
+public class AuditLogController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(Permissions.SystemConfigure)]
-    [ProducesResponseType<PagedResult<SecurityAuditLog>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<AeroMes.Application.Common.PagedResult<SecurityAuditLog>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Query(
         [FromQuery] string? actorId,
@@ -28,28 +28,9 @@ public class AuditLogController(AppDbContext db) : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
     {
-        var query = db.SecurityAuditLogs.AsNoTracking();
-
-        if (!string.IsNullOrWhiteSpace(actorId))
-            query = query.Where(x => x.ActorId == actorId);
-
-        if (!string.IsNullOrWhiteSpace(eventType))
-            query = query.Where(x => x.EventType == eventType);
-
-        if (!string.IsNullOrWhiteSpace(targetType))
-            query = query.Where(x => x.TargetType == targetType);
-
-        if (from.HasValue) query = query.Where(x => x.OccurredAt >= from.Value);
-        if (to.HasValue) query = query.Where(x => x.OccurredAt <= to.Value);
-
-        var total = await query.CountAsync();
-        var items = await query
-            .OrderByDescending(x => x.OccurredAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
-        return Ok(new PagedResult<SecurityAuditLog>(items, total, page, pageSize));
+        var result = await mediator.Send(
+            new QueryAuditLogQuery(actorId, eventType, targetType, from, to, page, pageSize));
+        return Ok(result);
     }
 
     [HttpGet("user/{userId}")]
@@ -59,15 +40,8 @@ public class AuditLogController(AppDbContext db) : ControllerBase
     public async Task<IActionResult> GetByUser(string userId,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
     {
-        var items = await db.SecurityAuditLogs
-            .AsNoTracking()
-            .Where(x => x.ActorId == userId || x.TargetId == userId)
-            .OrderByDescending(x => x.OccurredAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
-        return Ok(items);
+        var result = await mediator.Send(new GetAuditLogByUserQuery(userId, page, pageSize));
+        return Ok(result);
     }
 
     [HttpGet("export")]
@@ -76,14 +50,7 @@ public class AuditLogController(AppDbContext db) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Export([FromQuery] DateTime? from, [FromQuery] DateTime? to)
     {
-        var query = db.SecurityAuditLogs.AsNoTracking();
-        if (from.HasValue) query = query.Where(x => x.OccurredAt >= from.Value);
-        if (to.HasValue) query = query.Where(x => x.OccurredAt <= to.Value);
-
-        var items = await query
-            .OrderByDescending(x => x.OccurredAt)
-            .Take(10_000)
-            .ToListAsync();
+        var items = await mediator.Send(new ExportAuditLogQuery(from, to));
 
         var csv = new StringBuilder();
         csv.AppendLine("AuditId,EventType,ActorId,ActorType,ActorIp,TargetType,TargetId,Outcome,FailureReason,OccurredAt");

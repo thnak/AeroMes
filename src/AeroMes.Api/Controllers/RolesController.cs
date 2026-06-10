@@ -1,12 +1,15 @@
 using AeroMes.Api.Auth;
-using AeroMes.Application.Auth;
+using AeroMes.Application.Auth.Permissions;
+using AeroMes.Application.Auth.Permissions.Queries.GetAllPermissions;
+using AeroMes.Application.Auth.Roles.Commands.SetRolePermissions;
+using AeroMes.Application.Auth.Roles.Queries.GetRolePermissions;
 using AeroMes.Application.Common;
-using AeroMes.Application.Interfaces;
-using AeroMes.Infrastructure.Data;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace AeroMes.Api.Controllers;
 
@@ -15,8 +18,7 @@ namespace AeroMes.Api.Controllers;
 [Authorize]
 public class RolesController(
     RoleManager<IdentityRole> roleManager,
-    AppDbContext db,
-    IAuditLogger auditLogger) : ControllerBase
+    IMediator mediator) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(Permissions.RoleRead)]
@@ -72,18 +74,8 @@ public class RolesController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetPermissions(string id)
     {
-        var role = await roleManager.FindByIdAsync(id);
-        if (role is null) return NotFound();
-
-        var perms = await db.RolePermissions
-            .AsNoTracking()
-            .Where(rp => rp.RoleId == id)
-            .Join(db.Permissions, rp => rp.PermissionId, p => p.PermissionId,
-                (_, p) => new PermissionDto(p.PermissionId, p.PermissionCode, p.Resource, p.Action, p.Description))
-            .OrderBy(p => p.PermissionCode)
-            .ToListAsync();
-
-        return Ok(perms);
+        var result = await mediator.Send(new GetRolePermissionsQuery(id));
+        return Ok(result);
     }
 
     [HttpPut("{id}/permissions")]
@@ -93,33 +85,8 @@ public class RolesController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> SetPermissions(string id, [FromBody] SetPermissionsRequest request)
     {
-        var role = await roleManager.FindByIdAsync(id);
-        if (role is null) return NotFound();
-
-        var existing = await db.RolePermissions
-            .Where(rp => rp.RoleId == id)
-            .ToListAsync();
-
-        db.RolePermissions.RemoveRange(existing);
-
-        var permIds = await db.Permissions
-            .Where(p => request.PermissionCodes.Contains(p.PermissionCode))
-            .Select(p => p.PermissionId)
-            .ToListAsync();
-
-        db.RolePermissions.AddRange(
-            permIds.Select(pid => AeroMes.Domain.Auth.RolePermission.Create(id, pid)));
-
-        await db.SaveChangesAsync();
-
-        auditLogger.Log(new SecurityAuditEvent
-        {
-            EventType = AuditEventTypes.RolePermissionChanged,
-            ActorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
-            ActorType = "USER",
-            TargetType = "Role", TargetId = id,
-            NewValues = string.Join(",", request.PermissionCodes),
-        });
+        var actorId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        await mediator.Send(new SetRolePermissionsCommand(id, request.PermissionCodes, actorId));
         return NoContent();
     }
 }
@@ -127,7 +94,7 @@ public class RolesController(
 [ApiController]
 [Route("api/v1/auth/permissions")]
 [Authorize]
-public class PermissionsController(AppDbContext db) : ControllerBase
+public class PermissionsController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(Permissions.PermissionRead)]
@@ -135,17 +102,11 @@ public class PermissionsController(AppDbContext db) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll()
     {
-        var perms = await db.Permissions
-            .AsNoTracking()
-            .OrderBy(p => p.PermissionCode)
-            .Select(p => new PermissionDto(p.PermissionId, p.PermissionCode, p.Resource, p.Action, p.Description))
-            .ToListAsync();
-
-        return Ok(perms);
+        var result = await mediator.Send(new GetAllPermissionsQuery());
+        return Ok(result);
     }
 }
 
 public record CreateRoleRequest(string Name);
 public record SetPermissionsRequest(string[] PermissionCodes);
 public record RoleDto(string Id, string? Name);
-public record PermissionDto(int PermissionId, string PermissionCode, string Resource, string Action, string? Description);

@@ -1,10 +1,18 @@
 using AeroMes.Api.Auth;
 using AeroMes.Application.Auth;
+using AeroMes.Application.Auth.PermissionOverrides;
+using AeroMes.Application.Auth.PermissionOverrides.Commands.AddPermissionOverride;
+using AeroMes.Application.Auth.PermissionOverrides.Commands.RemovePermissionOverride;
+using AeroMes.Application.Auth.PermissionOverrides.Queries.GetUserPermissionOverrides;
+using AeroMes.Application.Auth.Sessions;
+using AeroMes.Application.Auth.Sessions.Commands.RevokeAllSessions;
+using AeroMes.Application.Auth.Sessions.Commands.RevokeSession;
+using AeroMes.Application.Auth.Sessions.Queries.GetUserSessions;
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Auth;
-using AeroMes.Infrastructure.Data;
 using AeroMes.Infrastructure.Identity;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +28,7 @@ public class UsersController(
     RoleManager<IdentityRole> roleManager,
     IPermissionService permissionService,
     IAuditLogger auditLogger,
-    AppDbContext db) : ControllerBase
+    IMediator mediator) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(Permissions.UserRead)]
@@ -272,18 +280,8 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPermissionOverrides(string id)
     {
-        if (await userManager.FindByIdAsync(id) is null) return NotFound();
-
-        var overrides = await db.UserPermissionOverrides
-            .AsNoTracking()
-            .Where(o => o.UserId == id)
-            .Join(db.Permissions, o => o.PermissionId, p => p.PermissionId,
-                (o, p) => new PermissionOverrideDto(
-                    o.OverrideId, p.PermissionCode, o.Effect.ToString(),
-                    o.GrantedBy, o.GrantedAt, o.ExpiresAt))
-            .ToListAsync();
-
-        return Ok(overrides);
+        var result = await mediator.Send(new GetUserPermissionOverridesQuery(id));
+        return Ok(result);
     }
 
     [HttpPost("{id}/permissions/override")]
@@ -296,40 +294,10 @@ public class UsersController(
     public async Task<IActionResult> AddPermissionOverride(
         string id, [FromBody] AddPermissionOverrideRequest request)
     {
-        if (await userManager.FindByIdAsync(id) is null) return NotFound();
-
-        var permission = await db.Permissions
-            .FirstOrDefaultAsync(p => p.PermissionCode == request.PermissionCode);
-        if (permission is null)
-            return BadRequest(new MessageResult($"Unknown permission code: {request.PermissionCode}"));
-
-        var existing = await db.UserPermissionOverrides
-            .FirstOrDefaultAsync(o => o.UserId == id && o.PermissionId == permission.PermissionId);
-        if (existing is not null)
-            db.UserPermissionOverrides.Remove(existing);
-
-        var effect = request.Effect.Equals("Grant", StringComparison.OrdinalIgnoreCase)
-            ? PermissionEffect.Grant : PermissionEffect.Deny;
-
-        var grantedBy = userManager.GetUserId(User) ?? "system";
-        var entity = UserPermissionOverride.Create(id, permission.PermissionId, effect, grantedBy, request.ExpiresAt);
-        db.UserPermissionOverrides.Add(entity);
-        await db.SaveChangesAsync();
-
-        await permissionService.InvalidateCacheAsync(id);
-
-        auditLogger.Log(new SecurityAuditEvent
-        {
-            EventType = AuditEventTypes.PermissionOverrideGranted,
-            ActorId = grantedBy, ActorType = "USER",
-            TargetType = "User", TargetId = id,
-            NewValues = $"{{\"permission\":\"{request.PermissionCode}\",\"effect\":\"{request.Effect}\"}}",
-        });
-
-        var dto = new PermissionOverrideDto(
-            entity.OverrideId, permission.PermissionCode,
-            effect.ToString(), grantedBy, entity.GrantedAt, entity.ExpiresAt);
-        return StatusCode(StatusCodes.Status201Created, dto);
+        var actorId = userManager.GetUserId(User) ?? "system";
+        var result = await mediator.Send(new AddPermissionOverrideCommand(
+            id, request.PermissionCode, request.Effect, request.ExpiresAt, actorId));
+        return StatusCode(StatusCodes.Status201Created, result);
     }
 
     [HttpDelete("{id}/permissions/override/{overrideId:int}")]
@@ -340,23 +308,7 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RemovePermissionOverride(string id, int overrideId)
     {
-        var entity = await db.UserPermissionOverrides
-            .Include(o => o.Permission)
-            .FirstOrDefaultAsync(o => o.OverrideId == overrideId && o.UserId == id);
-        if (entity is null) return NotFound();
-
-        db.UserPermissionOverrides.Remove(entity);
-        await db.SaveChangesAsync();
-        await permissionService.InvalidateCacheAsync(id);
-
-        auditLogger.Log(new SecurityAuditEvent
-        {
-            EventType = AuditEventTypes.PermissionOverrideRevoked,
-            ActorId = userManager.GetUserId(User), ActorType = "USER",
-            TargetType = "User", TargetId = id,
-            OldValues = $"{{\"permission\":\"{entity.Permission?.PermissionCode}\"}}",
-        });
-
+        await mediator.Send(new RemovePermissionOverrideCommand(id, overrideId, userManager.GetUserId(User)));
         return NoContent();
     }
 
@@ -370,16 +322,8 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetSessions(string id)
     {
-        if (await userManager.FindByIdAsync(id) is null) return NotFound();
-
-        var sessions = await db.RefreshTokens
-            .AsNoTracking()
-            .Where(t => t.UserId == id && t.RevokedAt == null && t.ExpiresAt > DateTime.UtcNow)
-            .OrderByDescending(t => t.CreatedAt)
-            .Select(t => new SessionDto(t.TokenId, t.DeviceInfo, t.IpAddress, t.CreatedAt, t.ExpiresAt, false))
-            .ToListAsync();
-
-        return Ok(sessions);
+        var result = await mediator.Send(new GetUserSessionsQuery(id));
+        return Ok(result);
     }
 
     [HttpDelete("{id}/sessions/{tokenId:long}")]
@@ -390,12 +334,7 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RevokeSession(string id, long tokenId)
     {
-        var token = await db.RefreshTokens
-            .FirstOrDefaultAsync(t => t.TokenId == tokenId && t.UserId == id && t.RevokedAt == null);
-        if (token is null) return NotFound();
-
-        token.Revoke();
-        await db.SaveChangesAsync();
+        await mediator.Send(new RevokeSessionCommand(id, tokenId));
         return NoContent();
     }
 
@@ -407,13 +346,7 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RevokeAllSessions(string id)
     {
-        if (await userManager.FindByIdAsync(id) is null) return NotFound();
-
-        var tokens = await db.RefreshTokens
-            .Where(t => t.UserId == id && t.RevokedAt == null)
-            .ToListAsync();
-        foreach (var t in tokens) t.Revoke();
-        await db.SaveChangesAsync();
+        await mediator.Send(new RevokeAllSessionsCommand(id));
         return NoContent();
     }
 
@@ -453,10 +386,6 @@ public record UpdateUserRequest(
 public record SetRolesRequest(string[] RoleNames);
 public record CreateUserResult(string Id, string TempPassword);
 public record ResetPasswordResult(string TempPassword);
-
-public record PermissionOverrideDto(
-    int OverrideId, string PermissionCode, string Effect,
-    string? GrantedBy, DateTimeOffset GrantedAt, DateTimeOffset? ExpiresAt);
 
 public record AddPermissionOverrideRequest(
     string PermissionCode, string Effect, DateTimeOffset? ExpiresAt);
