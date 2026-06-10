@@ -14,17 +14,26 @@ namespace AeroMes.Api.Controllers;
 public class WorkCentersController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
+    [ProducesResponseType<IReadOnlyList<WorkCenterDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, CancellationToken ct = default)
         => Ok(await mediator.Send(new GetWorkCentersQuery(activeOnly), ct));
 
     [HttpPost]
+    [ProducesResponseType<WorkCenterCreatedResult>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateWorkCenterRequest req, CancellationToken ct)
     {
         var id = await mediator.Send(new CreateWorkCenterCommand(req.Code, req.Name, req.Description, User.Identity?.Name), ct);
-        return CreatedAtAction(nameof(GetAll), new { }, new { id });
+        return CreatedAtAction(nameof(GetAll), null, new WorkCenterCreatedResult(id));
     }
 
     [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateWorkCenterRequest req, CancellationToken ct)
     {
         await mediator.Send(new UpdateWorkCenterCommand(id, req.Name, req.Description, User.Identity?.Name ?? "system"), ct);
@@ -32,6 +41,9 @@ public class WorkCentersController(IMediator mediator) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         await mediator.Send(new DeleteWorkCenterCommand(id), ct);
@@ -41,3 +53,4 @@ public class WorkCentersController(IMediator mediator) : ControllerBase
 
 public record CreateWorkCenterRequest(string Code, string Name, string? Description);
 public record UpdateWorkCenterRequest(string Name, string? Description);
+public record WorkCenterCreatedResult(int WorkCenterId);

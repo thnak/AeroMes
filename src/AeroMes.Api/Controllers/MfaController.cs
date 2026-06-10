@@ -1,4 +1,5 @@
 using AeroMes.Application.Auth;
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Auth;
 using AeroMes.Infrastructure.Data;
@@ -34,13 +35,15 @@ public class MfaController(
 
     [HttpGet("setup")]
     [Authorize]
+    [ProducesResponseType<TotpSetupResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<MessageResult>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> SetupTotp()
     {
         var user = await userManager.GetUserAsync(User);
         if (user is null) return Unauthorized();
-        if (user.TwoFactorEnabled) return Conflict(new { message = "MFA is already enabled." });
+        if (user.TwoFactorEnabled) return Conflict(new MessageResult("MFA is already enabled."));
 
-        // Generate a new TOTP secret if one doesn't exist yet
         var base32Secret = await userManager.GetAuthenticatorKeyAsync(user);
         if (base32Secret is null)
         {
@@ -53,21 +56,24 @@ public class MfaController(
         var otpauthUri = $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(email)}" +
                          $"?secret={base32Secret}&issuer={Uri.EscapeDataString(issuer)}&algorithm=SHA1&digits=6&period=30";
 
-        return Ok(new { secret = base32Secret, otpauthUri });
+        return Ok(new TotpSetupResult(base32Secret!, otpauthUri));
     }
 
     [HttpPost("setup/confirm")]
     [Authorize]
+    [ProducesResponseType<TotpEnabledResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<MessageResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ConfirmTotp([FromBody] TotpConfirmRequest request)
     {
         var user = await userManager.GetUserAsync(User);
         if (user is null) return Unauthorized();
 
         var keyString = await userManager.GetAuthenticatorKeyAsync(user);
-        if (keyString is null) return BadRequest(new { message = "No TOTP setup in progress. Call GET /mfa/setup first." });
+        if (keyString is null) return BadRequest(new MessageResult("No TOTP setup in progress. Call GET /mfa/setup first."));
 
         if (!VerifyTotp(keyString, request.Code))
-            return BadRequest(new { message = "Invalid TOTP code." });
+            return BadRequest(new MessageResult("Invalid TOTP code."));
 
         await userManager.SetTwoFactorEnabledAsync(user, true);
 
@@ -80,13 +86,16 @@ public class MfaController(
             ActorIp = HttpContext.Connection.RemoteIpAddress?.ToString(),
         });
 
-        return Ok(new { message = "MFA enabled.", recoveryCodes });
+        return Ok(new TotpEnabledResult("MFA enabled.", recoveryCodes));
     }
 
     // ── MFA verify (after login with 2FA enabled) ─────────────────────────
 
     [HttpPost("verify")]
     [AllowAnonymous]
+    [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Verify([FromBody] MfaVerifyRequest request)
     {
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
@@ -94,9 +103,8 @@ public class MfaController(
 
         var userId = ExtractUserIdFromMfaToken(request.MfaToken);
         if (userId is null)
-            return Unauthorized(new { message = "Invalid or expired MFA token." });
+            return Unauthorized(new MessageResult("Invalid or expired MFA token."));
 
-        // Rate limit check
         var attemptKey = OtpAttemptPrefix + userId;
         var attempts = cache.GetOrCreate(attemptKey, e =>
         {
@@ -106,20 +114,18 @@ public class MfaController(
 
         if (attempts >= 3)
             return StatusCode(StatusCodes.Status429TooManyRequests,
-                new { message = "Too many failed MFA attempts. Try again in 30 minutes." });
+                new MessageResult("Too many failed MFA attempts. Try again in 30 minutes."));
 
         var user = await userManager.FindByIdAsync(userId);
         if (user is null || !user.IsActive)
-            return Unauthorized(new { message = "Invalid MFA token." });
+            return Unauthorized(new MessageResult("Invalid MFA token."));
 
         bool verified = false;
 
-        // 1. Try TOTP
         var totpKey = await userManager.GetAuthenticatorKeyAsync(user);
         if (totpKey is not null && VerifyTotp(totpKey, request.Code))
             verified = true;
 
-        // 2. Try email OTP
         if (!verified)
         {
             var otpKey = OtpCachePrefix + userId;
@@ -130,7 +136,6 @@ public class MfaController(
             }
         }
 
-        // 3. Try recovery code
         if (!verified)
         {
             var redeemResult = await userManager.RedeemTwoFactorRecoveryCodeAsync(user, request.Code);
@@ -139,8 +144,7 @@ public class MfaController(
 
         if (!verified)
         {
-            cache.Set(attemptKey, attempts + 1,
-                TimeSpan.FromMinutes(30));
+            cache.Set(attemptKey, attempts + 1, TimeSpan.FromMinutes(30));
 
             auditLogger.Log(new SecurityAuditEvent
             {
@@ -149,7 +153,7 @@ public class MfaController(
                 ActorIp = ip, ActorUserAgent = ua,
                 Outcome = "FAILURE", FailureReason = "Invalid MFA code",
             });
-            return Unauthorized(new { message = "Invalid MFA code." });
+            return Unauthorized(new MessageResult("Invalid MFA code."));
         }
 
         cache.Remove(attemptKey);
@@ -183,21 +187,23 @@ public class MfaController(
 
     [HttpPost("send-otp")]
     [AllowAnonymous]
+    [ProducesResponseType<MessageResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> SendEmailOtp([FromBody] SendOtpRequest request)
     {
         var userId = ExtractUserIdFromMfaToken(request.MfaToken);
         if (userId is null)
-            return Unauthorized(new { message = "Invalid or expired MFA token." });
+            return Unauthorized(new MessageResult("Invalid or expired MFA token."));
 
         var user = await userManager.FindByIdAsync(userId);
         if (user is null || !user.IsActive)
-            return Unauthorized(new { message = "Invalid MFA token." });
+            return Unauthorized(new MessageResult("Invalid MFA token."));
 
-        // Rate limit: one OTP per minute
         var otpKey = OtpCachePrefix + userId;
         if (cache.TryGetValue(otpKey, out _))
             return StatusCode(StatusCodes.Status429TooManyRequests,
-                new { message = "A code was already sent. Please wait before requesting another." });
+                new MessageResult("A code was already sent. Please wait before requesting another."));
 
         var code = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
         cache.Set(otpKey, code, TimeSpan.FromMinutes(10));
@@ -205,52 +211,60 @@ public class MfaController(
         // TODO: send via email when IEmailSender is wired up
         logger.LogInformation("MFA email OTP for {Email}: {Code}", user.Email, code);
 
-        return Ok(new { message = "A 6-digit code has been sent to your email." });
+        return Ok(new MessageResult("A 6-digit code has been sent to your email."));
     }
 
     // ── Recovery codes ────────────────────────────────────────────────────
 
     [HttpGet("recovery-codes")]
     [Authorize]
+    [ProducesResponseType<RecoveryCodeCountResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetRecoveryCodeCount()
     {
         var user = await userManager.GetUserAsync(User);
         if (user is null) return Unauthorized();
         var count = await userManager.CountRecoveryCodesAsync(user);
-        return Ok(new { remaining = count });
+        return Ok(new RecoveryCodeCountResult(count));
     }
 
     [HttpPost("recovery-codes/regenerate")]
     [Authorize]
+    [ProducesResponseType<RecoveryCodesResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<MessageResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RegenerateRecoveryCodes([FromBody] TotpConfirmRequest request)
     {
         var user = await userManager.GetUserAsync(User);
         if (user is null) return Unauthorized();
-        if (!user.TwoFactorEnabled) return BadRequest(new { message = "MFA is not enabled." });
+        if (!user.TwoFactorEnabled) return BadRequest(new MessageResult("MFA is not enabled."));
 
         var totpKey = await userManager.GetAuthenticatorKeyAsync(user);
         if (totpKey is null || !VerifyTotp(totpKey, request.Code))
-            return Unauthorized(new { message = "Invalid TOTP code." });
+            return Unauthorized(new MessageResult("Invalid TOTP code."));
 
         var codes = await userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 8);
-        return Ok(new { recoveryCodes = codes });
+        return Ok(new RecoveryCodesResult(codes ?? []));
     }
 
     // ── Disable MFA ───────────────────────────────────────────────────────
 
     [HttpDelete]
     [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<MessageResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DisableMfa([FromBody] TotpConfirmRequest request)
     {
         var user = await userManager.GetUserAsync(User);
         if (user is null) return Unauthorized();
-        if (!user.TwoFactorEnabled) return BadRequest(new { message = "MFA is not enabled." });
+        if (!user.TwoFactorEnabled) return BadRequest(new MessageResult("MFA is not enabled."));
 
         var totpKey = await userManager.GetAuthenticatorKeyAsync(user);
         bool codeOk = (totpKey is not null && VerifyTotp(totpKey, request.Code))
                    || (await userManager.RedeemTwoFactorRecoveryCodeAsync(user, request.Code)).Succeeded;
 
-        if (!codeOk) return Unauthorized(new { message = "Invalid code." });
+        if (!codeOk) return Unauthorized(new MessageResult("Invalid code."));
 
         await userManager.SetTwoFactorEnabledAsync(user, false);
         await userManager.ResetAuthenticatorKeyAsync(user);
@@ -269,6 +283,9 @@ public class MfaController(
 
     [HttpDelete("/api/v1/users/{userId}/mfa")]
     [Authorize(Policy = "permission:User:ManageRoles")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> AdminDisableMfa(string userId)
     {
         var actor = await userManager.GetUserAsync(User);
@@ -370,3 +387,7 @@ public class MfaController(
 public record TotpConfirmRequest(string Code);
 public record MfaVerifyRequest(string MfaToken, string Code);
 public record SendOtpRequest(string MfaToken);
+public record TotpSetupResult(string Secret, string OtpauthUri);
+public record TotpEnabledResult(string Message, IEnumerable<string>? RecoveryCodes);
+public record RecoveryCodeCountResult(int Remaining);
+public record RecoveryCodesResult(IEnumerable<string> RecoveryCodes);

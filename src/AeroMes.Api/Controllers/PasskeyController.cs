@@ -1,4 +1,5 @@
 using AeroMes.Application.Auth;
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Auth;
 using AeroMes.Infrastructure.Data;
@@ -26,12 +27,10 @@ public class PasskeyController(
 
     // ── Registration ──────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Returns WebAuthn creation options for registering a new passkey.
-    /// The returned <c>attestationState</c> must be included in the subsequent /register call.
-    /// </summary>
     [HttpGet("attestation-options")]
     [Authorize]
+    [ProducesResponseType<AttestationOptionsResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAttestationOptions()
     {
         var user = await userManager.GetUserAsync(User);
@@ -45,18 +44,14 @@ public class PasskeyController(
         };
 
         var result = await passkeyHandler.MakeCreationOptionsAsync(userEntity, HttpContext);
-        return Ok(new
-        {
-            creationOptionsJson = result.CreationOptionsJson,
-            attestationState = result.AttestationState,
-        });
+        return Ok(new AttestationOptionsResult(result.CreationOptionsJson, result.AttestationState!));
     }
 
-    /// <summary>
-    /// Completes passkey registration.
-    /// </summary>
     [HttpPost("register")]
     [Authorize]
+    [ProducesResponseType<MessageResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<PasskeyErrorResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Register([FromBody] PasskeyRegisterRequest request)
     {
         var user = await userManager.GetUserAsync(User);
@@ -72,9 +67,8 @@ public class PasskeyController(
 
         var result = await passkeyHandler.PerformAttestationAsync(context);
         if (!result.Succeeded)
-            return BadRequest(new { message = "Passkey registration failed.", detail = result.Failure?.Message });
+            return BadRequest(new PasskeyErrorResult("Passkey registration failed.", result.Failure?.Message));
 
-        // Assign a name to the passkey (device/browser name from request or generated)
         var passkey = result.Passkey!;
         passkey.Name = request.Name ?? "Passkey";
         await userManager.AddOrUpdatePasskeyAsync(user, passkey);
@@ -88,34 +82,24 @@ public class PasskeyController(
             TargetId = Convert.ToBase64String(result.Passkey!.CredentialId),
         });
 
-        return Ok(new { message = "Passkey registered successfully." });
+        return Ok(new MessageResult("Passkey registered successfully."));
     }
 
     // ── Login ─────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Returns WebAuthn request options for passkey login (discoverable credentials).
-    /// The returned <c>assertionState</c> must be included in the subsequent /login call.
-    /// </summary>
     [HttpGet("assertion-options")]
     [AllowAnonymous]
+    [ProducesResponseType<AssertionOptionsResult>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAssertionOptions()
     {
-        // null user = discoverable credentials (any passkey registered with this RP)
         var result = await passkeyHandler.MakeRequestOptionsAsync(null!, HttpContext);
-        return Ok(new
-        {
-            requestOptionsJson = result.RequestOptionsJson,
-            assertionState = result.AssertionState,
-        });
+        return Ok(new AssertionOptionsResult(result.RequestOptionsJson, result.AssertionState!));
     }
 
-    /// <summary>
-    /// Completes passkey authentication and issues access + refresh tokens.
-    /// Passkey login counts as MFA-verified (the authenticator provides the second factor).
-    /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
+    [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] PasskeyLoginRequest request)
     {
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
@@ -137,15 +121,14 @@ public class PasskeyController(
                 ActorIp = ip, ActorUserAgent = ua,
                 Outcome = "FAILURE", FailureReason = result.Failure?.Message ?? "Passkey assertion failed",
             });
-            return Unauthorized(new { message = "Passkey authentication failed." });
+            return Unauthorized(new MessageResult("Passkey authentication failed."));
         }
 
         var user = result.User!;
         if (!user.IsActive)
-            return Unauthorized(new { message = "Account is disabled." });
+            return Unauthorized(new MessageResult("Account is disabled."));
 
         var roles = await userManager.GetRolesAsync(user);
-        // Passkey authentication inherently satisfies MFA — set mfaVerified=true
         var accessToken = tokenService.CreateToken(
             user.Id, user.Email!, roles, user.DefaultWorkCenterId, mfaVerified: true);
 
@@ -176,6 +159,8 @@ public class PasskeyController(
 
     [HttpGet]
     [Authorize]
+    [ProducesResponseType<IReadOnlyList<PasskeyDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetMyPasskeys()
     {
         var user = await userManager.GetUserAsync(User);
@@ -187,11 +172,15 @@ public class PasskeyController(
             p.Name ?? "Passkey",
             p.CreatedAt,
             p.IsBackedUp,
-            p.Transports ?? [])));
+            p.Transports ?? [])).ToList());
     }
 
     [HttpDelete("{credentialIdBase64}")]
     [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<MessageResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RemovePasskey(string credentialIdBase64)
     {
         var user = await userManager.GetUserAsync(User);
@@ -199,7 +188,7 @@ public class PasskeyController(
 
         byte[] credentialId;
         try { credentialId = Convert.FromBase64String(credentialIdBase64); }
-        catch { return BadRequest(new { message = "Invalid credential ID format." }); }
+        catch { return BadRequest(new MessageResult("Invalid credential ID format.")); }
 
         var passkey = await userManager.GetPasskeyAsync(user, credentialId);
         if (passkey is null) return NotFound();
@@ -255,3 +244,6 @@ public class PasskeyController(
 public record PasskeyRegisterRequest(string CredentialJson, string AttestationState, string? Name);
 public record PasskeyLoginRequest(string CredentialJson, string AssertionState);
 public record PasskeyDto(string CredentialId, string Name, DateTimeOffset CreatedAt, bool IsBackedUp, string[] Transports);
+public record AttestationOptionsResult(string CreationOptionsJson, string AttestationState);
+public record AssertionOptionsResult(string RequestOptionsJson, string AssertionState);
+public record PasskeyErrorResult(string Message, string? Detail);

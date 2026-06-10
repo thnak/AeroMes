@@ -13,7 +13,11 @@ namespace AeroMes.Api.Controllers;
 public class DowntimeController(IMediator mediator) : ControllerBase
 {
     [HttpPost("start")]
-    public async Task<ActionResult<ApiResponse<object>>> Start(
+    [ProducesResponseType<ApiResponse<DowntimeStartedResult>>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<DowntimeStartedResult>>> Start(
         [FromBody] StartDowntimeRequest request,
         CancellationToken ct)
     {
@@ -25,12 +29,16 @@ public class DowntimeController(IMediator mediator) : ControllerBase
             request.OperatorId,
             request.Notes), ct);
 
-        return StatusCode(201, new ApiResponse<object>(true, "Downtime started.",
-            new { DowntimeLogId = id, Status = "DOWNTIME_ACTIVE" }));
+        return StatusCode(StatusCodes.Status201Created,
+            new ApiResponse<DowntimeStartedResult>(true, "Downtime started.", new DowntimeStartedResult(id)));
     }
 
     [HttpPost("{downtimeLogId:long}/end")]
-    public async Task<ActionResult<ApiResponse<object>>> End(
+    [ProducesResponseType<ApiResponse<EndDowntimeResult>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<EndDowntimeResult>>> End(
         long downtimeLogId,
         [FromBody] EndDowntimeRequest request,
         CancellationToken ct)
@@ -38,8 +46,7 @@ public class DowntimeController(IMediator mediator) : ControllerBase
         var result = await mediator.Send(
             new EndDowntimeCommand(downtimeLogId, request.EndTime, request.Notes), ct);
 
-        return Ok(new ApiResponse<object>(true, "Downtime resolved.",
-            new { result.DowntimeLogId, result.DurationMinutes, Status = "RESOLVED" }));
+        return Ok(new ApiResponse<EndDowntimeResult>(true, "Downtime resolved.", result));
     }
 }
 
@@ -52,3 +59,4 @@ public record StartDowntimeRequest(
     string? Notes = null);
 
 public record EndDowntimeRequest(DateTime EndTime, string? Notes = null);
+public record DowntimeStartedResult(long DowntimeLogId, string Status = "DOWNTIME_ACTIVE");

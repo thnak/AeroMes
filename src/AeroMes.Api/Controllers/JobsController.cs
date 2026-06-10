@@ -12,10 +12,11 @@ namespace AeroMes.Api.Controllers;
 [Authorize]
 public class JobsController(IMediator mediator) : ControllerBase
 {
-    /// <summary>
-    /// An operator starts a Job on a machine for a running Work Order.
-    /// </summary>
     [HttpPost]
+    [ProducesResponseType<ApiResponse<StartJobResult>>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ApiResponse<StartJobResult>>> Start(
         [FromBody] StartJobRequest request,
         CancellationToken ct)
@@ -27,13 +28,14 @@ public class JobsController(IMediator mediator) : ControllerBase
             request.OperatorId,
             request.StartTime), ct);
 
-        return StatusCode(201, new ApiResponse<StartJobResult>(true, "Job started.", result));
+        return StatusCode(StatusCodes.Status201Created, new ApiResponse<StartJobResult>(true, "Job started.", result));
     }
 
-    /// <summary>
-    /// Close a Job when the operator finishes their shift or the WO step is done.
-    /// </summary>
     [HttpPost("{jobId:long}/finish")]
+    [ProducesResponseType<ApiResponse<FinishJobResult>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ApiResponse<FinishJobResult>>> Finish(
         long jobId,
         [FromBody] FinishJobRequest request,

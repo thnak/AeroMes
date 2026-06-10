@@ -1,4 +1,5 @@
 using AeroMes.Application.Auth;
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Auth;
 using AeroMes.Infrastructure.Data;
@@ -26,6 +27,10 @@ public class AuthController(
     private const string RefreshCookiePath = "/api/v1/auth";
 
     [HttpPost("login")]
+    [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<MfaPendingResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
@@ -45,7 +50,7 @@ public class AuthController(
                 Outcome = "FAILURE", FailureReason = "Account locked",
             });
             return StatusCode(StatusCodes.Status429TooManyRequests,
-                new { message = "Account locked due to too many failed attempts. Try again later." });
+                new MessageResult("Account locked due to too many failed attempts. Try again later."));
         }
 
         if (!result.Succeeded)
@@ -57,7 +62,7 @@ public class AuthController(
                 TargetType = "User", TargetId = request.Email,
                 Outcome = "FAILURE", FailureReason = "Invalid credentials",
             });
-            return Unauthorized(new { message = "Invalid email or password." });
+            return Unauthorized(new MessageResult("Invalid email or password."));
         }
 
         var user = await userManager.FindByEmailAsync(request.Email);
@@ -70,11 +75,9 @@ public class AuthController(
                 TargetType = "User", TargetId = request.Email,
                 Outcome = "FAILURE", FailureReason = "Account disabled",
             });
-            return Unauthorized(new { message = "Account is disabled." });
+            return Unauthorized(new MessageResult("Account is disabled."));
         }
 
-        // MFA gate — if the user has 2FA enabled, issue a short-lived pending token
-        // instead of the full access token. The client must call POST /mfa/verify.
         if (user.TwoFactorEnabled)
         {
             var mfaToken = tokenService.CreateMfaPendingToken(user.Id, user.Email!);
@@ -84,7 +87,7 @@ public class AuthController(
                 ActorId = user.Id, ActorType = "USER",
                 ActorIp = ip, ActorUserAgent = ua,
             });
-            return Ok(new { requiresMfa = true, mfaToken });
+            return Ok(new MfaPendingResult(true, mfaToken));
         }
 
         var roles = await userManager.GetRolesAsync(user);
@@ -113,17 +116,19 @@ public class AuthController(
     }
 
     [HttpPost("refresh")]
+    [ProducesResponseType<RefreshTokenResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh()
     {
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
         var raw = Request.Cookies[RefreshTokenCookie];
-        if (raw is null) return Unauthorized(new { message = "No refresh token." });
+        if (raw is null) return Unauthorized(new MessageResult("No refresh token."));
 
         var hash = HashToken(raw);
         var stored = await db.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == hash);
 
         if (stored is null)
-            return Unauthorized(new { message = "Invalid refresh token." });
+            return Unauthorized(new MessageResult("Invalid refresh token."));
 
         if (stored.RevokedAt is not null)
         {
@@ -136,18 +141,18 @@ public class AuthController(
                 Outcome = "FAILURE", FailureReason = "Revoked token reuse — family revoked",
             });
             DeleteRefreshCookie();
-            return Unauthorized(new { message = "Refresh token reuse detected. All sessions revoked." });
+            return Unauthorized(new MessageResult("Refresh token reuse detected. All sessions revoked."));
         }
 
         if (stored.ExpiresAt <= DateTime.UtcNow)
         {
             DeleteRefreshCookie();
-            return Unauthorized(new { message = "Refresh token expired." });
+            return Unauthorized(new MessageResult("Refresh token expired."));
         }
 
         var user = await userManager.FindByIdAsync(stored.UserId);
         if (user is null || !user.IsActive)
-            return Unauthorized(new { message = "Account disabled." });
+            return Unauthorized(new MessageResult("Account disabled."));
 
         var roles = await userManager.GetRolesAsync(user);
         var accessToken = tokenService.CreateToken(user.Id, user.Email!, roles, user.DefaultWorkCenterId);
@@ -168,11 +173,13 @@ public class AuthController(
             ActorId = user.Id, ActorType = "USER", ActorIp = ip,
         });
 
-        return Ok(new { accessToken, tokenType = "Bearer", expiresIn = AccessTokenLifetimeSeconds });
+        return Ok(new RefreshTokenResult(accessToken, "Bearer", AccessTokenLifetimeSeconds));
     }
 
     [HttpPost("logout")]
     [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Logout()
     {
         var raw = Request.Cookies[RefreshTokenCookie];
@@ -202,6 +209,8 @@ public class AuthController(
 
     [HttpPost("logout-all")]
     [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> LogoutAll()
     {
         var userId = userManager.GetUserId(User)!;
@@ -219,6 +228,8 @@ public class AuthController(
 
     [HttpGet("sessions")]
     [Authorize]
+    [ProducesResponseType<IReadOnlyList<SessionDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetSessions()
     {
         var userId = userManager.GetUserId(User)!;
@@ -240,6 +251,9 @@ public class AuthController(
 
     [HttpDelete("sessions/{tokenId:long}")]
     [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RevokeSession(long tokenId)
     {
         var userId = userManager.GetUserId(User)!;
@@ -254,27 +268,24 @@ public class AuthController(
 
     [HttpGet("me")]
     [Authorize]
+    [ProducesResponseType<UserProfileResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Me()
     {
         var user = await userManager.GetUserAsync(User);
         if (user is null) return Unauthorized();
         var roles = await userManager.GetRolesAsync(user);
-        return Ok(new
-        {
-            user.Id,
-            user.Email,
-            user.FullName,
-            user.Department,
-            user.PreferredLanguage,
-            user.AvatarUrl,
-            user.ForcePasswordChange,
-            user.DefaultWorkCenterId,
-            Roles = roles,
-        });
+        return Ok(new UserProfileResult(
+            user.Id, user.Email, user.FullName, user.Department,
+            user.PreferredLanguage, user.AvatarUrl, user.ForcePasswordChange,
+            user.DefaultWorkCenterId, [.. roles]));
     }
 
     [HttpPut("me")]
     [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<IdentityErrorResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UpdateMe([FromBody] UpdateMeRequest request)
     {
         var user = await userManager.GetUserAsync(User);
@@ -286,13 +297,16 @@ public class AuthController(
 
         var result = await userManager.UpdateAsync(user);
         if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+            return BadRequest(new IdentityErrorResult(result.Errors.Select(e => e.Description)));
 
         return NoContent();
     }
 
     [HttpPost("change-password")]
     [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<IdentityErrorResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
         var user = await userManager.GetUserAsync(User);
@@ -300,7 +314,7 @@ public class AuthController(
 
         var result = await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
         if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+            return BadRequest(new IdentityErrorResult(result.Errors.Select(e => e.Description)));
 
         user.ForcePasswordChange = false;
         await userManager.UpdateAsync(user);
@@ -367,6 +381,12 @@ public record LoginRequest(string Email, string Password);
 public record LoginResponse(
     string AccessToken, string TokenType, int ExpiresIn,
     string Email, string FullName, string[] Roles, bool ForcePasswordChange);
+public record MfaPendingResult(bool RequiresMfa, string MfaToken);
+public record RefreshTokenResult(string AccessToken, string TokenType, int ExpiresIn);
+public record UserProfileResult(
+    string Id, string? Email, string? FullName, string? Department,
+    string? PreferredLanguage, string? AvatarUrl, bool ForcePasswordChange,
+    int? DefaultWorkCenterId, string[] Roles);
 public record UpdateMeRequest(string? FullName, string? PreferredLanguage, string? AvatarUrl);
 public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 public record SessionDto(long TokenId, string? DeviceInfo, string? IpAddress,

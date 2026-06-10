@@ -1,6 +1,8 @@
 using AeroMes.Api.Auth;
 using AeroMes.Api.Identity;
 using AeroMes.Api.Middleware;
+using AeroMes.Api.OpenApi;
+using Scalar.AspNetCore;
 using AeroMes.Application;
 using AeroMes.Application.Interfaces;
 using AeroMes.Infrastructure;
@@ -15,7 +17,11 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(opts =>
+{
+    opts.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+    opts.AddOperationTransformer<AuthOperationTransformer>();
+});
 builder.Services.AddProblemDetails();
 
 builder.Services.AddApplication();        // MediatR + FluentValidation + ValidationBehavior
@@ -112,7 +118,10 @@ using (var scope = app.Services.CreateScope())
 }
 
 if (app.Environment.IsDevelopment())
+{
     app.MapOpenApi();
+    app.MapScalarApiReference();
+}
 
 app.UseMiddleware<ExceptionMiddleware>();   // must be first — catches all downstream exceptions
 app.UseCors("AllowFrontend");

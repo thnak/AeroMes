@@ -13,6 +13,8 @@ namespace AeroMes.Api.Controllers;
 public class WorkOrdersController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
+    [ProducesResponseType<ApiResponse<IReadOnlyList<WorkOrderDto>>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<WorkOrderDto>>>> GetAll(
         [FromQuery] string? status,
         CancellationToken ct)
@@ -22,6 +24,10 @@ public class WorkOrdersController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost("{id:int}/start")]
+    [ProducesResponseType<ApiResponse<StartWorkOrderResult>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ApiResponse<StartWorkOrderResult>>> Start(
         int id,
         [FromBody] StartWorkOrderRequest request,

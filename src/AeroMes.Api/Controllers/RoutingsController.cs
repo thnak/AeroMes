@@ -17,10 +17,15 @@ namespace AeroMes.Api.Controllers;
 public class RoutingsController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
+    [ProducesResponseType<IReadOnlyList<RoutingDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, CancellationToken ct = default)
         => Ok(await mediator.Send(new GetRoutingsQuery(activeOnly), ct));
 
     [HttpGet("{id:int}")]
+    [ProducesResponseType<RoutingDetailDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetWithSteps(int id, CancellationToken ct)
     {
         var result = await mediator.Send(new GetRoutingWithStepsQuery(id), ct);
@@ -28,14 +33,21 @@ public class RoutingsController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType<RoutingCreatedResult>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateRoutingRequest req, CancellationToken ct)
     {
         var id = await mediator.Send(
             new CreateRoutingCommand(req.Code, req.Name, req.ProductCode, req.IsDefault, User.Identity?.Name), ct);
-        return CreatedAtAction(nameof(GetWithSteps), new { id }, new { id });
+        return CreatedAtAction(nameof(GetWithSteps), new { id }, new RoutingCreatedResult(id));
     }
 
     [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateRoutingRequest req, CancellationToken ct)
     {
         await mediator.Send(new UpdateRoutingCommand(id, req.Name, req.IsDefault, User.Identity?.Name ?? "system"), ct);
@@ -43,6 +55,9 @@ public class RoutingsController(IMediator mediator) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         await mediator.Send(new DeleteRoutingCommand(id), ct);
@@ -50,14 +65,21 @@ public class RoutingsController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost("{id:int}/steps")]
+    [ProducesResponseType<RoutingStepCreatedResult>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> AddStep(int id, [FromBody] AddRoutingStepRequest req, CancellationToken ct)
     {
         var stepId = await mediator.Send(
             new AddRoutingStepCommand(id, req.StepNumber, req.OperationCode, req.DefaultWorkCenterId, req.StandardCycleTime, req.IsQcRequired), ct);
-        return CreatedAtAction(nameof(GetWithSteps), new { id }, new { stepId });
+        return CreatedAtAction(nameof(GetWithSteps), new { id }, new RoutingStepCreatedResult(stepId));
     }
 
     [HttpDelete("steps/{stepId:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DeleteStep(int stepId, CancellationToken ct)
     {
         await mediator.Send(new DeleteRoutingStepCommand(stepId), ct);
@@ -68,3 +90,5 @@ public class RoutingsController(IMediator mediator) : ControllerBase
 public record CreateRoutingRequest(string Code, string Name, string ProductCode, bool IsDefault = true);
 public record UpdateRoutingRequest(string Name, bool IsDefault);
 public record AddRoutingStepRequest(int StepNumber, string OperationCode, int DefaultWorkCenterId, double StandardCycleTime = 0, bool IsQcRequired = false);
+public record RoutingCreatedResult(int RoutingId);
+public record RoutingStepCreatedResult(int StepId);

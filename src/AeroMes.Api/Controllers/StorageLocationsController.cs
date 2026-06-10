@@ -15,18 +15,27 @@ namespace AeroMes.Api.Controllers;
 public class StorageLocationsController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
+    [ProducesResponseType<IReadOnlyList<StorageLocationDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, CancellationToken ct = default)
         => Ok(await mediator.Send(new GetStorageLocationsQuery(activeOnly), ct));
 
     [HttpPost]
+    [ProducesResponseType<StorageLocationCreatedResult>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateStorageLocationRequest req, CancellationToken ct)
     {
         var id = await mediator.Send(
             new CreateStorageLocationCommand(req.Code, req.Name, req.LocationType, req.WorkCenterId), ct);
-        return CreatedAtAction(nameof(GetAll), new { }, new { id });
+        return CreatedAtAction(nameof(GetAll), null, new StorageLocationCreatedResult(id));
     }
 
     [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateStorageLocationRequest req, CancellationToken ct)
     {
         await mediator.Send(new UpdateStorageLocationCommand(id, req.Name, req.LocationType, req.WorkCenterId), ct);
@@ -34,6 +43,9 @@ public class StorageLocationsController(IMediator mediator) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         await mediator.Send(new DeleteStorageLocationCommand(id), ct);
@@ -43,3 +55,4 @@ public class StorageLocationsController(IMediator mediator) : ControllerBase
 
 public record CreateStorageLocationRequest(string Code, string Name, LocationType LocationType, int? WorkCenterId = null);
 public record UpdateStorageLocationRequest(string Name, LocationType LocationType, int? WorkCenterId = null);
+public record StorageLocationCreatedResult(int StorageLocationId);

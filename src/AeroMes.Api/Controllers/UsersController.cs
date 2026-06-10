@@ -1,5 +1,6 @@
 using AeroMes.Api.Auth;
 using AeroMes.Application.Auth;
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authorization;
@@ -20,6 +21,8 @@ public class UsersController(
 {
     [HttpGet]
     [RequirePermission(Permissions.UserRead)]
+    [ProducesResponseType<PagedResult<UserSummaryDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? role,
         [FromQuery] string? department,
@@ -38,7 +41,7 @@ public class UsersController(
         if (!string.IsNullOrWhiteSpace(role))
         {
             var roleObj = await roleManager.FindByNameAsync(role);
-            if (roleObj is null) return Ok(new { items = Array.Empty<object>(), total = 0 });
+            if (roleObj is null) return Ok(new PagedResult<UserSummaryDto>([], 0, page, pageSize));
 
             var userIdsInRole = await userManager.GetUsersInRoleAsync(role);
             var ids = userIdsInRole.Select(u => u.Id).ToHashSet();
@@ -55,11 +58,14 @@ public class UsersController(
                 u.IsActive, u.LastLoginAt, u.PreferredLanguage))
             .ToListAsync();
 
-        return Ok(new { items, total, page, pageSize });
+        return Ok(new PagedResult<UserSummaryDto>(items, total, page, pageSize));
     }
 
     [HttpGet("{id}")]
     [RequirePermission(Permissions.UserRead)]
+    [ProducesResponseType<UserDetailDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetById(string id)
     {
         var user = await userManager.FindByIdAsync(id);
@@ -75,6 +81,9 @@ public class UsersController(
 
     [HttpPost]
     [RequirePermission(Permissions.UserCreate)]
+    [ProducesResponseType<CreateUserResult>(StatusCodes.Status201Created)]
+    [ProducesResponseType<IdentityErrorResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateUserRequest request)
     {
         var user = new ApplicationUser
@@ -92,7 +101,7 @@ public class UsersController(
         var tempPassword = GenerateTempPassword();
         var result = await userManager.CreateAsync(user, tempPassword);
         if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+            return BadRequest(new IdentityErrorResult(result.Errors.Select(e => e.Description)));
 
         if (request.Roles is { Length: > 0 })
             await userManager.AddToRolesAsync(user, request.Roles);
@@ -106,11 +115,15 @@ public class UsersController(
         });
 
         return CreatedAtAction(nameof(GetById), new { id = user.Id },
-            new { user.Id, tempPassword });
+            new CreateUserResult(user.Id, tempPassword));
     }
 
     [HttpPut("{id}")]
     [RequirePermission(Permissions.UserUpdate)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<IdentityErrorResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(string id, [FromBody] UpdateUserRequest request)
     {
         var user = await userManager.FindByIdAsync(id);
@@ -125,24 +138,28 @@ public class UsersController(
 
         var result = await userManager.UpdateAsync(user);
         if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+            return BadRequest(new IdentityErrorResult(result.Errors.Select(e => e.Description)));
 
         return NoContent();
     }
 
     [HttpDelete("{id}")]
     [RequirePermission(Permissions.UserDelete)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<MessageResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(string id)
     {
         var user = await userManager.FindByIdAsync(id);
         if (user is null) return NotFound();
 
         if (await IsLastSystemAdmin(user))
-            return BadRequest(new { message = "Cannot deactivate the last SYSTEM_ADMIN account." });
+            return BadRequest(new MessageResult("Cannot deactivate the last SYSTEM_ADMIN account."));
 
         user.IsActive = false;
         await userManager.UpdateAsync(user);
-        await userManager.UpdateSecurityStampAsync(user); // revokes all active sessions
+        await userManager.UpdateSecurityStampAsync(user);
 
         auditLogger.Log(new SecurityAuditEvent
         {
@@ -155,6 +172,9 @@ public class UsersController(
 
     [HttpPost("{id}/activate")]
     [RequirePermission(Permissions.UserUpdate)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Activate(string id)
     {
         var user = await userManager.FindByIdAsync(id);
@@ -173,6 +193,9 @@ public class UsersController(
 
     [HttpGet("{id}/roles")]
     [RequirePermission(Permissions.UserRead)]
+    [ProducesResponseType<IReadOnlyList<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetRoles(string id)
     {
         var user = await userManager.FindByIdAsync(id);
@@ -184,6 +207,10 @@ public class UsersController(
 
     [HttpPost("{id}/roles")]
     [RequirePermission(Permissions.UserManageRoles)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<MessageResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> SetRoles(string id, [FromBody] SetRolesRequest request)
     {
         var user = await userManager.FindByIdAsync(id);
@@ -191,7 +218,7 @@ public class UsersController(
 
         if (await IsLastSystemAdmin(user) &&
             !request.RoleNames.Contains(AppRoles.SystemAdmin, StringComparer.OrdinalIgnoreCase))
-            return BadRequest(new { message = "Cannot remove SYSTEM_ADMIN from the last admin account." });
+            return BadRequest(new MessageResult("Cannot remove SYSTEM_ADMIN from the last admin account."));
 
         var current = await userManager.GetRolesAsync(user);
         await userManager.RemoveFromRolesAsync(user, current);
@@ -211,6 +238,10 @@ public class UsersController(
 
     [HttpPost("{id}/reset-password")]
     [RequirePermission(Permissions.UserResetPassword)]
+    [ProducesResponseType<ResetPasswordResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<IdentityErrorResult>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ResetPassword(string id)
     {
         var user = await userManager.FindByIdAsync(id);
@@ -220,12 +251,12 @@ public class UsersController(
         var tempPassword = GenerateTempPassword();
         var result = await userManager.ResetPasswordAsync(user, token, tempPassword);
         if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+            return BadRequest(new IdentityErrorResult(result.Errors.Select(e => e.Description)));
 
         user.ForcePasswordChange = true;
         await userManager.UpdateAsync(user);
 
-        return Ok(new { tempPassword });
+        return Ok(new ResetPasswordResult(tempPassword));
     }
 
     private async Task<bool> IsLastSystemAdmin(ApplicationUser user)
@@ -262,3 +293,5 @@ public record UpdateUserRequest(
     string? PreferredLanguage, string? AvatarUrl, int? DefaultWorkCenterId);
 
 public record SetRolesRequest(string[] RoleNames);
+public record CreateUserResult(string Id, string TempPassword);
+public record ResetPasswordResult(string TempPassword);

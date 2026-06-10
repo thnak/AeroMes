@@ -14,18 +14,27 @@ namespace AeroMes.Api.Controllers;
 public class MachinesController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
+    [ProducesResponseType<IReadOnlyList<MachineDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, CancellationToken ct = default)
         => Ok(await mediator.Send(new GetMachinesQuery(activeOnly), ct));
 
     [HttpPost]
+    [ProducesResponseType<MachineCreatedResult>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateMachineRequest req, CancellationToken ct)
     {
         var code = await mediator.Send(
             new CreateMachineCommand(req.Code, req.Name, req.WorkCenterId, req.Brand, req.Model, User.Identity?.Name), ct);
-        return CreatedAtAction(nameof(GetAll), new { }, new { code });
+        return CreatedAtAction(nameof(GetAll), null, new MachineCreatedResult(code));
     }
 
     [HttpPut("{code}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateMachineRequest req, CancellationToken ct)
     {
         await mediator.Send(
@@ -34,6 +43,9 @@ public class MachinesController(IMediator mediator) : ControllerBase
     }
 
     [HttpDelete("{code}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(string code, CancellationToken ct)
     {
         await mediator.Send(new DeleteMachineCommand(code), ct);
@@ -43,3 +55,4 @@ public class MachinesController(IMediator mediator) : ControllerBase
 
 public record CreateMachineRequest(string Code, string Name, int WorkCenterId, string? Brand, string? Model);
 public record UpdateMachineRequest(string Name, int WorkCenterId, string? Brand, string? Model);
+public record MachineCreatedResult(string MachineCode);

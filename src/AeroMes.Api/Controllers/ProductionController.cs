@@ -12,10 +12,11 @@ namespace AeroMes.Api.Controllers;
 [Authorize]
 public class ProductionController(IMediator mediator) : ControllerBase
 {
-    /// <summary>
-    /// Submit output (OK + NG) for an active Job. Idempotent via X-Idempotency-Key header.
-    /// </summary>
     [HttpPost("submit-output")]
+    [ProducesResponseType<ApiResponse<SubmitOutputResult>>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ApiResponse<SubmitOutputResult>>> SubmitOutput(
         [FromHeader(Name = "X-Idempotency-Key")] string? idempotencyKey,
         [FromBody] SubmitOutputRequest request,
@@ -32,14 +33,14 @@ public class ProductionController(IMediator mediator) : ControllerBase
             request.Defects.Select(d => new DefectEntry(d.DefectCode, d.Qty)).ToList());
 
         var result = await mediator.Send(cmd, ct);
-        return StatusCode(201, new ApiResponse<SubmitOutputResult>(true,
+        return StatusCode(StatusCodes.Status201Created, new ApiResponse<SubmitOutputResult>(true,
             "Production output recorded successfully.", result));
     }
 
-    /// <summary>
-    /// Get OEE metrics for a machine within a shift window.
-    /// </summary>
     [HttpGet("oee")]
+    [ProducesResponseType<ApiResponse<OeeResult>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ApiResponse<OeeResult>>> GetOee(
         [FromQuery] string machineCode,
         [FromQuery] DateTime shiftStart,

@@ -1,5 +1,8 @@
 using AeroMes.Api.Auth;
+using AeroMes.Application.Common;
+using AeroMes.Domain.Auth;
 using AeroMes.Infrastructure.Data;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +17,8 @@ public class AuditLogController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(Permissions.SystemConfigure)]
+    [ProducesResponseType<PagedResult<SecurityAuditLog>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Query(
         [FromQuery] string? actorId,
         [FromQuery] string? eventType,
@@ -44,11 +49,13 @@ public class AuditLogController(AppDbContext db) : ControllerBase
             .Take(pageSize)
             .ToListAsync();
 
-        return Ok(new { items, total, page, pageSize });
+        return Ok(new PagedResult<SecurityAuditLog>(items, total, page, pageSize));
     }
 
     [HttpGet("user/{userId}")]
     [RequirePermission(Permissions.SystemConfigure)]
+    [ProducesResponseType<IReadOnlyList<SecurityAuditLog>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetByUser(string userId,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
     {
@@ -65,6 +72,8 @@ public class AuditLogController(AppDbContext db) : ControllerBase
 
     [HttpGet("export")]
     [RequirePermission(Permissions.ReportExport)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Export([FromQuery] DateTime? from, [FromQuery] DateTime? to)
     {
         var query = db.SecurityAuditLogs.AsNoTracking();
@@ -73,7 +82,7 @@ public class AuditLogController(AppDbContext db) : ControllerBase
 
         var items = await query
             .OrderByDescending(x => x.OccurredAt)
-            .Take(10_000) // safety cap
+            .Take(10_000)
             .ToListAsync();
 
         var csv = new StringBuilder();
