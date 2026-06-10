@@ -1,0 +1,6 @@
+FILE: tablet-idle-welcome.png
+DIMENSIONS: 800 x 400 px
+PLACEMENT: Tablet operator station — welcome/idle screen before operator logs in or starts a job
+
+PROMPT:
+A wide-format flat illustration suitable for a 10-inch tablet operator interface. Shows a friendly factory workstation scene: a machine in ready/standby state (green indicator light), a tablet mounted on a stand showing a ready prompt, safety equipment nearby (hard hat, gloves). Clean, inviting, professional. Color palette: seafoam teal (#044A42, #3A9188) dominant, amber accent for the standby light, white/light grey background. Style: clean flat illustration, horizontally composed to fit a wide banner area. No text.

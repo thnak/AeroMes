@@ -1,0 +1,6 @@
+FILE: empty-no-orders.png
+DIMENSIONS: 400 x 300 px
+PLACEMENT: Tablet operator station — no available work orders assigned
+
+PROMPT:
+A flat illustration of a factory workstation that is idle — machines powered off, conveyor belt stopped, an operator (in a hard hat) sitting and waiting, looking at an empty task list on a tablet. Calm, not alarming. Color palette: seafoam teal accent (#3A9188), warm neutral background. Style: clean flat illustration, manufacturing context. No text. Slightly larger/bolder style since it will appear on a 10-inch tablet.

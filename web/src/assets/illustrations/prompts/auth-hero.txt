@@ -1,0 +1,6 @@
+FILE: auth-hero.png
+DIMENSIONS: 1200 x 900 px
+PLACEMENT: Left panel of the login/auth split-screen layout
+
+PROMPT:
+A modern, clean illustration of a smart manufacturing factory floor at night, viewed from a slightly elevated isometric-like perspective. Glowing screens and dashboards on the walls display production charts and OEE metrics. Operators in safety helmets work at illuminated workstations. Subtle data flow lines (teal/cyan) connect machines to a central hub. Color palette: deep seafoam green (#031514 to #044A42) as the dominant background, with warm amber accent lights from machines and bright teal (#3A9188) data flows. Style: flat illustration with soft gradients, no 3D rendering, no photorealism. Clean geometric shapes. Mood: professional, efficient, high-tech manufacturing.

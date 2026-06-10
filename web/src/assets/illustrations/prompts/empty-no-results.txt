@@ -1,0 +1,6 @@
+FILE: empty-no-results.png
+DIMENSIONS: 400 x 300 px
+PLACEMENT: Empty state when a search returns no matching results
+
+PROMPT:
+A minimalist flat illustration of a search bar or magnifying glass that found nothing — perhaps the magnifying glass is looking at an empty box or a question mark. A small character looks puzzled. Color palette: seafoam teal (#3A9188) accent, warm grey tones. Style: simple, clean, slightly playful. No text. Suitable as inline empty-state graphic inside a search results area.

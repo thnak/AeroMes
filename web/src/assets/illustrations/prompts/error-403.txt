@@ -1,0 +1,6 @@
+FILE: error-403.png
+DIMENSIONS: 400 x 300 px
+PLACEMENT: 403 Forbidden / Access Denied error page
+
+PROMPT:
+A flat illustration of a locked door or gate with a "no entry" symbol, in a manufacturing/industrial aesthetic. A small character stands in front of it looking apologetic. The overall tone is calm and professional, not alarming. Color palette: seafoam teal (#044A42) door/gate, warning amber (#D97706) lock symbol, light background. Style: clean flat illustration. No text.

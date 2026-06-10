@@ -1,0 +1,6 @@
+FILE: error-500.png
+DIMENSIONS: 400 x 300 px
+PLACEMENT: 500 Server Error page
+
+PROMPT:
+A flat illustration of a machine that has broken down — gears stopped, warning lights blinking amber, a small wrench and a hard-hatted technician looking at it. Conveys "something went wrong, we're on it." Color palette: warning amber (#D97706) warning lights, seafoam teal (#3A9188) machine body, warm grey background. Style: clean flat illustration, manufacturing aesthetic. Concerned but not catastrophic mood. No text.

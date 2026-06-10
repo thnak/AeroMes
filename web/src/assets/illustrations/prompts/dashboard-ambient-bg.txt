@@ -1,0 +1,6 @@
+FILE: dashboard-ambient-bg.png
+DIMENSIONS: 1920 x 1080 px (also export 3840 x 2160 for 4K)
+PLACEMENT: Background of the OEE Dashboard (TV/display wall mode)
+
+PROMPT:
+An abstract dark manufacturing-themed background for a factory display wall. Very subtle, meant to sit behind data charts and KPI numbers without competing for attention. A low-opacity (15-20%) silhouette of a factory production line — conveyor belts, robotic arms, machinery — rendered in the deepest seafoam tones (#031514, #062925). Overlaid with a slow-moving gradient mesh of deep teal and near-black. Faint grid lines suggesting a data/HUD aesthetic. No text, no explicit UI elements. Color palette: #031514 (base) → #044A42 (mid glow) → #062925 (edges). Style: abstract, atmospheric, dark mode optimized. Should look impressive on a 55-inch 4K screen at 10 feet distance.

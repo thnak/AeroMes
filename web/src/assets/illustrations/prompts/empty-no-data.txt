@@ -1,0 +1,6 @@
+FILE: empty-no-data.png
+DIMENSIONS: 400 x 300 px
+PLACEMENT: Empty state when a data table or list has no records yet
+
+PROMPT:
+A friendly, minimalist flat illustration of an empty clipboard or data sheet with a small magnifying glass and a few dotted lines where data would appear. A small robot or character with a neutral/curious expression sits beside it. Color palette: seafoam teal (#3A9188) as primary accent, light grey (#E6F7F5) background, white clipboard. Style: simple, clean, slightly playful but professional. No text in the illustration. Suitable as an inline empty-state graphic (not a full-page illustration).

@@ -1,0 +1,6 @@
+FILE: error-404.png
+DIMENSIONS: 400 x 300 px
+PLACEMENT: 404 Not Found error page
+
+PROMPT:
+A flat illustration of a factory floor with an empty spot — a machine base outline with nothing on it, or a conveyor belt leading to a dead end. A small character scratches their head looking confused. Friendly, not alarming. Color palette: seafoam teal accents, warm grey background. Style: clean flat illustration, manufacturing context. No text in the illustration.
