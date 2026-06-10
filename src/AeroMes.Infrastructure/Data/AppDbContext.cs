@@ -7,6 +7,7 @@ using AeroMes.Domain.Master;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.ValueObjects;
 using AeroMes.Domain.Quality;
+using AeroMes.Domain.Settings;
 using AeroMes.Infrastructure.Identity;
 using LiteBus.Events.Abstractions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -51,6 +52,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<DefectCode> DefectCodes => Set<DefectCode>();
     public DbSet<DefectDetail> DefectDetails => Set<DefectDetail>();
 
+    // settings
+    public DbSet<SystemOptions> SystemOptions => Set<SystemOptions>();
+
     public override async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
         var result = await base.SaveChangesAsync(ct);
@@ -80,6 +84,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureIntegrationSchema(b);
         ConfigureProdSchema(b);
         ConfigureQualSchema(b);
+        ConfigureSettingsSchema(b);
     }
 
     // ── auth ──────────────────────────────────────────────────────────────
@@ -514,6 +519,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.DefectCodeID);
 
             // ProductionLog ↔ DefectDetails relationship configured on ProductionLog side
+        });
+    }
+
+    // ── settings ──────────────────────────────────────────────────────────
+    private static void ConfigureSettingsSchema(ModelBuilder b)
+    {
+        b.Entity<SystemOptions>(e =>
+        {
+            e.ToTable("SystemOptions", "settings");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.Property(x => x.MaterialManagementType).HasMaxLength(20);
+            e.Property(x => x.PurchaseOrderDefaultAllocationMethod).HasMaxLength(50);
+            e.Property(x => x.DispatchSequentialWorkflowEnforcement).HasMaxLength(10);
+            e.Property(x => x.QcTargetSelection).HasMaxLength(20);
+            e.Property(x => x.UpdatedBy).HasMaxLength(450);
         });
     }
 }
