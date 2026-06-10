@@ -33,6 +33,8 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
 
         // master repositories
+        services.AddScoped<IWorkShiftRepository, WorkShiftRepository>();
+        services.AddScoped<IWorkCalendarRepository, WorkCalendarRepository>();
         services.AddScoped<IWorkCenterRepository, WorkCenterRepository>();
         services.AddScoped<IMachineRepository, MachineRepository>();
         services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();

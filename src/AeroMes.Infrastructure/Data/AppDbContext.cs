@@ -39,6 +39,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<RoutingStep> RoutingSteps => Set<RoutingStep>();
     public DbSet<StorageLocation> StorageLocations => Set<StorageLocation>();
     public DbSet<ShiftTemplate> ShiftTemplates => Set<ShiftTemplate>();
+    public DbSet<WorkShift> WorkShifts => Set<WorkShift>();
+    public DbSet<ShiftBreak> ShiftBreaks => Set<ShiftBreak>();
+    public DbSet<WorkCalendar> WorkCalendars => Set<WorkCalendar>();
+    public DbSet<CalendarDay> CalendarDays => Set<CalendarDay>();
+    public DbSet<CalendarShift> CalendarShifts => Set<CalendarShift>();
+    public DbSet<CalendarException> CalendarExceptions => Set<CalendarException>();
     public DbSet<DowntimeReasonCode> DowntimeReasonCodes => Set<DowntimeReasonCode>();
     public DbSet<MachineProductConfig> MachineProductConfigs => Set<MachineProductConfig>();
     public DbSet<AlertThreshold> AlertThresholds => Set<AlertThreshold>();
@@ -481,6 +487,87 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.HasOne(x => x.WorkCenter)
                 .WithMany()
                 .HasForeignKey(x => x.WorkCenterId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<WorkShift>(e =>
+        {
+            e.ToTable("WorkShifts", "master");
+            e.HasKey(x => x.WorkShiftId);
+            e.Property(x => x.ShiftCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.ShiftName).HasMaxLength(100).IsRequired();
+            e.HasIndex(x => x.ShiftCode).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasMany(x => x.Breaks)
+                .WithOne()
+                .HasForeignKey(x => x.WorkShiftId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<ShiftBreak>(e =>
+        {
+            e.ToTable("ShiftBreaks", "master");
+            e.HasKey(x => x.ShiftBreakId);
+        });
+
+        b.Entity<WorkCalendar>(e =>
+        {
+            e.ToTable("WorkCalendars", "master");
+            e.HasKey(x => x.WorkCalendarId);
+            e.Property(x => x.CalendarCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.CalendarName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(500);
+            e.HasIndex(x => x.CalendarCode).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasMany(x => x.Days)
+                .WithOne()
+                .HasForeignKey(x => x.WorkCalendarId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasMany(x => x.Exceptions)
+                .WithOne()
+                .HasForeignKey(x => x.WorkCalendarId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<CalendarDay>(e =>
+        {
+            e.ToTable("CalendarDays", "master");
+            e.HasKey(x => x.CalendarDayId);
+            e.HasIndex(x => new { x.WorkCalendarId, x.DayOfWeek }).IsUnique();
+            e.Property(x => x.DayOfWeek).HasConversion<int>();
+
+            e.HasMany(x => x.Shifts)
+                .WithOne()
+                .HasForeignKey(x => x.CalendarDayId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<CalendarShift>(e =>
+        {
+            e.ToTable("CalendarShifts", "master");
+            e.HasKey(x => x.CalendarShiftId);
+
+            e.HasOne(x => x.WorkShift)
+                .WithMany()
+                .HasForeignKey(x => x.WorkShiftId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<CalendarException>(e =>
+        {
+            e.ToTable("CalendarExceptions", "master");
+            e.HasKey(x => x.CalendarExceptionId);
+            e.Property(x => x.ExceptionType).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.CreatedBy).HasMaxLength(256);
+            e.HasIndex(x => new { x.WorkCalendarId, x.Date }).IsUnique();
+
+            e.HasOne(x => x.WorkShift)
+                .WithMany()
+                .HasForeignKey(x => x.WorkShiftId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
         });
