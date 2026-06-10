@@ -56,34 +56,53 @@ public class RefreshTokenTests(AeroMesWebFactory factory)
     }
 
     [Fact]
-    public async Task Refresh_ReuseAttack_FamilyRevoked_Returns401()
+    public async Task Refresh_ReuseAttack_ReplaysRevokedToken_RevokesFamily()
     {
-        // Client A: login, get cookie, refresh once → captures new cookie
-        using var clientA = factory.CreateClient(
+        // Use a client with no automatic cookie management so we control cookies manually.
+        using var client = factory.CreateClient(
             new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
-            { HandleCookies = true });
+            { HandleCookies = false });
 
-        await clientA.PostAsJsonAsync("/api/v1/auth/login",
+        // Step 1: Login — capture C1 from Set-Cookie header.
+        var loginResp = await client.PostAsJsonAsync("/api/v1/auth/login",
             new { Email = "system@aeromes.local", Password = "ChangeMe123!" });
+        Assert.Equal(HttpStatusCode.OK, loginResp.StatusCode);
 
-        // Extract original refresh cookie before rotation
-        var cookieContainer = new System.Net.CookieContainer();
+        var c1 = ExtractRefreshTokenValue(loginResp);
+        Assert.NotNull(c1);
 
-        // Manually replay the original (pre-rotation) token — simulate theft
-        // The cookie jar rotates automatically, so we test by sending the old cookie manually
+        // Step 2: Refresh with C1 → token rotated, C1 revoked, C2 issued.
+        var firstRefresh = await PostWithRefreshCookie(client, c1);
+        Assert.Equal(HttpStatusCode.OK, firstRefresh.StatusCode);
 
-        // After the first refresh the old token is revoked.
-        // Simulate reuse: use client that has the old cookie (before 1st refresh)
-        using var staleClient = factory.CreateClient();
-        // Add the same cookie the first login set (we don't have direct access here,
-        // so we verify the guard fires when clientA refreshes then refreshes again from a new client)
+        var c2 = ExtractRefreshTokenValue(firstRefresh);
+        Assert.NotNull(c2);
+        Assert.NotEqual(c1, c2);
 
-        // Refresh with clientA (rotates token)
-        await clientA.PostAsync("/api/v1/auth/refresh", null);
+        // Step 3: Replay the now-revoked C1 → reuse attack detected, entire family revoked.
+        var reuseResp = await PostWithRefreshCookie(client, c1);
+        Assert.Equal(HttpStatusCode.Unauthorized, reuseResp.StatusCode);
 
-        // clientA's cookie is now the rotated one. A second refresh from clientA should succeed.
-        var validRefresh = await clientA.PostAsync("/api/v1/auth/refresh", null);
-        Assert.Equal(HttpStatusCode.OK, validRefresh.StatusCode);
+        // Step 4: C2 must also be rejected — family revocation wiped the rotated token too.
+        var c2Resp = await PostWithRefreshCookie(client, c2);
+        Assert.Equal(HttpStatusCode.Unauthorized, c2Resp.StatusCode);
+    }
+
+    private static string? ExtractRefreshTokenValue(HttpResponseMessage response)
+    {
+        if (!response.Headers.TryGetValues("Set-Cookie", out var cookies))
+            return null;
+        var cookie = cookies.FirstOrDefault(c => c.StartsWith("refresh_token="));
+        if (cookie is null) return null;
+        // "refresh_token=VALUE; Path=/...; HttpOnly; ..." — take the raw value only
+        return cookie["refresh_token=".Length..].Split(';')[0];
+    }
+
+    private static Task<HttpResponseMessage> PostWithRefreshCookie(HttpClient client, string tokenValue)
+    {
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh");
+        req.Headers.Add("Cookie", $"refresh_token={tokenValue}");
+        return client.SendAsync(req);
     }
 
     private record RefreshResponse(string AccessToken, string TokenType, int ExpiresIn);

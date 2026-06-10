@@ -1,3 +1,4 @@
+using AeroMes.Api.Auth;
 using AeroMes.Application.Common;
 using AeroMes.Application.Jobs.Commands.FinishJob;
 using AeroMes.Application.Jobs.Commands.StartJob;
@@ -13,10 +14,12 @@ namespace AeroMes.Api.Controllers;
 public class JobsController(IMediator mediator) : ControllerBase
 {
     [HttpPost]
+    [RequirePermission(Permissions.JobStart)]
     [ProducesResponseType<ApiResponse<StartJobResult>>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ApiResponse<StartJobResult>>> Start(
         [FromBody] StartJobRequest request,
         CancellationToken ct)
@@ -32,10 +35,12 @@ public class JobsController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost("{jobId:long}/finish")]
+    [RequirePermission(Permissions.JobComplete)]
     [ProducesResponseType<ApiResponse<FinishJobResult>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ApiResponse<FinishJobResult>>> Finish(
         long jobId,
         [FromBody] FinishJobRequest request,

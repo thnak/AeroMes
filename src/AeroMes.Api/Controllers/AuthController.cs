@@ -21,6 +21,7 @@ public class AuthController(
     ITokenService tokenService,
     AppDbContext db,
     IAuditLogger auditLogger,
+    IEmailSender emailSender,
     IConfiguration configuration) : ControllerBase
 {
     private const string RefreshTokenCookie = "refresh_token";
@@ -367,6 +368,60 @@ public class AuthController(
     private void DeleteRefreshCookie()
         => Response.Cookies.Delete(RefreshTokenCookie, new CookieOptions { Path = RefreshCookiePath });
 
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [ProducesResponseType<MessageResult>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordRequest request,
+        CancellationToken ct)
+    {
+        var user = await userManager.FindByEmailAsync(request.Email);
+        if (user is { IsActive: true })
+        {
+            var token = await userManager.GeneratePasswordResetTokenAsync(user);
+            var frontendUrl = configuration["App:FrontendUrl"] ?? "http://localhost:5173";
+            var resetLink = $"{frontendUrl}/auth/reset-password" +
+                            $"?email={Uri.EscapeDataString(user.Email!)}" +
+                            $"&token={Uri.EscapeDataString(token)}";
+            await emailSender.SendAsync(
+                user.Email!,
+                "Reset your AeroMes password",
+                $"<p>Click the link below to reset your password (valid for 1 hour):</p><p><a href='{resetLink}'>{resetLink}</a></p>",
+                ct);
+        }
+        return Ok(new MessageResult("If that email is registered, a reset link has been sent."));
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [ProducesResponseType<MessageResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<IdentityErrorResult>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordRequest request,
+        CancellationToken ct)
+    {
+        var user = await userManager.FindByEmailAsync(request.Email);
+        if (user is null)
+            return BadRequest(new MessageResult("Invalid or expired reset token."));
+
+        var result = await userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
+        if (!result.Succeeded)
+            return BadRequest(new IdentityErrorResult(result.Errors.Select(e => e.Description)));
+
+        user.ForcePasswordChange = false;
+        await userManager.UpdateAsync(user);
+
+        auditLogger.Log(new SecurityAuditEvent
+        {
+            EventType = AuditEventTypes.AuthPasswordChanged,
+            ActorId = user.Id, ActorType = "USER",
+            ActorIp = HttpContext.Connection.RemoteIpAddress?.ToString(),
+            Outcome = "SUCCESS",
+        });
+
+        return Ok(new MessageResult("Password reset successfully."));
+    }
+
     private async Task RevokeFamily(Guid familyId)
     {
         var family = await db.RefreshTokens
@@ -377,6 +432,8 @@ public class AuthController(
     }
 }
 
+public record ForgotPasswordRequest(string Email);
+public record ResetPasswordRequest(string Email, string Token, string NewPassword);
 public record LoginRequest(string Email, string Password);
 public record LoginResponse(
     string AccessToken, string TokenType, int ExpiresIn,

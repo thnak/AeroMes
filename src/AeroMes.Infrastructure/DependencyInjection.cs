@@ -77,6 +77,7 @@ public static class DependencyInjection
 
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<DatabaseSeeder>();
+        services.AddScoped<IEmailSender, LoggingEmailSender>();
 
         services.AddSingleton<DbAuditLogger>();
         services.AddSingleton<IAuditLogger>(sp => sp.GetRequiredService<DbAuditLogger>());

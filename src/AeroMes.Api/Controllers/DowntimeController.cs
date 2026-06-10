@@ -1,3 +1,4 @@
+using AeroMes.Api.Auth;
 using AeroMes.Application.Common;
 using AeroMes.Application.Downtime.Commands.EndDowntime;
 using AeroMes.Application.Downtime.Commands.StartDowntime;
@@ -13,10 +14,12 @@ namespace AeroMes.Api.Controllers;
 public class DowntimeController(IMediator mediator) : ControllerBase
 {
     [HttpPost("start")]
+    [RequirePermission(Permissions.DowntimeDeclare)]
     [ProducesResponseType<ApiResponse<DowntimeStartedResult>>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ApiResponse<DowntimeStartedResult>>> Start(
         [FromBody] StartDowntimeRequest request,
         CancellationToken ct)
@@ -34,10 +37,12 @@ public class DowntimeController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost("{downtimeLogId:long}/end")]
+    [RequirePermission(Permissions.DowntimeDeclare)]
     [ProducesResponseType<ApiResponse<EndDowntimeResult>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ApiResponse<EndDowntimeResult>>> End(
         long downtimeLogId,
         [FromBody] EndDowntimeRequest request,

@@ -1,3 +1,4 @@
+using AeroMes.Api.Auth;
 using AeroMes.Application.Common;
 using AeroMes.Application.Production.Commands.SubmitOutput;
 using AeroMes.Application.Production.Queries.GetOee;
@@ -13,10 +14,12 @@ namespace AeroMes.Api.Controllers;
 public class ProductionController(IMediator mediator) : ControllerBase
 {
     [HttpPost("submit-output")]
+    [RequirePermission(Permissions.ProductionSubmitOutput)]
     [ProducesResponseType<ApiResponse<SubmitOutputResult>>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ApiResponse<SubmitOutputResult>>> SubmitOutput(
         [FromHeader(Name = "X-Idempotency-Key")] string? idempotencyKey,
         [FromBody] SubmitOutputRequest request,
@@ -38,9 +41,11 @@ public class ProductionController(IMediator mediator) : ControllerBase
     }
 
     [HttpGet("oee")]
+    [RequirePermission(Permissions.ProductionRead)]
     [ProducesResponseType<ApiResponse<OeeResult>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ApiResponse<OeeResult>>> GetOee(
         [FromQuery] string machineCode,
         [FromQuery] DateTime shiftStart,
