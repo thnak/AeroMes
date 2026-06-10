@@ -10,7 +10,10 @@
     "preview": "vite preview",
     "fetch:spec": "curl -sf http://localhost:5170/openapi/v1.json -o ../aeromes-openapi.json",
     "generate:api": "orval --config orval.config.ts",
-    "generate:api:watch": "orval --config orval.config.ts --watch"
+    "generate:api:watch": "orval --config orval.config.ts --watch",
+    "bundle-icons": "node scripts/bundleIcons.mjs",
+    "stub:illustrations": "uv run scripts/stubIllustrations.py",
+    "generate:illustrations": "uv run scripts/generateIllustrations.py"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -36,6 +39,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@iconify-json/solar": "^1.2.5",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

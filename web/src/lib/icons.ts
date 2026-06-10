@@ -9,7 +9,7 @@
 export const Icons = {
   // Navigation
   dashboard:       'solar:widget-bold-duotone',
-  production:      'solar:factory-bold-duotone',
+  production:      'solar:buildings-2-bold-duotone',
   workOrders:      'solar:clipboard-list-bold-duotone',
   jobs:            'solar:play-circle-bold-duotone',
   machines:        'solar:settings-bold-duotone',
@@ -65,7 +65,7 @@ export const Icons = {
   machineOn:       'solar:cpu-bolt-bold',
   machineOff:      'solar:cpu-outline',
   machineDown:     'solar:danger-circle-bold',
-  maintenance:     'solar:wrench-bold',
+  maintenance:     'solar:sledgehammer-bold',
 
   // Auth / visibility
   eye:             'solar:eye-outline',
@@ -87,7 +87,7 @@ export const Icons = {
   // Domain entities — Linear weight
   order:           'solar:document-text-linear',
   lot:             'solar:tag-linear',
-  serial:          'solar:barcode-linear',
+  serial:          'solar:qr-code-linear',
   operator:        'solar:user-linear',
   shift:           'solar:calendar-linear',
   location:        'solar:map-point-linear',
@@ -106,7 +106,7 @@ export const Icons = {
   emptySearch:     'solar:magnifer-zoom-out-outline',
   forbidden:       'solar:lock-keyhole-bold',
   notFound:        'solar:ghost-outline',
-  serverError:     'solar:server-broken-outline',
+  serverError:     'solar:server-2-broken',
 } as const;
 
 export type IconKey = keyof typeof Icons;

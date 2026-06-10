@@ -3,23 +3,23 @@
 // Prompts for AI image generation are in ./prompts/*.txt
 
 // Auth
-import authHero from './auth-hero.png';
+import authHero from './auth-hero.webp';
 
 // Dashboard
-import dashboardAmbientBg from './dashboard-ambient-bg.png';
+import dashboardAmbientBg from './dashboard-ambient-bg.webp';
 
 // Empty states
-import emptyNoData from './empty-no-data.png';
-import emptyNoResults from './empty-no-results.png';
-import emptyNoOrders from './empty-no-orders.png';
+import emptyNoData from './empty-no-data.webp';
+import emptyNoResults from './empty-no-results.webp';
+import emptyNoOrders from './empty-no-orders.webp';
 
 // Errors
-import error403 from './error-403.png';
-import error404 from './error-404.png';
-import error500 from './error-500.png';
+import error403 from './error-403.webp';
+import error404 from './error-404.webp';
+import error500 from './error-500.webp';
 
 // Tablet
-import tabletIdleWelcome from './tablet-idle-welcome.png';
+import tabletIdleWelcome from './tablet-idle-welcome.webp';
 
 export const illustrations = {
   authHero,
