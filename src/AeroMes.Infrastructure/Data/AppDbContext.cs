@@ -610,7 +610,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.ToTable("DowntimeLogs", "prod");
             e.HasKey(x => x.DowntimeLogID);
             e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
-            e.Property(x => x.ReasonCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ReasonCode).HasMaxLength(30).IsRequired();
             e.Property(x => x.ReasonName).HasMaxLength(150);
             e.Property(x => x.OperatorID).HasMaxLength(50);
             e.Property(x => x.Notes).HasMaxLength(255);
