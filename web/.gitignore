@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# orval-generated API hooks (regenerated from OpenAPI spec — never hand-edit)
+src/api/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
