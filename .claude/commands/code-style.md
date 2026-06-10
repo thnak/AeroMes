@@ -1,3 +1,11 @@
+---
+description: AeroMes coding standards and architecture reference (.NET 10 / C# 13). Apply before writing or modifying any C# code — covers solution structure, CQRS patterns, EF Core config, error handling, Identity, and cold-start/AOT rules.
+---
+
+Apply the full AeroMes coding standards to the current task. The complete reference is below.
+
+---
+
 # Code Style & Architecture Standards — AeroMes (.NET 10)
 
 This document defines the folder structure, coding standards, CQRS design, EF Core configuration, Identity, error handling, and cold-start patterns for the AeroMes MES project on .NET 10 / C# 13.
@@ -140,7 +148,6 @@ Commands/
 ### 4.1. JSON columns for dynamic attributes
 
 ```csharp
-// Domain entity
 public class Machine : AuditableEntity
 {
     public required string MachineCode { get; set; }
@@ -170,9 +177,7 @@ public class MachineConfiguration : IEntityTypeConfiguration<Machine>
     {
         builder.ToTable("Machines", "master");
         builder.HasKey(m => m.MachineCode);
-
         builder.OwnsOne(m => m.CustomAttributes, nav => nav.ToJson());
-
         builder.HasQueryFilter(m => !m.IsDeleted);
     }
 }
@@ -240,14 +245,10 @@ Dual-scheme authentication: **Cookie** (Web UI) + **JWT Bearer** (PDA / API clie
 
 ## 7. Complete Blueprint — SubmitOutput Use Case
 
-A working end-to-end example: recording OK/NG output from a PDA device.
-
 ### 7.1. Command & Result
 
 ```csharp
 // AeroMes.Application/Production/Commands/SubmitOutput/SubmitOutputCommand.cs
-using MediatR;
-
 namespace AeroMes.Application.Production.Commands.SubmitOutput;
 
 public record SubmitOutputCommand(
@@ -261,16 +262,12 @@ public record SubmitOutputCommand(
     List<DefectEntry> Defects) : IRequest<SubmitOutputResult>;
 
 public record DefectEntry(string DefectCode, int Qty);
-
 public record SubmitOutputResult(long LogId, int WorkOrderOK, int WorkOrderNG, bool IsDuplicate = false);
 ```
 
 ### 7.2. Validator
 
 ```csharp
-// AeroMes.Application/Production/Commands/SubmitOutput/SubmitOutputValidator.cs
-using FluentValidation;
-
 namespace AeroMes.Application.Production.Commands.SubmitOutput;
 
 public class SubmitOutputValidator : AbstractValidator<SubmitOutputCommand>
@@ -308,12 +305,6 @@ public class SubmitOutputValidator : AbstractValidator<SubmitOutputCommand>
 ### 7.3. Handler
 
 ```csharp
-// AeroMes.Application/Production/Commands/SubmitOutput/SubmitOutputHandler.cs
-using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
-using AeroMes.Domain.Production;
-using MediatR;
-
 namespace AeroMes.Application.Production.Commands.SubmitOutput;
 
 public class SubmitOutputHandler(
@@ -326,7 +317,6 @@ public class SubmitOutputHandler(
 {
     public async Task<SubmitOutputResult> Handle(SubmitOutputCommand cmd, CancellationToken ct)
     {
-        // Idempotency guard
         if (cmd.IdempotencyKey is not null &&
             await productionLogRepo.ExistsByIdempotencyKeyAsync(cmd.IdempotencyKey, ct))
             return new SubmitOutputResult(-1, -1, -1, IsDuplicate: true);
@@ -397,17 +387,9 @@ public record ProductListItem(string ProductCode, string ProductName);
 
 ### 8.2. JSON source generator
 
-Every type used in an API response **must** be registered in a `JsonSerializerContext`. Single file at `AeroMes.Api/Serialization/AeroMesJsonContext.cs`:
+Every type used in an API response **must** be registered in `AeroMes.Api/Serialization/AeroMesJsonContext.cs`:
 
 ```csharp
-// AeroMes.Api/Serialization/AeroMesJsonContext.cs
-using System.Text.Json.Serialization;
-using AeroMes.Application.Common;
-using AeroMes.Application.Master.Queries.GetProducts;
-using Microsoft.AspNetCore.Mvc;
-
-namespace AeroMes.Api.Serialization;
-
 [JsonSerializable(typeof(ProblemDetails))]
 [JsonSerializable(typeof(ValidationProblemDetails))]
 [JsonSerializable(typeof(ApiResponse))]
@@ -428,7 +410,7 @@ builder.Services.AddControllers()
         opts.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, AeroMesJsonContext.Default));
 ```
 
-**Mandatory rule:** when creating a new endpoint, add `[JsonSerializable(typeof(ApiResponse<YourDto>))]` to `AeroMesJsonContext` in the same PR.
+**Mandatory:** when creating a new endpoint, add `[JsonSerializable(typeof(ApiResponse<YourDto>))]` to `AeroMesJsonContext` in the same PR.
 
 ### 8.3. No reflection in application code
 
@@ -437,21 +419,12 @@ builder.Services.AddControllers()
 | `dynamic` | Explicit type or generic |
 | `Activator.CreateInstance(type)` | Factory method / DI |
 | `Type.GetProperties()` / `PropertyInfo` | Not needed — use record constructor |
-| AutoMapper (reflection-based) | Explicit mapping in a static method or primary constructor |
+| AutoMapper (reflection-based) | Explicit mapping in a static extension method |
 | `Enum.GetName(value)` in hot path | Pre-built `static readonly Dictionary<TEnum, string>` |
-
-```csharp
-// ❌ WRONG — AutoMapper reflection
-CreateMap<Product, ProductDto>();
-
-// ✓ CORRECT — explicit static mapping
-public static ProductDto ToDto(this Product p) =>
-    new(p.ProductCode, p.ProductName, p.IsActive);
-```
 
 ### 8.4. Extension method mapping instead of AutoMapper
 
-All Entity → DTO mappings use an extension method co-located with the DTO file:
+All Entity → DTO mappings use a static extension method co-located with the DTO:
 
 ```csharp
 // AeroMes.Application/Master/Queries/GetProducts/ProductListItem.cs

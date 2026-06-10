@@ -2,7 +2,7 @@
 
 ## Coding standards
 
-All code must follow **[code-style.md](./code-style.md)**. Read it before writing any new feature or modifying existing code. Key points:
+All code must follow the **`/code-style`** slash command (`.claude/commands/code-style.md`). Run it before writing any new feature or modifying existing code. Key points:
 
 - Project prefix is `AeroMes.*` — never `Mes.*`.
 - Host layer is `AeroMes.Api`, not `Mes.Web`.
