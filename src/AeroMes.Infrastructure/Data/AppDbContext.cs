@@ -49,6 +49,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<MachineProductConfig> MachineProductConfigs => Set<MachineProductConfig>();
     public DbSet<AlertThreshold> AlertThresholds => Set<AlertThreshold>();
     public DbSet<WorkOrderAutoRules> WorkOrderAutoRules => Set<WorkOrderAutoRules>();
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<ApprovedVendorItem> ApprovedVendorItems => Set<ApprovedVendorItem>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -569,6 +571,52 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .WithMany()
                 .HasForeignKey(x => x.WorkShiftId)
                 .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<Supplier>(e =>
+        {
+            e.ToTable("Suppliers", "master");
+            e.HasKey(x => x.SupplierCode);
+            e.Property(x => x.SupplierCode).HasMaxLength(30).ValueGeneratedNever();
+            e.Property(x => x.SupplierName).HasMaxLength(150).IsRequired();
+            e.Property(x => x.Country).HasMaxLength(50);
+            e.Property(x => x.City).HasMaxLength(100);
+            e.Property(x => x.Address).HasMaxLength(300);
+            e.Property(x => x.Phone).HasMaxLength(30);
+            e.Property(x => x.Email).HasMaxLength(100);
+            e.Property(x => x.ContactName).HasMaxLength(150);
+            e.Property(x => x.TaxCode).HasMaxLength(20);
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasMany(x => x.AvlItems)
+                .WithOne()
+                .HasForeignKey(x => x.SupplierCode)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.AvlItems)
+                .HasField("_avlItems")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<ApprovedVendorItem>(e =>
+        {
+            e.ToTable("ApprovedVendorList", "master");
+            e.HasKey(x => x.AvlItemId);
+            e.Property(x => x.SupplierCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.UnitPrice).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.CurrencyCode).HasMaxLength(10);
+            e.Property(x => x.MinOrderQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.AqlLevel).HasMaxLength(20);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.ApprovedFrom).HasColumnType("date");
+            e.Property(x => x.ApprovedTo).HasColumnType("date");
+            e.HasIndex(x => new { x.SupplierCode, x.ProductCode }).IsUnique();
+
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

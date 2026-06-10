@@ -44,6 +44,7 @@ public static class DependencyInjection
         services.AddScoped<IBomItemRepository, BomItemRepository>();
         services.AddScoped<IStorageLocationRepository, StorageLocationRepository>();
         services.AddScoped<IRoutingRepository, RoutingRepository>();
+        services.AddScoped<ISupplierRepository, SupplierRepository>();
 
         // integration repositories
         services.AddScoped<IProductionOrderRepository, ProductionOrderRepository>();
