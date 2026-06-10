@@ -73,6 +73,20 @@ public class AuthController(
             return Unauthorized(new { message = "Account is disabled." });
         }
 
+        // MFA gate — if the user has 2FA enabled, issue a short-lived pending token
+        // instead of the full access token. The client must call POST /mfa/verify.
+        if (user.TwoFactorEnabled)
+        {
+            var mfaToken = tokenService.CreateMfaPendingToken(user.Id, user.Email!);
+            auditLogger.Log(new SecurityAuditEvent
+            {
+                EventType = AuditEventTypes.AuthLoginSuccess,
+                ActorId = user.Id, ActorType = "USER",
+                ActorIp = ip, ActorUserAgent = ua,
+            });
+            return Ok(new { requiresMfa = true, mfaToken });
+        }
+
         var roles = await userManager.GetRolesAsync(user);
         var accessToken = tokenService.CreateToken(user.Id, user.Email!, roles, user.DefaultWorkCenterId);
 

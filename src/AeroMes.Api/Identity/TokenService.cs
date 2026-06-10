@@ -1,5 +1,4 @@
 using AeroMes.Application.Interfaces;
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -9,12 +8,10 @@ namespace AeroMes.Api.Identity;
 
 public class TokenService(IConfiguration configuration) : ITokenService
 {
-    public string CreateToken(string userId, string email, IEnumerable<string> roles, int? workCenterId = null)
+    public string CreateToken(
+        string userId, string email, IEnumerable<string> roles,
+        int? workCenterId = null, bool mfaVerified = false)
     {
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(configuration["Jwt:Key"]
-                ?? throw new InvalidOperationException("Jwt:Key is not configured.")));
-
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, userId),
@@ -26,7 +23,31 @@ public class TokenService(IConfiguration configuration) : ITokenService
         if (workCenterId.HasValue)
             claims.Add(new Claim("wc_scope", workCenterId.Value.ToString()));
 
-        var expiryMinutes = int.TryParse(configuration["Jwt:ExpiryMinutes"], out var m) ? m : 480;
+        if (mfaVerified)
+            claims.Add(new Claim("mfa_verified", "true"));
+
+        var expiryMinutes = int.TryParse(configuration["Jwt:ExpiryMinutes"], out var m) ? m : 15;
+        return BuildToken(claims, expiryMinutes);
+    }
+
+    public string CreateMfaPendingToken(string userId, string email)
+    {
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, userId),
+            new(JwtRegisteredClaimNames.Email, email),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new("mfa_pending", "true"),
+        };
+        return BuildToken(claims, expiryMinutes: 5);
+    }
+
+    private string BuildToken(IEnumerable<Claim> claims, int expiryMinutes)
+    {
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(configuration["Jwt:Key"]
+                ?? throw new InvalidOperationException("Jwt:Key is not configured.")));
+
         var token = new JwtSecurityToken(
             issuer: configuration["Jwt:Issuer"],
             audience: configuration["Jwt:Audience"],

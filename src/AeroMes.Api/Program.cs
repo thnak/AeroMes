@@ -119,6 +119,7 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<ForcePasswordChangeMiddleware>();
+app.UseMiddleware<MfaEnforcementMiddleware>();
 app.MapControllers();
 
 app.Run();

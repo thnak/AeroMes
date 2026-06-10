@@ -17,6 +17,7 @@ namespace AeroMes.Infrastructure.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options, IPublisher publisher)
     : IdentityDbContext<ApplicationUser>(options), IUnitOfWork
 {
+
     // auth schema
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
@@ -173,6 +174,24 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IPublisher pub
             e.HasIndex(x => new { x.TargetType, x.TargetId, x.OccurredAt });
             // Append-only: prevent EF from generating UPDATE/DELETE for this entity
             e.ToTable(t => t.ExcludeFromMigrations(false));
+        });
+
+        // Passkey (WebAuthn) — IdentityUserPasskey<TKey> is not auto-discovered; must be configured manually
+        b.Entity<IdentityUserPasskey<string>>(e =>
+        {
+            e.ToTable("AspNetUserPasskeys");
+            e.HasKey(x => new { x.UserId, x.CredentialId });
+            e.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+            e.Property(x => x.CredentialId).IsRequired();
+            e.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.OwnsOne(x => x.Data, d =>
+            {
+                d.ToJson();
+                d.Property(p => p.Name).HasMaxLength(200);
+            });
         });
     }
 

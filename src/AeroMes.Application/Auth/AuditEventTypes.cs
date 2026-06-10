@@ -9,6 +9,11 @@ public static class AuditEventTypes
     public const string AuthTokenReuseAttack = "AUTH_TOKEN_REUSE_ATTACK";
     public const string AuthMfaSuccess = "AUTH_MFA_SUCCESS";
     public const string AuthMfaFailure = "AUTH_MFA_FAILURE";
+    public const string AuthMfaSetup = "AUTH_MFA_SETUP";
+    public const string AuthMfaDisabled = "AUTH_MFA_DISABLED";
+    public const string AuthPasskeyRegistered = "AUTH_PASSKEY_REGISTERED";
+    public const string AuthPasskeyLogin = "AUTH_PASSKEY_LOGIN";
+    public const string AuthPasskeyRemoved = "AUTH_PASSKEY_REMOVED";
     public const string AuthPasswordChanged = "AUTH_PASSWORD_CHANGED";
 
     public const string UserCreated = "USER_CREATED";

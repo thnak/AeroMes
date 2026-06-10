@@ -40,3 +40,11 @@ web/                     ← Vite + React frontend
 - No comments unless the WHY is non-obvious.
 - No `Result<T>` — throw domain exceptions instead.
 - Vietnamese log/error messages are acceptable; English preferred for code identifiers.
+
+## Cold-start & serialization (reduce reflection at startup)
+
+- **No anonymous types** in LINQ projections, Handler return values, or anywhere a type crosses a method boundary. Use named `record` types.
+- **JSON source generators required** for all API response types. Every new DTO/response record must be registered in `AeroMes.Api/Serialization/AeroMesJsonContext.cs` with `[JsonSerializable(typeof(T))]`.
+- **No `dynamic`, no `Activator.CreateInstance`, no `Type.GetProperties()`** in application code.
+- **No AutoMapper** — use explicit constructor-based mapping or `record` copy expressions.
+- See **Section 8** in `code-style.md` for patterns and examples.

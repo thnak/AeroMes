@@ -65,6 +65,16 @@ public static class DependencyInjection
         .AddSignInManager()
         .AddDefaultTokenProviders();
 
+        // Passkey (WebAuthn) — .NET 10 built-in, no AddPasskeys() extension needed
+        services.Configure<IdentityPasskeyOptions>(opts =>
+        {
+            opts.ServerDomain = configuration["Auth:PasskeyServerDomain"] ?? "localhost";
+            var allowedOrigins = configuration.GetSection("Auth:PasskeyAllowedOrigins").Get<string[]>() ?? [];
+            opts.ValidateOrigin = ctx => ValueTask.FromResult(
+                allowedOrigins.Contains(ctx.Origin, StringComparer.OrdinalIgnoreCase));
+        });
+        services.AddScoped<IPasskeyHandler<ApplicationUser>, PasskeyHandler<ApplicationUser>>();
+
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<DatabaseSeeder>();
 

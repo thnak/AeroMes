@@ -11,6 +11,8 @@ public class ForcePasswordChangeMiddleware(RequestDelegate next)
         "/api/v1/auth/logout",
         "/api/v1/auth/refresh",
         "/api/v1/auth/me",
+        "/api/v1/auth/mfa/",
+        "/api/v1/auth/passkey/",
     ];
 
     public async Task InvokeAsync(HttpContext ctx, UserManager<ApplicationUser> userManager)
