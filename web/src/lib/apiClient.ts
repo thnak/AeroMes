@@ -43,11 +43,16 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    // 403 PasswordChangeRequired gate
+    // 403 gates — redirect to the appropriate recovery page
     if (error.response?.status === 403) {
       const data = error.response.data as ApiError | undefined;
       if (data?.code === 'PasswordChangeRequired') {
         window.location.href = '/auth/change-password';
+        return Promise.reject(error);
+      }
+      if (data?.code === 'MFA_REQUIRED') {
+        localStorage.removeItem('accessToken');
+        window.location.href = '/auth/login';
         return Promise.reject(error);
       }
     }
