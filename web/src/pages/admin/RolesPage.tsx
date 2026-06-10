@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -119,11 +119,22 @@ interface RightPanelProps {
 
 function RightPanel({ selectedRole }: RightPanelProps) {
   const queryClient = useQueryClient();
-  const [pendingPermCodes, setPendingPermCodes] = useState<Set<string>>(new Set());
+  // null = "use server data"; non-null = user has made local edits
+  const [localOverride, setLocalOverride] = useState<Set<string> | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const roleId = selectedRole?.id ?? '';
+
+  // Reset local state when the selected role changes (render-time state update
+  // avoids the setState-in-effect lint error and is the React-recommended pattern).
+  const prevRoleIdRef = useRef(roleId);
+  if (prevRoleIdRef.current !== roleId) {
+    prevRoleIdRef.current = roleId;
+    setLocalOverride(null);
+    setSaveError(null);
+    setSaveSuccess(false);
+  }
 
   const {
     data: rolePermissions,
@@ -135,17 +146,12 @@ function RightPanel({ selectedRole }: RightPanelProps) {
 
   const { data: allPermissions, isLoading: loadingAllPerms } = useGetApiV1AuthPermissions();
 
-  useEffect(() => {
-    if (rolePermissions) {
-      setPendingPermCodes(
-        new Set(rolePermissions.map((p) => p.permissionCode ?? '').filter(Boolean)),
-      );
-    } else {
-      setPendingPermCodes(new Set());
-    }
-    setSaveError(null);
-    setSaveSuccess(false);
-  }, [rolePermissions, roleId]);
+  const serverCodes = useMemo(
+    () => new Set((rolePermissions ?? []).map((p) => p.permissionCode ?? '').filter(Boolean)),
+    [rolePermissions],
+  );
+
+  const pendingPermCodes = localOverride ?? serverCodes;
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -153,6 +159,7 @@ function RightPanel({ selectedRole }: RightPanelProps) {
     onSuccess: () => {
       setSaveError(null);
       setSaveSuccess(true);
+      setLocalOverride(null);
       void queryClient.invalidateQueries({
         queryKey: getGetApiV1RolesIdPermissionsQueryKey(roleId),
       });
@@ -165,8 +172,9 @@ function RightPanel({ selectedRole }: RightPanelProps) {
   });
 
   const handleToggle = (code: string) => {
-    setPendingPermCodes((prev) => {
-      const next = new Set(prev);
+    setLocalOverride((prev) => {
+      const base = prev ?? serverCodes;
+      const next = new Set(base);
       if (next.has(code)) {
         next.delete(code);
       } else {
