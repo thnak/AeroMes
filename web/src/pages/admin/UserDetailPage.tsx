@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
-import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -202,57 +202,46 @@ export default function UserDetailPage() {
 
   // ── Local UI state ────────────────────────────────────────────────────────
   const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  // pendingRoles: null = use server value; array = user has unsaved changes
+  const [pendingRoles, setPendingRoles] = useState<string[] | null>(null);
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [mfaDialogOpen, setMfaDialogOpen] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
 
-  // ── Permission overrides state ────────────────────────────────────────────
-  const [overrides, setOverrides] = useState<PermissionOverrideDto[]>([]);
-  const [overridesLoading, setOverridesLoading] = useState(false);
+  // ── Permission overrides (React Query) ───────────────────────────────────
+  const {
+    data: overridesData,
+    isLoading: overridesLoading,
+    refetch: refetchOverrides,
+  } = useQuery({
+    queryKey: ['userOverrides', id],
+    queryFn: () => api.get<PermissionOverrideDto[]>(`/api/v1/users/${id}/permissions/overrides`),
+    enabled: !!id,
+  });
+  const overrides = overridesData ?? [];
+
   const [addOverrideOpen, setAddOverrideOpen] = useState(false);
   const [addOverrideCode, setAddOverrideCode] = useState('');
   const [addOverrideEffect, setAddOverrideEffect] = useState<'Grant' | 'Deny'>('Grant');
   const [addOverrideSubmitting, setAddOverrideSubmitting] = useState(false);
 
-  // ── Sessions state ────────────────────────────────────────────────────────
-  const [sessions, setSessions] = useState<SessionDto[]>([]);
-  const [sessionsLoading, setSessionsLoading] = useState(false);
+  // ── Sessions (React Query) ────────────────────────────────────────────────
+  const {
+    data: sessionsData,
+    isLoading: sessionsLoading,
+    refetch: refetchSessions,
+  } = useQuery({
+    queryKey: ['userSessions', id],
+    queryFn: () => api.get<SessionDto[]>(`/api/v1/users/${id}/sessions`),
+    enabled: !!id,
+  });
+  const sessions = sessionsData ?? [];
+
   const [revokeAllSessionsLoading, setRevokeAllSessionsLoading] = useState(false);
   const [revokeAllOpen, setRevokeAllOpen] = useState(false);
 
-  const fetchOverrides = useCallback(async () => {
-    if (!id) return;
-    setOverridesLoading(true);
-    try {
-      const data = await api.get<PermissionOverrideDto[]>(`/api/v1/users/${id}/permissions/overrides`);
-      setOverrides(data);
-    } catch {
-      // silently fail — not critical
-    } finally {
-      setOverridesLoading(false);
-    }
-  }, [id]);
-
-  const fetchSessions = useCallback(async () => {
-    if (!id) return;
-    setSessionsLoading(true);
-    try {
-      const data = await api.get<SessionDto[]>(`/api/v1/users/${id}/sessions`);
-      setSessions(data);
-    } catch {
-      // silently fail
-    } finally {
-      setSessionsLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    if (id) {
-      void fetchOverrides();
-      void fetchSessions();
-    }
-  }, [id, fetchOverrides, fetchSessions]);
+  // Derive selected roles: use pending edits when present, fall back to server value
+  const selectedRoles = pendingRoles ?? user?.roles ?? [];
 
   // ── Profile form ──────────────────────────────────────────────────────────
   const {
@@ -279,7 +268,6 @@ export default function UserDetailPage() {
         employeeCode: user.employeeCode ?? '',
         preferredLanguage: (user.preferredLanguage as 'en' | 'vi' | '' | null) ?? '',
       });
-      setSelectedRoles(user.roles ?? []);
     }
   }, [user, reset]);
 
@@ -317,6 +305,7 @@ export default function UserDetailPage() {
     mutationFn: (req: SetRolesRequest) => postApiV1UsersIdRoles(id ?? '', req),
     onSuccess: () => {
       setSnackbar({ message: 'Roles updated successfully.', severity: 'success' });
+      setPendingRoles(null);
       invalidateUser();
     },
     onError: (err) => {
@@ -325,8 +314,9 @@ export default function UserDetailPage() {
   });
 
   function handleRoleToggle(roleName: string) {
-    setSelectedRoles((prev) =>
-      prev.includes(roleName) ? prev.filter((r) => r !== roleName) : [...prev, roleName],
+    const current = pendingRoles ?? user?.roles ?? [];
+    setPendingRoles(
+      current.includes(roleName) ? current.filter((r) => r !== roleName) : [...current, roleName],
     );
   }
 
@@ -348,7 +338,7 @@ export default function UserDetailPage() {
       setAddOverrideOpen(false);
       setAddOverrideCode('');
       setAddOverrideEffect('Grant');
-      await fetchOverrides();
+      await refetchOverrides();
     } catch (err) {
       setSnackbar({ message: getErrorMessage(err, 'Failed to add override.'), severity: 'error' });
     } finally {
@@ -361,7 +351,7 @@ export default function UserDetailPage() {
     try {
       await api.delete(`/api/v1/users/${id}/permissions/override/${overrideId}`);
       setSnackbar({ message: 'Override removed.', severity: 'success' });
-      setOverrides((prev) => prev.filter((o) => o.overrideId !== overrideId));
+      await refetchOverrides();
     } catch (err) {
       setSnackbar({ message: getErrorMessage(err, 'Failed to remove override.'), severity: 'error' });
     }
@@ -373,7 +363,7 @@ export default function UserDetailPage() {
     try {
       await api.delete(`/api/v1/users/${id}/sessions/${tokenId}`);
       setSnackbar({ message: 'Session revoked.', severity: 'success' });
-      setSessions((prev) => prev.filter((s) => s.tokenId !== tokenId));
+      await refetchSessions();
     } catch (err) {
       setSnackbar({ message: getErrorMessage(err, 'Failed to revoke session.'), severity: 'error' });
     }
@@ -386,7 +376,7 @@ export default function UserDetailPage() {
       await api.post(`/api/v1/users/${id}/sessions/revoke-all`);
       setSnackbar({ message: 'All sessions revoked.', severity: 'success' });
       setRevokeAllOpen(false);
-      setSessions([]);
+      await refetchSessions();
     } catch (err) {
       setSnackbar({ message: getErrorMessage(err, 'Failed to revoke all sessions.'), severity: 'error' });
     } finally {
