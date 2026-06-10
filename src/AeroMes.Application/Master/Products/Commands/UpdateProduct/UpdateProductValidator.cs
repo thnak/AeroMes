@@ -5,26 +5,35 @@ namespace AeroMes.Application.Master.Products.Commands.UpdateProduct;
 
 public class UpdateProductValidator : AbstractValidator<UpdateProductCommand>
 {
-    public UpdateProductValidator(IProductRepository repo)
+    public UpdateProductValidator(IProductRepository repo, IUnitOfMeasureRepository uomRepo)
     {
         RuleFor(x => x.Code)
-            .NotEmpty().WithMessage("Code is required.")
+            .NotEmpty()
             .MustAsync(async (code, ct) => await repo.ExistsAsync(code, ct))
             .WithMessage(x => $"Product '{x.Code}' does not exist.");
 
         RuleFor(x => x.Name)
-            .NotEmpty().WithMessage("Name is required.")
-            .MaximumLength(150).WithMessage("Name must be at most 150 characters.");
+            .NotEmpty()
+            .MaximumLength(200);
 
-        RuleFor(x => x.Unit)
-            .NotEmpty().WithMessage("Unit is required.")
-            .MaximumLength(20).WithMessage("Unit must be at most 20 characters.");
+        RuleFor(x => x.BaseUoMCode)
+            .NotEmpty()
+            .MaximumLength(20)
+            .MustAsync(async (code, ct) => await uomRepo.CodeExistsAsync(code, ct))
+            .WithMessage(x => $"UoM '{x.BaseUoMCode}' not found.");
 
-        RuleFor(x => x.BarcodePattern)
-            .MaximumLength(200).WithMessage("BarcodePattern must be at most 200 characters.")
-            .When(x => x.BarcodePattern is not null);
+        RuleFor(x => x.PurchaseToBaseQty)
+            .GreaterThan(0);
+
+        RuleFor(x => x.ShelfLifeDays)
+            .GreaterThan(0).When(x => x.ShelfLifeDays.HasValue);
+
+        RuleFor(x => x.EffectiveTo)
+            .GreaterThan(x => x.EffectiveFrom)
+            .When(x => x.EffectiveFrom.HasValue && x.EffectiveTo.HasValue)
+            .WithMessage("EffectiveTo must be after EffectiveFrom.");
 
         RuleFor(x => x.UpdatedBy)
-            .NotEmpty().WithMessage("UpdatedBy is required.");
+            .NotEmpty();
     }
 }

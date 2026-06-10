@@ -29,6 +29,8 @@ public static class DependencyInjection
         // master repositories
         services.AddScoped<IWorkCenterRepository, WorkCenterRepository>();
         services.AddScoped<IMachineRepository, MachineRepository>();
+        services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
+        services.AddScoped<IUnitOfMeasureRepository, UnitOfMeasureRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IOperationRepository, OperationRepository>();
         services.AddScoped<IBomItemRepository, BomItemRepository>();

@@ -30,6 +30,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     // master schema
     public DbSet<WorkCenter> WorkCenters => Set<WorkCenter>();
     public DbSet<Machine> Machines => Set<Machine>();
+    public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
+    public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<BomItem> BomItems => Set<BomItem>();
     public DbSet<Operation> Operations => Set<Operation>();
@@ -254,15 +256,77 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.HasQueryFilter(x => !x.IsDeleted);
         });
 
+        b.Entity<ProductCategory>(e =>
+        {
+            e.ToTable("ProductCategories", "master");
+            e.HasKey(x => x.CategoryId);
+            e.Property(x => x.CategoryCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.CategoryName).HasMaxLength(100).IsRequired();
+            e.HasIndex(x => x.CategoryCode).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne(x => x.Parent)
+                .WithMany(x => x.Children)
+                .HasForeignKey(x => x.ParentId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.Navigation(x => x.Children)
+                .HasField("_children")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<UnitOfMeasure>(e =>
+        {
+            e.ToTable("UnitsOfMeasure", "master");
+            e.HasKey(x => x.UoMCode);
+            e.Property(x => x.UoMCode).HasMaxLength(20).ValueGeneratedNever();
+            e.Property(x => x.UoMName).HasMaxLength(50).IsRequired();
+            e.Property(x => x.UoMGroup).HasMaxLength(20).IsRequired();
+        });
+
         b.Entity<Product>(e =>
         {
             e.ToTable("Products", "master");
             e.HasKey(x => x.ProductCode);
             e.Property(x => x.ProductCode).HasMaxLength(50).ValueGeneratedNever();
             e.Property(x => x.ProductName).HasMaxLength(200).IsRequired();
-            e.Property(x => x.ProductUnit).HasMaxLength(20).IsRequired();
-            e.Property(x => x.BarcodePattern).HasMaxLength(100);
+            e.Property(x => x.BarcodePattern).HasMaxLength(200);
+            e.Property(x => x.ItemType).HasConversion<string>().HasMaxLength(10).IsRequired();
+            e.Property(x => x.BaseUoMCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.PurchaseUoMCode).HasMaxLength(20);
+            e.Property(x => x.PurchaseToBaseQty).HasColumnType("NUMERIC(18,6)");
+            e.Property(x => x.NetWeight).HasColumnType("NUMERIC(10,4)");
+            e.Property(x => x.GrossWeight).HasColumnType("NUMERIC(10,4)");
+            e.Property(x => x.Length).HasColumnType("NUMERIC(10,2)");
+            e.Property(x => x.Width).HasColumnType("NUMERIC(10,2)");
+            e.Property(x => x.Height).HasColumnType("NUMERIC(10,2)");
+            e.Property(x => x.ReorderPoint).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.SafetyStock).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.ProcurementType).HasConversion<string>().HasMaxLength(10);
+            e.Property(x => x.LifecycleStatus).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.EffectiveFrom).HasColumnType("date");
+            e.Property(x => x.EffectiveTo).HasColumnType("date");
+            e.Property(x => x.CustomerPartNo).HasMaxLength(100);
+            e.Property(x => x.DrawingNo).HasMaxLength(100);
+            e.Property(x => x.Revision).HasMaxLength(10);
+            e.Property(x => x.ImageUrl).HasMaxLength(500);
+            e.Property(x => x.ThumbnailUrl).HasMaxLength(500);
             e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne(x => x.Category)
+                .WithMany()
+                .HasForeignKey(x => x.CategoryId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<UnitOfMeasure>()
+                .WithMany()
+                .HasForeignKey(x => x.BaseUoMCode)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<UnitOfMeasure>()
+                .WithMany()
+                .HasForeignKey(x => x.PurchaseUoMCode)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         b.Entity<BomItem>(e =>
