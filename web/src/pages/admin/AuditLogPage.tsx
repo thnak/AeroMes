@@ -3,13 +3,19 @@ import {
   Box,
   Button,
   Chip,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Divider,
   FormControl,
+  IconButton,
   InputLabel,
   MenuItem,
   Paper,
   Select,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -18,6 +24,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import dayjs, { type Dayjs } from 'dayjs';
+import { Icon } from '@iconify/react';
 import PageHeader, { PageRoot } from '../../components/PageHeader';
 import { useGetApiV1AuditLog } from '../../api/audit-log/audit-log';
 import type { SecurityAuditLog } from '../../api/model/securityAuditLog';
@@ -52,6 +59,8 @@ const TARGET_TYPE_OPTIONS = [
   'MfaDevice',
 ] as const;
 
+const OUTCOME_OPTIONS = ['SUCCESS', 'FAILURE'] as const;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getEventTypeColor(
@@ -83,78 +92,269 @@ function buildExportUrl(from?: string, to?: string): string {
   return `${base}/v1/audit-log/export${qs ? `?${qs}` : ''}`;
 }
 
+function formatJson(raw: string | null | undefined): string {
+  if (!raw) return '';
+  try {
+    return JSON.stringify(JSON.parse(raw), null, 2);
+  } catch {
+    return raw;
+  }
+}
+
+// ─── Detail dialog ────────────────────────────────────────────────────────────
+
+interface DetailDialogProps {
+  row: SecurityAuditLog | null;
+  onClose: () => void;
+}
+
+function DetailDialog({ row, onClose }: DetailDialogProps) {
+  if (!row) return null;
+
+  const hasChanges = row.oldValues || row.newValues;
+
+  return (
+    <Dialog open onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography variant="h6">Audit Entry Detail</Typography>
+        <IconButton size="small" onClick={onClose}>
+          <Icon icon="solar:close-circle-linear" width={20} />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
+        <Stack spacing={2}>
+          {/* Meta row */}
+          <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
+            <Box>
+              <Typography variant="caption" color="text.secondary">Audit ID</Typography>
+              <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                {row.auditId ?? '—'}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary">Occurred At</Typography>
+              <Typography variant="body2">
+                {row.occurredAt ? dayjs(row.occurredAt).format('MMM D, YYYY HH:mm:ss') : '—'}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary">Outcome</Typography>
+              <Box sx={{ mt: 0.25 }}>
+                <Chip
+                  label={row.outcome ?? '—'}
+                  color={getOutcomeColor(row.outcome)}
+                  size="small"
+                />
+              </Box>
+            </Box>
+          </Stack>
+
+          <Divider />
+
+          {/* Event */}
+          <Box>
+            <Typography variant="caption" color="text.secondary">Event Type</Typography>
+            <Box sx={{ mt: 0.25 }}>
+              <Chip
+                label={
+                  <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                    {row.eventType ?? '—'}
+                  </Typography>
+                }
+                color={getEventTypeColor(row.eventType)}
+                size="small"
+                variant="outlined"
+              />
+            </Box>
+          </Box>
+
+          <Divider />
+
+          {/* Actor */}
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>Actor</Typography>
+            <Stack direction="row" spacing={3} sx={{ flexWrap: 'wrap' }}>
+              <Box>
+                <Typography variant="caption" color="text.secondary">Type</Typography>
+                <Typography variant="body2">{row.actorType ?? '—'}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">ID</Typography>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  {row.actorId ?? '—'}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">IP Address</Typography>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                  {row.actorIp ?? '—'}
+                </Typography>
+              </Box>
+            </Stack>
+            {row.actorUserAgent && (
+              <Box sx={{ mt: 1 }}>
+                <Typography variant="caption" color="text.secondary">User Agent</Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ wordBreak: 'break-all', color: 'text.secondary', fontSize: '0.75rem' }}
+                >
+                  {row.actorUserAgent}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+
+          {/* Target */}
+          {(row.targetType || row.targetId) && (
+            <>
+              <Divider />
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>Target</Typography>
+                <Stack direction="row" spacing={3}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Type</Typography>
+                    <Typography variant="body2">{row.targetType ?? '—'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">ID</Typography>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                      {row.targetId ?? '—'}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Box>
+            </>
+          )}
+
+          {/* Failure reason */}
+          {row.failureReason && (
+            <>
+              <Divider />
+              <Box>
+                <Typography variant="caption" color="text.secondary">Failure Reason</Typography>
+                <Typography variant="body2" color="error.main">
+                  {row.failureReason}
+                </Typography>
+              </Box>
+            </>
+          )}
+
+          {/* Old / New values */}
+          {hasChanges && (
+            <>
+              <Divider />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                {row.oldValues && (
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Old Values</Typography>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 1.5,
+                        bgcolor: 'error.50',
+                        borderColor: 'error.200',
+                        overflowX: 'auto',
+                      }}
+                    >
+                      <Typography
+                        component="pre"
+                        variant="caption"
+                        sx={{
+                          fontFamily: 'monospace',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-all',
+                          m: 0,
+                          color: 'text.primary',
+                        }}
+                      >
+                        {formatJson(row.oldValues)}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                )}
+                {row.newValues && (
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 0.5 }}>New Values</Typography>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 1.5,
+                        bgcolor: 'success.50',
+                        borderColor: 'success.200',
+                        overflowX: 'auto',
+                      }}
+                    >
+                      <Typography
+                        component="pre"
+                        variant="caption"
+                        sx={{
+                          fontFamily: 'monospace',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-all',
+                          m: 0,
+                          color: 'text.primary',
+                        }}
+                      >
+                        {formatJson(row.newValues)}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                )}
+              </Stack>
+            </>
+          )}
+        </Stack>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Column definitions ───────────────────────────────────────────────────────
 
-const columns: GridColDef<SecurityAuditLog>[] = [
-  {
-    field: 'occurredAt',
-    headerName: 'Occurred At',
-    width: 180,
-    valueFormatter: (value: string | undefined) =>
-      value ? dayjs(value).format('MMM D, YYYY HH:mm:ss') : '—',
-  },
-  {
-    field: 'eventType',
-    headerName: 'Event Type',
-    width: 220,
-    renderCell: ({ value }) => {
-      const color = getEventTypeColor(value as string | undefined);
-      return (
-        <Chip
-          label={
-            <Typography
-              component="span"
-              sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
-            >
-              {value ?? '—'}
-            </Typography>
-          }
-          color={color}
-          size="small"
-          variant="outlined"
-        />
-      );
+function buildColumns(onDetail: (row: SecurityAuditLog) => void): GridColDef<SecurityAuditLog>[] {
+  return [
+    {
+      field: 'occurredAt',
+      headerName: 'Occurred At',
+      width: 180,
+      valueFormatter: (value: string | undefined) =>
+        value ? dayjs(value).format('MMM D, YYYY HH:mm:ss') : '—',
     },
-  },
-  {
-    field: 'actor',
-    headerName: 'Actor',
-    width: 200,
-    sortable: false,
-    valueGetter: (_value: unknown, row: SecurityAuditLog) => {
-      const type = row.actorType ?? '';
-      const id = row.actorId ?? '';
-      if (!type && !id) return '—';
-      return `${type} / ${id}`;
+    {
+      field: 'eventType',
+      headerName: 'Event Type',
+      width: 220,
+      renderCell: ({ value }) => {
+        const color = getEventTypeColor(value as string | undefined);
+        return (
+          <Chip
+            label={
+              <Typography
+                component="span"
+                sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
+              >
+                {value ?? '—'}
+              </Typography>
+            }
+            color={color}
+            size="small"
+            variant="outlined"
+          />
+        );
+      },
     },
-    renderCell: ({ value }) => (
-      <Typography
-        variant="body2"
-        sx={{
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          maxWidth: '100%',
-        }}
-        title={value as string}
-      >
-        {value}
-      </Typography>
-    ),
-  },
-  {
-    field: 'target',
-    headerName: 'Target',
-    width: 200,
-    sortable: false,
-    valueGetter: (_value: unknown, row: SecurityAuditLog) => {
-      const type = row.targetType ?? '';
-      const id = row.targetId ?? '';
-      if (!type && !id) return '';
-      return `${type} / ${id}`;
-    },
-    renderCell: ({ value }) =>
-      value ? (
+    {
+      field: 'actor',
+      headerName: 'Actor',
+      width: 200,
+      sortable: false,
+      valueGetter: (_value: unknown, row: SecurityAuditLog) => {
+        const type = row.actorType ?? '';
+        const id = row.actorId ?? '';
+        if (!type && !id) return '—';
+        return `${type} / ${id}`;
+      },
+      renderCell: ({ value }) => (
         <Typography
           variant="body2"
           sx={{
@@ -167,49 +367,105 @@ const columns: GridColDef<SecurityAuditLog>[] = [
         >
           {value}
         </Typography>
-      ) : (
-        <Typography variant="body2" color="text.disabled">
-          —
+      ),
+    },
+    {
+      field: 'actorIp',
+      headerName: 'IP Address',
+      width: 140,
+      renderCell: ({ value }) => (
+        <Typography
+          variant="body2"
+          sx={{ fontFamily: 'monospace' }}
+          color={value ? 'text.primary' : 'text.disabled'}
+        >
+          {value ?? '—'}
         </Typography>
       ),
-  },
-  {
-    field: 'outcome',
-    headerName: 'Outcome',
-    width: 110,
-    renderCell: ({ value }) => {
-      const color = getOutcomeColor(value as string | undefined);
-      return value ? (
-        <Chip label={value} color={color} size="small" />
-      ) : (
-        <Typography variant="body2" color="text.disabled">
-          —
-        </Typography>
-      );
     },
-  },
-  {
-    field: 'failureReason',
-    headerName: 'Failure Reason',
-    flex: 1,
-    minWidth: 160,
-    renderCell: ({ value }) => (
-      <Typography
-        variant="body2"
-        color={value ? 'text.primary' : 'text.disabled'}
-        sx={{
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          maxWidth: '100%',
-        }}
-        title={value ?? undefined}
-      >
-        {value ?? '—'}
-      </Typography>
-    ),
-  },
-];
+    {
+      field: 'target',
+      headerName: 'Target',
+      width: 200,
+      sortable: false,
+      valueGetter: (_value: unknown, row: SecurityAuditLog) => {
+        const type = row.targetType ?? '';
+        const id = row.targetId ?? '';
+        if (!type && !id) return '';
+        return `${type} / ${id}`;
+      },
+      renderCell: ({ value }) =>
+        value ? (
+          <Typography
+            variant="body2"
+            sx={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              maxWidth: '100%',
+            }}
+            title={value as string}
+          >
+            {value}
+          </Typography>
+        ) : (
+          <Typography variant="body2" color="text.disabled">
+            —
+          </Typography>
+        ),
+    },
+    {
+      field: 'outcome',
+      headerName: 'Outcome',
+      width: 110,
+      renderCell: ({ value }) => {
+        const color = getOutcomeColor(value as string | undefined);
+        return value ? (
+          <Chip label={value} color={color} size="small" />
+        ) : (
+          <Typography variant="body2" color="text.disabled">
+            —
+          </Typography>
+        );
+      },
+    },
+    {
+      field: 'failureReason',
+      headerName: 'Failure Reason',
+      flex: 1,
+      minWidth: 160,
+      renderCell: ({ value }) => (
+        <Typography
+          variant="body2"
+          color={value ? 'text.primary' : 'text.disabled'}
+          sx={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '100%',
+          }}
+          title={value ?? undefined}
+        >
+          {value ?? '—'}
+        </Typography>
+      ),
+    },
+    {
+      field: '__detail',
+      headerName: '',
+      width: 48,
+      sortable: false,
+      disableColumnMenu: true,
+      renderCell: ({ row }) => (
+        <Tooltip title="View details">
+          <IconButton size="small" onClick={() => onDetail(row)}>
+            <Icon icon="solar:eye-linear" width={16} />
+          </IconButton>
+        </Tooltip>
+      ),
+    },
+  ];
+}
 
 // ─── Filter draft state ───────────────────────────────────────────────────────
 
@@ -219,6 +475,7 @@ interface FilterDraft {
   to: Dayjs | null;
   actorId: string;
   targetType: string;
+  outcome: string;
 }
 
 const DEFAULT_DRAFT: FilterDraft = {
@@ -227,6 +484,7 @@ const DEFAULT_DRAFT: FilterDraft = {
   to: null,
   actorId: '',
   targetType: '',
+  outcome: '',
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -241,6 +499,7 @@ export default function AuditLogPage() {
     page: 0,
     pageSize: 50,
   });
+  const [selectedRow, setSelectedRow] = useState<SecurityAuditLog | null>(null);
 
   const { data, isLoading, isError, error } = useGetApiV1AuditLog({
     ...filters,
@@ -261,6 +520,7 @@ export default function AuditLogPage() {
       to: draft.to ? draft.to.toISOString() : undefined,
       actorId: draft.actorId || undefined,
       targetType: draft.targetType || undefined,
+      outcome: draft.outcome || undefined,
     });
     setPaginationModel((prev) => ({ ...prev, page: 0 }));
   }
@@ -272,6 +532,7 @@ export default function AuditLogPage() {
   }
 
   const exportUrl = buildExportUrl(filters.from, filters.to);
+  const columns = buildColumns(setSelectedRow);
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -305,6 +566,27 @@ export default function AuditLogPage() {
                     <em>All</em>
                   </MenuItem>
                   {EVENT_TYPE_OPTIONS.map((opt) => (
+                    <MenuItem key={opt} value={opt}>
+                      {opt}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel id="audit-outcome-label">Outcome</InputLabel>
+                <Select
+                  labelId="audit-outcome-label"
+                  label="Outcome"
+                  value={draft.outcome}
+                  onChange={(e) =>
+                    setDraft((prev) => ({ ...prev, outcome: e.target.value }))
+                  }
+                >
+                  <MenuItem value="">
+                    <em>All</em>
+                  </MenuItem>
+                  {OUTCOME_OPTIONS.map((opt) => (
                     <MenuItem key={opt} value={opt}>
                       {opt}
                     </MenuItem>
@@ -413,6 +695,11 @@ export default function AuditLogPage() {
           />
         </Box>
       </PageRoot>
+
+      {/* ── Detail dialog ──────────────────────────────────────────────────── */}
+      {selectedRow && (
+        <DetailDialog row={selectedRow} onClose={() => setSelectedRow(null)} />
+      )}
     </LocalizationProvider>
   );
 }

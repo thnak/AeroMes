@@ -11,7 +11,7 @@ public class QueryAuditLogHandler(IAuditLogRepository repo)
     public async Task<PagedResult<SecurityAuditLog>> HandleAsync(QueryAuditLogQuery q, CancellationToken ct)
     {
         var (items, total) = await repo.QueryAsync(
-            q.ActorId, q.EventType, q.TargetType,
+            q.ActorId, q.EventType, q.TargetType, q.Outcome,
             q.From, q.To, q.Page, q.PageSize, ct);
 
         return new PagedResult<SecurityAuditLog>(items, total, q.Page, q.PageSize);

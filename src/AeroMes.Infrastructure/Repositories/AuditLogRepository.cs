@@ -8,7 +8,7 @@ namespace AeroMes.Infrastructure.Repositories;
 public class AuditLogRepository(AppDbContext db) : IAuditLogRepository
 {
     public async Task<(IReadOnlyList<SecurityAuditLog> Items, int Total)> QueryAsync(
-        string? actorId, string? eventType, string? targetType,
+        string? actorId, string? eventType, string? targetType, string? outcome,
         DateTime? from, DateTime? to, int page, int pageSize,
         CancellationToken ct = default)
     {
@@ -20,6 +20,8 @@ public class AuditLogRepository(AppDbContext db) : IAuditLogRepository
             query = query.Where(x => x.EventType == eventType);
         if (!string.IsNullOrWhiteSpace(targetType))
             query = query.Where(x => x.TargetType == targetType);
+        if (!string.IsNullOrWhiteSpace(outcome))
+            query = query.Where(x => x.Outcome == outcome);
         if (from.HasValue) query = query.Where(x => x.OccurredAt >= from.Value);
         if (to.HasValue) query = query.Where(x => x.OccurredAt <= to.Value);
 

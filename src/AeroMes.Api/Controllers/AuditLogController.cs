@@ -25,11 +25,12 @@ public class AuditLogController(IQueryMediator queryMediator) : ControllerBase
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to,
         [FromQuery] string? targetType,
+        [FromQuery] string? outcome,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
     {
         var result = await queryMediator.QueryAsync(
-            new QueryAuditLogQuery(actorId, eventType, targetType, from, to, page, pageSize));
+            new QueryAuditLogQuery(actorId, eventType, targetType, outcome, from, to, page, pageSize));
         return Ok(result);
     }
 

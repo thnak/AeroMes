@@ -5,7 +5,7 @@ namespace AeroMes.Application.Interfaces;
 public interface IAuditLogRepository
 {
     Task<(IReadOnlyList<SecurityAuditLog> Items, int Total)> QueryAsync(
-        string? actorId, string? eventType, string? targetType,
+        string? actorId, string? eventType, string? targetType, string? outcome,
         DateTime? from, DateTime? to, int page, int pageSize,
         CancellationToken ct = default);
 
