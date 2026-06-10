@@ -20,11 +20,26 @@ namespace AeroMes.Infrastructure.Migrations
                 oldClrType: typeof(string),
                 oldType: "nvarchar(50)",
                 oldMaxLength: 50);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_DowntimeLogs_DowntimeReasonCodes_ReasonCode",
+                schema: "prod",
+                table: "DowntimeLogs",
+                column: "ReasonCode",
+                principalSchema: "master",
+                principalTable: "DowntimeReasonCodes",
+                principalColumn: "ReasonCode",
+                onDelete: ReferentialAction.Restrict);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_DowntimeLogs_DowntimeReasonCodes_ReasonCode",
+                schema: "prod",
+                table: "DowntimeLogs");
+
             migrationBuilder.AlterColumn<string>(
                 name: "ReasonCode",
                 schema: "prod",

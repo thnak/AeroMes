@@ -204,16 +204,6 @@ namespace AeroMes.Infrastructure.Migrations
                 filter: "[WorkCenterId] IS NOT NULL AND [IsDeleted] = 0");
 
             migrationBuilder.AddForeignKey(
-                name: "FK_DowntimeLogs_DowntimeReasonCodes_ReasonCode",
-                schema: "prod",
-                table: "DowntimeLogs",
-                column: "ReasonCode",
-                principalSchema: "master",
-                principalTable: "DowntimeReasonCodes",
-                principalColumn: "ReasonCode",
-                onDelete: ReferentialAction.Restrict);
-
-            migrationBuilder.AddForeignKey(
                 name: "FK_Jobs_ShiftTemplates_ShiftCode",
                 schema: "prod",
                 table: "Jobs",
@@ -227,11 +217,6 @@ namespace AeroMes.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_DowntimeLogs_DowntimeReasonCodes_ReasonCode",
-                schema: "prod",
-                table: "DowntimeLogs");
-
             migrationBuilder.DropForeignKey(
                 name: "FK_Jobs_ShiftTemplates_ShiftCode",
                 schema: "prod",
