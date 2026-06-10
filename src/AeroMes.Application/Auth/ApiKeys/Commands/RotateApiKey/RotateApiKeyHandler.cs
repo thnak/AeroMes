@@ -1,4 +1,3 @@
-using AeroMes.Application.Auth;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using LiteBus.Commands.Abstractions;
