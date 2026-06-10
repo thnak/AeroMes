@@ -145,8 +145,9 @@ export default function App() {
           <Route path="reports/downtime" element={<DowntimeReportPage />} />
           <Route path="reports/quality" element={<QualityReportPage />} />
 
-          {/* Account */}
+          {/* Account / Profile */}
           <Route path="account" element={<AccountPage />} />
+          <Route path="profile" element={<AccountPage />} />
 
           {/* Admin */}
           <Route path="admin/settings" element={<SettingsPage />} />

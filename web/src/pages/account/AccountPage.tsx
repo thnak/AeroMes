@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,6 +37,8 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
+import LinearProgress from '@mui/material/LinearProgress';
+import InputAdornment from '@mui/material/InputAdornment';
 
 import PageHeader, { PageRoot } from '../../components/PageHeader';
 import SolarIcon from '../../components/SolarIcon';
@@ -49,7 +51,9 @@ import {
   putApiV1AuthMe,
   deleteApiV1AuthSessionsTokenId,
   postApiV1AuthLogoutAll,
+  postApiV1AuthChangePassword,
 } from '../../api/auth/auth';
+import type { ChangePasswordRequest } from '../../api/model/changePasswordRequest';
 import {
   useGetApiV1AuthMfaRecoveryCodes,
   deleteApiV1AuthMfa,
@@ -760,6 +764,167 @@ function SecurityTab() {
   );
 }
 
+// ─── Change Password Tab ──────────────────────────────────────────────────────
+
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Required'),
+    newPassword: z
+      .string()
+      .min(8, 'Minimum 8 characters')
+      .regex(/[A-Z]/, 'Need uppercase')
+      .regex(/[0-9]/, 'Need digit'),
+    confirmPassword: z.string(),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
+
+function getPwStrengthScore(pw: string) {
+  let s = 0;
+  if (pw.length >= 8) s++;
+  if (/[A-Z]/.test(pw)) s++;
+  if (/[a-z]/.test(pw)) s++;
+  if (/[0-9]/.test(pw)) s++;
+  if (/[^A-Za-z0-9]/.test(pw)) s++;
+  return s;
+}
+
+function ChangePasswordTab() {
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [snack, setSnack] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors, isValid },
+  } = useForm<ChangePasswordFormValues>({
+    resolver: zodResolver(changePasswordSchema),
+    mode: 'onChange',
+  });
+
+  const newPw = watch('newPassword') ?? '';
+  const score = useMemo(() => getPwStrengthScore(newPw), [newPw]);
+  const strengthColor = score <= 1 ? 'error' : score <= 3 ? 'warning' : 'success';
+  const strengthLabel = score === 0 ? '' : score <= 1 ? 'Very weak' : score <= 3 ? 'Moderate' : score === 4 ? 'Strong' : 'Very strong';
+
+  const { mutate, isPending, error: serverError, reset: resetMutation } = useMutation({
+    mutationFn: (body: ChangePasswordRequest) => postApiV1AuthChangePassword(body),
+    onSuccess: () => {
+      reset();
+      resetMutation();
+      setSnack(true);
+    },
+  });
+
+  return (
+    <Box sx={{ maxWidth: 480 }}>
+      <Card variant="outlined">
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2.5 }}>
+            Change password
+          </Typography>
+          <Box component="form" onSubmit={handleSubmit((v) => mutate({ currentPassword: v.currentPassword, newPassword: v.newPassword }))} noValidate>
+            <Stack spacing={2.5}>
+              <TextField
+                label="Current password"
+                type={showCurrent ? 'text' : 'password'}
+                fullWidth
+                autoComplete="current-password"
+                error={!!errors.currentPassword}
+                helperText={errors.currentPassword?.message}
+                disabled={isPending}
+                slotProps={{ input: { endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setShowCurrent((v) => !v)} edge="end">
+                      <SolarIcon name="view" size={18} />
+                    </IconButton>
+                  </InputAdornment>
+                )}}}
+                {...register('currentPassword')}
+              />
+              <Box>
+                <TextField
+                  label="New password"
+                  type={showNew ? 'text' : 'password'}
+                  fullWidth
+                  autoComplete="new-password"
+                  error={!!errors.newPassword}
+                  helperText={errors.newPassword?.message}
+                  disabled={isPending}
+                  slotProps={{ input: { endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => setShowNew((v) => !v)} edge="end">
+                        <SolarIcon name="view" size={18} />
+                      </IconButton>
+                    </InputAdornment>
+                  )}}}
+                  {...register('newPassword')}
+                />
+                {newPw.length > 0 && (
+                  <Box sx={{ mt: 1 }}>
+                    <LinearProgress
+                      variant="determinate"
+                      value={(score / 5) * 100}
+                      color={strengthColor}
+                      sx={{ height: 6, borderRadius: 3 }}
+                    />
+                    <Typography variant="caption" color={`${strengthColor}.main`} sx={{ mt: 0.5, display: 'block' }}>
+                      {strengthLabel}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+              <TextField
+                label="Confirm new password"
+                type={showConfirm ? 'text' : 'password'}
+                fullWidth
+                autoComplete="new-password"
+                error={!!errors.confirmPassword}
+                helperText={errors.confirmPassword?.message}
+                disabled={isPending}
+                slotProps={{ input: { endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setShowConfirm((v) => !v)} edge="end">
+                      <SolarIcon name="view" size={18} />
+                    </IconButton>
+                  </InputAdornment>
+                )}}}
+                {...register('confirmPassword')}
+              />
+              {serverError && <Alert severity="error">{getErrorMessage(serverError)}</Alert>}
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={!isValid || isPending}
+                  startIcon={isPending ? <CircularProgress size={16} color="inherit" /> : undefined}
+                >
+                  {isPending ? 'Saving…' : 'Change password'}
+                </Button>
+              </Box>
+            </Stack>
+          </Box>
+        </CardContent>
+      </Card>
+      <Snackbar
+        open={snack}
+        autoHideDuration={3000}
+        onClose={() => setSnack(false)}
+        message="Password changed successfully"
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
+    </Box>
+  );
+}
+
 // ─── AccountPage ──────────────────────────────────────────────────────────────
 
 export default function AccountPage() {
@@ -780,6 +945,7 @@ export default function AccountPage() {
       >
         <Tab label="Profile" id="account-tab-0" aria-controls="account-panel-0" />
         <Tab label="Security" id="account-tab-1" aria-controls="account-panel-1" />
+        <Tab label="Change password" id="account-tab-2" aria-controls="account-panel-2" />
       </Tabs>
 
       <Box role="tabpanel" id="account-panel-0" aria-labelledby="account-tab-0" hidden={activeTab !== 0}>
@@ -787,6 +953,9 @@ export default function AccountPage() {
       </Box>
       <Box role="tabpanel" id="account-panel-1" aria-labelledby="account-tab-1" hidden={activeTab !== 1}>
         {activeTab === 1 && <SecurityTab />}
+      </Box>
+      <Box role="tabpanel" id="account-panel-2" aria-labelledby="account-tab-2" hidden={activeTab !== 2}>
+        {activeTab === 2 && <ChangePasswordTab />}
       </Box>
     </PageRoot>
   );
