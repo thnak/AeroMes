@@ -36,6 +36,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<Routing> Routings => Set<Routing>();
     public DbSet<RoutingStep> RoutingSteps => Set<RoutingStep>();
     public DbSet<StorageLocation> StorageLocations => Set<StorageLocation>();
+    public DbSet<ShiftTemplate> ShiftTemplates => Set<ShiftTemplate>();
+    public DbSet<DowntimeReasonCode> DowntimeReasonCodes => Set<DowntimeReasonCode>();
+    public DbSet<MachineProductConfig> MachineProductConfigs => Set<MachineProductConfig>();
+    public DbSet<AlertThreshold> AlertThresholds => Set<AlertThreshold>();
+    public DbSet<WorkOrderAutoRules> WorkOrderAutoRules => Set<WorkOrderAutoRules>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -340,6 +345,81 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.WorkCenterID)
                 .IsRequired(false);
         });
+
+        b.Entity<ShiftTemplate>(e =>
+        {
+            e.ToTable("ShiftTemplates", "master");
+            e.HasKey(x => x.ShiftCode);
+            e.Property(x => x.ShiftCode).HasMaxLength(20).ValueGeneratedNever();
+            e.Property(x => x.ShiftName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.ValidDays).HasConversion<int>();
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne(x => x.WorkCenter)
+                .WithMany()
+                .HasForeignKey(x => x.WorkCenterId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<DowntimeReasonCode>(e =>
+        {
+            e.ToTable("DowntimeReasonCodes", "master");
+            e.HasKey(x => x.ReasonCode);
+            e.Property(x => x.ReasonCode).HasMaxLength(30).ValueGeneratedNever();
+            e.Property(x => x.ReasonName).HasMaxLength(150).IsRequired();
+            e.Property(x => x.Category).HasConversion<string>().HasMaxLength(20);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<MachineProductConfig>(e =>
+        {
+            e.ToTable("MachineProductConfigs", "master");
+            e.HasKey(x => new { x.MachineCode, x.ProductCode });
+            e.Property(x => x.MachineCode).HasMaxLength(50);
+            e.Property(x => x.ProductCode).HasMaxLength(50);
+            e.Property(x => x.EffectiveFrom).HasColumnType("date");
+
+            e.HasOne<Machine>()
+                .WithMany()
+                .HasForeignKey(x => x.MachineCode)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<RoutingStep>()
+                .WithMany()
+                .HasForeignKey(x => x.RoutingStepId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<AlertThreshold>(e =>
+        {
+            e.ToTable("AlertThresholds", "master");
+            e.HasKey(x => x.ThresholdId);
+            e.Property(x => x.MetricKey).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Scope).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.ScopeId).HasMaxLength(50);
+            e.Property(x => x.WarningLevel).HasColumnType("DECIMAL(10,4)");
+            e.Property(x => x.CriticalLevel).HasColumnType("DECIMAL(10,4)");
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<WorkOrderAutoRules>(e =>
+        {
+            e.ToTable("WorkOrderAutoRules", "master");
+            e.HasKey(x => x.RuleId);
+            e.HasIndex(x => x.WorkCenterId).IsUnique().HasFilter("[WorkCenterId] IS NOT NULL AND [IsDeleted] = 0");
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne(x => x.WorkCenter)
+                .WithMany()
+                .HasForeignKey(x => x.WorkCenterId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     // ── integration ───────────────────────────────────────────────────────
@@ -429,6 +509,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .WithMany()
                 .HasForeignKey(x => x.MachineCode)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<ShiftTemplate>()
+                .WithMany()
+                .HasForeignKey(x => x.ShiftCode)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         b.Entity<ProductionLog>(e =>
@@ -471,6 +557,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.HasOne<Machine>()
                 .WithMany()
                 .HasForeignKey(x => x.MachineCode)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<DowntimeReasonCode>()
+                .WithMany()
+                .HasForeignKey(x => x.ReasonCode)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

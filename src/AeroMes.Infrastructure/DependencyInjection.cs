@@ -87,6 +87,11 @@ public static class DependencyInjection
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
         services.AddScoped<ISystemOptionsRepository, SystemOptionsRepository>();
+        services.AddScoped<IShiftTemplateRepository, ShiftTemplateRepository>();
+        services.AddScoped<IDowntimeReasonCodeRepository, DowntimeReasonCodeRepository>();
+        services.AddScoped<IMachineProductConfigRepository, MachineProductConfigRepository>();
+        services.AddScoped<IAlertThresholdRepository, AlertThresholdRepository>();
+        services.AddScoped<IWorkOrderAutoRulesRepository, WorkOrderAutoRulesRepository>();
 
         services.AddSingleton<DbAuditLogger>();
         services.AddSingleton<IAuditLogger>(sp => sp.GetRequiredService<DbAuditLogger>());
