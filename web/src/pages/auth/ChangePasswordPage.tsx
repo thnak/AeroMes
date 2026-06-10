@@ -12,7 +12,8 @@ import LinearProgress from '@mui/material/LinearProgress';
 import InputAdornment from '@mui/material/InputAdornment';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
-import { usePostApiV1AuthChangePassword } from '../../api/auth/auth';
+import { useMutation } from '@tanstack/react-query';
+import { postApiV1AuthChangePassword } from '../../api/auth/auth';
 import { getErrorMessage } from '../../lib/apiClient';
 import type { ChangePasswordRequest } from '../../api/model/changePasswordRequest';
 import SolarIcon from '../../components/SolarIcon';
@@ -81,20 +82,15 @@ export default function ChangePasswordPage() {
   const newPasswordValue = watch('newPassword') ?? '';
   const strengthScore = useMemo(() => getStrengthScore(newPasswordValue), [newPasswordValue]);
 
-  const { mutate, isPending, error: serverError } = usePostApiV1AuthChangePassword({
-    mutation: {
-      onSuccess: () => {
-        navigate(state?.from ?? '/dashboard', { replace: true });
-      },
+  const { mutate, isPending, error: serverError } = useMutation({
+    mutationFn: (body: ChangePasswordRequest) => postApiV1AuthChangePassword(body),
+    onSuccess: () => {
+      navigate(state?.from ?? '/dashboard', { replace: true });
     },
   });
 
   const onSubmit = (values: FormValues) => {
-    const body: ChangePasswordRequest = {
-      currentPassword: values.currentPassword,
-      newPassword: values.newPassword,
-    };
-    mutate({ data: body });
+    mutate({ currentPassword: values.currentPassword, newPassword: values.newPassword });
   };
 
   return (
@@ -141,19 +137,21 @@ export default function ChangePasswordPage() {
           autoComplete="current-password"
           error={!!errors.currentPassword}
           helperText={errors.currentPassword?.message}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label="Toggle current password visibility"
-                  onClick={() => setShowCurrent((v) => !v)}
-                  edge="end"
-                  size="small"
-                >
-                  <SolarIcon name="view" size={18} />
-                </IconButton>
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="Toggle current password visibility"
+                    onClick={() => setShowCurrent((v) => !v)}
+                    edge="end"
+                    size="small"
+                  >
+                    <SolarIcon name="view" size={18} />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
           }}
           {...register('currentPassword')}
         />
@@ -166,19 +164,21 @@ export default function ChangePasswordPage() {
             autoComplete="new-password"
             error={!!errors.newPassword}
             helperText={errors.newPassword?.message}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="Toggle new password visibility"
-                    onClick={() => setShowNew((v) => !v)}
-                    edge="end"
-                    size="small"
-                  >
-                    <SolarIcon name="view" size={18} />
-                  </IconButton>
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="Toggle new password visibility"
+                      onClick={() => setShowNew((v) => !v)}
+                      edge="end"
+                      size="small"
+                    >
+                      <SolarIcon name="view" size={18} />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
             }}
             {...register('newPassword')}
           />
@@ -208,19 +208,21 @@ export default function ChangePasswordPage() {
           autoComplete="new-password"
           error={!!errors.confirmPassword}
           helperText={errors.confirmPassword?.message}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label="Toggle confirm password visibility"
-                  onClick={() => setShowConfirm((v) => !v)}
-                  edge="end"
-                  size="small"
-                >
-                  <SolarIcon name="view" size={18} />
-                </IconButton>
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="Toggle confirm password visibility"
+                    onClick={() => setShowConfirm((v) => !v)}
+                    edge="end"
+                    size="small"
+                  >
+                    <SolarIcon name="view" size={18} />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
           }}
           {...register('confirmPassword')}
         />

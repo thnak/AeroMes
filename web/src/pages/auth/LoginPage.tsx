@@ -12,8 +12,9 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import InputAdornment from '@mui/material/InputAdornment';
 import IconButton from '@mui/material/IconButton';
+import { useMutation } from '@tanstack/react-query';
 import { useAuth, type AuthUser, type UserRole } from '../../contexts/AuthContext';
-import { usePostApiV1AuthLogin } from '../../api/auth/auth';
+import { postApiV1AuthLogin } from '../../api/auth/auth';
 import { getErrorMessage } from '../../lib/apiClient';
 import type { LoginResponse } from '../../api/model/loginResponse';
 import type { MfaPendingResult } from '../../api/model/mfaPendingResult';
@@ -34,7 +35,10 @@ export default function LoginPage() {
 
   const [showPassword, setShowPassword] = useState(false);
 
-  const { mutate, isPending, error } = usePostApiV1AuthLogin();
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: (req: { email: string; password: string }) =>
+      postApiV1AuthLogin({ email: req.email, password: req.password }),
+  });
 
   const {
     register,
@@ -47,7 +51,7 @@ export default function LoginPage() {
 
   const onSubmit = (values: FormValues) => {
     mutate(
-      { data: { email: values.email, password: values.password } },
+      { email: values.email, password: values.password },
       {
         onSuccess: (data) => {
           const result = data as LoginResponse | MfaPendingResult;
@@ -135,19 +139,21 @@ export default function LoginPage() {
           fullWidth
           error={!!errors.password}
           helperText={errors.password?.message}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  onClick={() => setShowPassword((v) => !v)}
-                  edge="end"
-                  size="small"
-                >
-                  <SolarIcon name={showPassword ? 'eyeClosed' : 'eye'} size={20} />
-                </IconButton>
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    onClick={() => setShowPassword((v) => !v)}
+                    edge="end"
+                    size="small"
+                  >
+                    <SolarIcon name={showPassword ? 'eyeClosed' : 'eye'} size={20} />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
           }}
           {...register('password')}
         />

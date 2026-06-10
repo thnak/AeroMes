@@ -97,7 +97,7 @@ function TempPasswordDialog({ open, tempPassword, onClose }: TempPasswordDialogP
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { p: 0.5 } } }}>
       <DialogTitle>
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-          <SolarIcon name="lock" size={22} color="warning.main" />
+          <SolarIcon name="forbidden" size={22} color="warning.main" />
           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
             Temporary Password
           </Typography>
@@ -324,14 +324,14 @@ export default function UserDetailPage() {
     return (
       <PageRoot>
         <Stack sx={{ alignItems: 'center', justifyContent: 'center', py: 8, gap: 2 }}>
-          <SolarIcon name="user-cross" size={48} color="text.secondary" />
+          <SolarIcon name="error" size={48} color="text.secondary" />
           <Typography variant="h6" color="text.secondary">
             {status === 404 ? 'User not found.' : 'Failed to load user.'}
           </Typography>
           <Button
             variant="outlined"
             onClick={() => navigate('/admin/users')}
-            startIcon={<SolarIcon name="arrow-left" size={18} />}
+            startIcon={<SolarIcon name="back" size={18} />}
           >
             Back to Users
           </Button>
@@ -367,7 +367,7 @@ export default function UserDetailPage() {
             size="small"
             component={RouterLink}
             to="/admin/users"
-            startIcon={<SolarIcon name="arrow-left" size={16} />}
+            startIcon={<SolarIcon name="back" size={16} />}
           >
             Back
           </Button>
@@ -461,7 +461,7 @@ export default function UserDetailPage() {
                       variant="contained"
                       size="small"
                       disabled={!isDirty || isSubmitting || updateProfileMutation.isPending}
-                      startIcon={<SolarIcon name="floppy-disk" size={16} />}
+                      startIcon={<SolarIcon name="edit" size={16} />}
                     >
                       {updateProfileMutation.isPending ? 'Saving…' : 'Save Changes'}
                     </Button>
@@ -482,7 +482,7 @@ export default function UserDetailPage() {
               size="small"
               disabled={saveRolesMutation.isPending || rolesLoading}
               onClick={handleSaveRoles}
-              startIcon={<SolarIcon name="shield-check" size={16} />}
+              startIcon={<SolarIcon name="quality" size={16} />}
             >
               {saveRolesMutation.isPending ? 'Saving…' : 'Save Roles'}
             </Button>
@@ -550,7 +550,7 @@ export default function UserDetailPage() {
                         size="small"
                         disabled={deactivateMutation.isPending}
                         onClick={() => setDeactivateDialogOpen(true)}
-                        startIcon={<SolarIcon name="user-block" size={16} />}
+                        startIcon={<SolarIcon name="cancel" size={16} />}
                       >
                         Deactivate
                       </Button>
@@ -561,7 +561,7 @@ export default function UserDetailPage() {
                         size="small"
                         disabled={activateMutation.isPending}
                         onClick={() => activateMutation.mutate()}
-                        startIcon={<SolarIcon name="user-check" size={16} />}
+                        startIcon={<SolarIcon name="success" size={16} />}
                       >
                         {activateMutation.isPending ? 'Activating…' : 'Activate'}
                       </Button>
@@ -604,7 +604,7 @@ export default function UserDetailPage() {
                     size="small"
                     disabled={resetPasswordMutation.isPending}
                     onClick={() => resetPasswordMutation.mutate()}
-                    startIcon={<SolarIcon name="key" size={16} />}
+                    startIcon={<SolarIcon name="forbidden" size={16} />}
                   >
                     {resetPasswordMutation.isPending ? 'Resetting…' : 'Reset Password'}
                   </Button>
@@ -627,7 +627,7 @@ export default function UserDetailPage() {
                     size="small"
                     disabled={disableMfaMutation.isPending}
                     onClick={() => setMfaDialogOpen(true)}
-                    startIcon={<SolarIcon name="shield-warning" size={16} />}
+                    startIcon={<SolarIcon name="warning" size={16} />}
                   >
                     Disable MFA
                   </Button>

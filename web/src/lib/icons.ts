@@ -67,6 +67,10 @@ export const Icons = {
   machineDown:     'solar:danger-circle-bold',
   maintenance:     'solar:wrench-bold',
 
+  // Auth / visibility
+  eye:             'solar:eye-outline',
+  eyeClosed:       'solar:eye-closed-outline',
+
   // AppBar
   notifications:   'solar:bell-bing-bold-duotone',
   settings:        'solar:settings-bold-duotone',

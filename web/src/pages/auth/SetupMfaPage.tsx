@@ -192,7 +192,7 @@ function StepConfirm({ onSuccess, onBack }: StepConfirmProps) {
         fullWidth
         autoFocus
         autoComplete="one-time-code"
-        inputProps={{ maxLength: 6, inputMode: 'numeric', pattern: '[0-9]*' }}
+        slotProps={{ htmlInput: { maxLength: 6, inputMode: 'numeric', pattern: '[0-9]*' } }}
         error={!!errors.code}
         helperText={errors.code?.message}
         disabled={confirmMutation.isPending}

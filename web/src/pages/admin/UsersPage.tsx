@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { Link as RouterLink } from 'react-router-dom';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -34,10 +34,11 @@ import {
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import {
   useGetApiV1Users,
-  usePostApiV1Users,
+  postApiV1Users,
   getGetApiV1UsersQueryKey,
 } from '../../api/users/users';
 import { useGetApiV1Roles } from '../../api/roles/roles';
+import type { RoleDto } from '../../api/model/roleDto';
 import type { UserSummaryDto } from '../../api/model/userSummaryDto';
 import type { CreateUserRequest } from '../../api/model/createUserRequest';
 import PageHeader, { PageRoot } from '../../components/PageHeader';
@@ -109,7 +110,7 @@ function TempPasswordDialog({ open, tempPassword, onClose }: TempPasswordDialogP
             <Box sx={{ flex: 1, wordBreak: 'break-all' }}>{tempPassword}</Box>
             <Tooltip title={copied ? 'Copied!' : 'Copy to clipboard'}>
               <IconButton size="small" onClick={handleCopy}>
-                <SolarIcon name={copied ? 'check-circle' : 'copy'} size={20} />
+                <SolarIcon name={copied ? 'complete' : 'copy'} size={20} />
               </IconButton>
             </Tooltip>
           </Box>
@@ -132,20 +133,18 @@ interface CreateUserDrawerProps {
   open: boolean;
   onClose: () => void;
   onCreated: (tempPassword: string) => void;
-  roleOptions: Array<{ id: string; name?: string }>;
+  roleOptions: RoleDto[];
 }
 
 function CreateUserDrawer({ open, onClose, onCreated, roleOptions }: CreateUserDrawerProps) {
   const queryClient = useQueryClient();
-  const { mutate, isPending, error, reset } = usePostApiV1Users({
-    mutation: {
-      onSuccess: (data) => {
-        queryClient.invalidateQueries({ queryKey: getGetApiV1UsersQueryKey() });
-        onCreated(data.tempPassword ?? '');
-        onClose();
-        formReset();
-        reset();
-      },
+  const { mutate, isPending, error, reset } = useMutation({
+    mutationFn: (req: CreateUserRequest) => postApiV1Users(req),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: getGetApiV1UsersQueryKey() });
+      onCreated(data.tempPassword ?? '');
+      onClose();
+      formReset();
     },
   });
 
@@ -169,17 +168,17 @@ function CreateUserDrawer({ open, onClose, onCreated, roleOptions }: CreateUserD
     const payload: CreateUserRequest = {
       email: values.email,
       fullName: values.fullName,
-      department: values.department || undefined,
-      employeeCode: values.employeeCode || undefined,
-      roles: values.roles && values.roles.length > 0 ? values.roles : undefined,
+      department: values.department || null,
+      employeeCode: values.employeeCode || null,
+      roles: values.roles && values.roles.length > 0 ? values.roles : null,
     };
-    mutate({ data: payload });
+    mutate(payload);
   };
 
   const handleClose = () => {
     onClose();
     formReset();
-    reset();
+    reset(); // clear mutation error state
   };
 
   return (
@@ -187,15 +186,15 @@ function CreateUserDrawer({ open, onClose, onCreated, roleOptions }: CreateUserD
       anchor="right"
       open={open}
       onClose={handleClose}
-      PaperProps={{ sx: { width: 400, p: 3 } }}
+      slotProps={{ paper: { sx: { width: 400, p: 3 } } }}
     >
       <Stack spacing={3} component="form" onSubmit={handleSubmit(onSubmit)} sx={{ height: '100%' }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography variant="h6" fontWeight={600}>
+        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
             New User
           </Typography>
           <IconButton size="small" onClick={handleClose}>
-            <SolarIcon name="close-circle" size={20} />
+            <SolarIcon name="close" size={20} />
           </IconButton>
         </Stack>
 
@@ -294,7 +293,7 @@ function CreateUserDrawer({ open, onClose, onCreated, roleOptions }: CreateUserD
 
         <Box sx={{ flex: 1 }} />
 
-        <Stack direction="row" spacing={1} justifyContent="flex-end">
+        <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
           <Button variant="outlined" onClick={handleClose} disabled={isPending}>
             Cancel
           </Button>
@@ -325,12 +324,10 @@ export default function UsersPage() {
     activeFilter === 'active' ? true : activeFilter === 'inactive' ? false : undefined;
 
   const { data, isLoading } = useGetApiV1Users({
-    params: {
-      role: roleFilter || undefined,
-      isActive: isActiveParam,
-      page: paginationModel.page + 1,
-      pageSize: paginationModel.pageSize,
-    },
+    role: roleFilter || undefined,
+    isActive: isActiveParam,
+    page: paginationModel.page + 1,
+    pageSize: paginationModel.pageSize,
   });
 
   const { data: rolesData } = useGetApiV1Roles();
@@ -408,10 +405,10 @@ export default function UsersPage() {
       <PageHeader
         title="Users"
         subtitle="Manage system user accounts and access"
-        action={
+        actions={
           <Button
             variant="contained"
-            startIcon={<SolarIcon name="user-plus" size={18} />}
+            startIcon={<SolarIcon name="add" size={18} />}
             onClick={() => setDrawerOpen(true)}
           >
             New User
@@ -423,20 +420,21 @@ export default function UsersPage() {
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         spacing={2}
-        alignItems={{ sm: 'center' }}
-        sx={{ mb: 2 }}
+        sx={{ mb: 2, alignItems: { sm: 'center' } }}
       >
         <TextField
           size="small"
           placeholder="Search name or email…"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <Box sx={{ mr: 0.5, display: 'flex', color: 'text.secondary' }}>
-                <SolarIcon name="magnifer" size={18} />
-              </Box>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <Box sx={{ mr: 0.5, display: 'flex', color: 'text.secondary' }}>
+                  <SolarIcon name="search" size={18} />
+                </Box>
+              ),
+            },
           }}
           sx={{ minWidth: 240 }}
         />
