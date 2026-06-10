@@ -123,6 +123,9 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseMiddleware<ExceptionMiddleware>();   // must be first — catches all downstream exceptions
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
@@ -130,6 +133,7 @@ app.UseAuthorization();
 app.UseMiddleware<ForcePasswordChangeMiddleware>();
 app.UseMiddleware<MfaEnforcementMiddleware>();
 app.MapControllers();
+app.MapFallbackToFile("index.html");
 
 app.Run();
 

@@ -20,6 +20,9 @@ web/dist/
 web/.env
 web/.env.local
 
+# SPA build output (produced by: cd web && npm run build)
+src/AeroMes.Api/wwwroot/
+
 # OS
 .DS_Store
 Thumbs.db

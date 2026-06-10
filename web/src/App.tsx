@@ -49,6 +49,7 @@ const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
 const UserDetailPage = lazy(() => import('./pages/admin/UserDetailPage'));
 const RolesPage = lazy(() => import('./pages/admin/RolesPage'));
 const AuditLogPage = lazy(() => import('./pages/admin/AuditLogPage'));
+const AccountPage = lazy(() => import('./pages/account/AccountPage'));
 
 // Tablet (separate layout — M5)
 const TabletLoginPage = lazy(() => import('./pages/tablet/TabletLoginPage'));
@@ -143,6 +144,9 @@ export default function App() {
           <Route path="reports/oee" element={<OeeReportPage />} />
           <Route path="reports/downtime" element={<DowntimeReportPage />} />
           <Route path="reports/quality" element={<QualityReportPage />} />
+
+          {/* Account */}
+          <Route path="account" element={<AccountPage />} />
 
           {/* Admin */}
           <Route path="admin/settings" element={<SettingsPage />} />

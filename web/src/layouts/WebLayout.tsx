@@ -4,7 +4,12 @@ import {
   Badge,
   Box,
   Breadcrumbs,
+  Divider,
   IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Stack,
   Toolbar,
   Tooltip,
@@ -12,7 +17,8 @@ import {
   useColorScheme,
 } from '@mui/material';
 import { useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import SolarIcon from '../components/SolarIcon';
 import Sidebar from './Sidebar';
@@ -49,6 +55,10 @@ function TopBar({ sidebarWidth }: { sidebarWidth: number }) {
   const { mode, setMode } = useColorScheme();
   const breadcrumbs = useBreadcrumbs();
   const current = breadcrumbs[breadcrumbs.length - 1];
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const initials = user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() ?? 'U';
 
   return (
     <AppBar
@@ -108,21 +118,40 @@ function TopBar({ sidebarWidth }: { sidebarWidth: number }) {
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Account">
+          <>
             <Avatar
-              sx={{
-                width: 30,
-                height: 30,
-                ml: 0.5,
-                bgcolor: 'primary.main',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
+              onClick={(e) => setAnchorEl(e.currentTarget)}
+              sx={{ width: 30, height: 30, ml: 0.5, bgcolor: 'primary.main', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
             >
-              OP
+              {initials}
             </Avatar>
-          </Tooltip>
+            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}
+              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+              slotProps={{ paper: { sx: { minWidth: 200, mt: 0.5 } } }}
+            >
+              <MenuItem disabled sx={{ opacity: '1 !important' }}>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{user?.name ?? 'User'}</Typography>
+                  <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
+                </Box>
+              </MenuItem>
+              <Divider />
+              <MenuItem onClick={() => { setAnchorEl(null); navigate('/account'); }}>
+                <ListItemIcon><SolarIcon name="profile" size={18} /></ListItemIcon>
+                <ListItemText>My Account</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={() => { setAnchorEl(null); navigate('/auth/change-password'); }}>
+                <ListItemIcon><SolarIcon name="settings" size={18} /></ListItemIcon>
+                <ListItemText>Change Password</ListItemText>
+              </MenuItem>
+              <Divider />
+              <MenuItem onClick={() => { setAnchorEl(null); logout(); navigate('/auth/login', { replace: true }); }} sx={{ color: 'error.main' }}>
+                <ListItemIcon sx={{ color: 'error.main' }}><SolarIcon name="logout" size={18} /></ListItemIcon>
+                <ListItemText>Sign out</ListItemText>
+              </MenuItem>
+            </Menu>
+          </>
         </Stack>
       </Toolbar>
     </AppBar>
