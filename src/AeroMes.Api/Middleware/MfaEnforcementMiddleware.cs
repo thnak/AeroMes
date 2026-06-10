@@ -31,7 +31,7 @@ public class MfaEnforcementMiddleware(RequestDelegate next, IConfiguration confi
             // Block mfa_pending tokens everywhere except MFA verify endpoints
             if (ctx.User.HasClaim("mfa_pending", "true"))
             {
-                if (!MfaAllowedPaths.Any(p => path.StartsWith(p)))
+                if (!MfaAllowedPaths.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
                 {
                     ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     ctx.Response.ContentType = "application/problem+json";
@@ -60,7 +60,7 @@ public class MfaEnforcementMiddleware(RequestDelegate next, IConfiguration confi
                         .Select(c => c.Value);
 
                     if (userRoles.Any(r => mfaRequiredRoles.Contains(r, StringComparer.OrdinalIgnoreCase))
-                        && !MfaAllowedPaths.Any(p => path.StartsWith(p)))
+                        && !MfaAllowedPaths.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
                     {
                         ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
                         ctx.Response.ContentType = "application/problem+json";
