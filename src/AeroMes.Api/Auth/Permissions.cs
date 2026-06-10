@@ -79,6 +79,11 @@ public static class Permissions
     public const string MaintenanceCreate = "Maintenance:Create";
     public const string MaintenanceApprove = "Maintenance:Approve";
 
+    // ApiKey
+    public const string ApiKeyRead = "ApiKey:Read";
+    public const string ApiKeyCreate = "ApiKey:Create";
+    public const string ApiKeyRevoke = "ApiKey:Revoke";
+
     // System
     public const string SystemConfigure = "System:Configure";
     public const string PermissionRead = "Permission:Read";
@@ -100,6 +105,7 @@ public static class Permissions
         WarehouseRead, WarehouseReceive, WarehousePutAway, WarehousePick, WarehouseDispatch,
         CycleCountRead, CycleCountApprove,
         MaintenanceRead, MaintenanceExecute, MaintenanceCreate, MaintenanceApprove,
+        ApiKeyRead, ApiKeyCreate, ApiKeyRevoke,
         SystemConfigure, PermissionRead, PermissionManage,
     ];
 }

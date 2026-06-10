@@ -24,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<UserPermissionOverride> UserPermissionOverrides => Set<UserPermissionOverride>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<SecurityAuditLog> SecurityAuditLogs => Set<SecurityAuditLog>();
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
 
     // master schema
     public DbSet<WorkCenter> WorkCenters => Set<WorkCenter>();
@@ -174,6 +175,24 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.HasIndex(x => new { x.TargetType, x.TargetId, x.OccurredAt });
             // Append-only: prevent EF from generating UPDATE/DELETE for this entity
             e.ToTable(t => t.ExcludeFromMigrations(false));
+        });
+
+        b.Entity<ApiKey>(e =>
+        {
+            e.ToTable("ApiKeys", "auth");
+            e.HasKey(x => x.ApiKeyId);
+            e.Property(x => x.KeyName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.KeyPrefix).HasMaxLength(8).IsRequired();
+            e.Property(x => x.KeyHash).HasMaxLength(64).IsRequired();
+            e.Property(x => x.OwnerUserId).HasMaxLength(450).IsRequired();
+            e.Property(x => x.AssignedRole).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasIndex(x => x.KeyHash).IsUnique();
+            e.HasIndex(x => x.OwnerUserId);
+            e.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(x => x.OwnerUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Passkey (WebAuthn) — IdentityUserPasskey<TKey> is not auto-discovered; must be configured manually

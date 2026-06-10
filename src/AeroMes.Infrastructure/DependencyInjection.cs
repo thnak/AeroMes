@@ -85,6 +85,7 @@ public static class DependencyInjection
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
 
         services.AddSingleton<DbAuditLogger>();
         services.AddSingleton<IAuditLogger>(sp => sp.GetRequiredService<DbAuditLogger>());

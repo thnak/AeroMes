@@ -59,9 +59,11 @@ builder.Services
         options.ForwardDefaultSelector = context =>
         {
             var auth = context.Request.Headers.Authorization.FirstOrDefault();
-            return auth?.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) == true
-                ? JwtBearerDefaults.AuthenticationScheme
-                : IdentityConstants.ApplicationScheme;
+            if (auth?.StartsWith("ApiKey ", StringComparison.OrdinalIgnoreCase) == true)
+                return ApiKeyAuthenticationHandler.SchemeName;
+            if (auth?.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) == true)
+                return JwtBearerDefaults.AuthenticationScheme;
+            return IdentityConstants.ApplicationScheme;
         };
     })
     .AddCookie(IdentityConstants.ApplicationScheme, opts =>
@@ -96,7 +98,9 @@ builder.Services
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero,
         };
-    });
+    })
+    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(
+        ApiKeyAuthenticationHandler.SchemeName, null);
 
 builder.Services.AddCors(opts =>
     opts.AddPolicy("AllowFrontend", p =>
