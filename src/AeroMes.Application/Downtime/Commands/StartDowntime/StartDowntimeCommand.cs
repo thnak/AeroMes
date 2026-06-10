@@ -1,4 +1,4 @@
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Downtime.Commands.StartDowntime;
 
@@ -8,4 +8,4 @@ public record StartDowntimeCommand(
     string? ReasonName,
     DateTime StartTime,
     string OperatorId,
-    string? Notes = null) : IRequest<long>;
+    string? Notes = null) : ICommand<long>;

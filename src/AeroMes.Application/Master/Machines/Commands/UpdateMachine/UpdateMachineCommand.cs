@@ -1,4 +1,4 @@
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Machines.Commands.UpdateMachine;
 
@@ -8,4 +8,4 @@ public record UpdateMachineCommand(
     int WorkCenterId,
     string? Brand,
     string? Model,
-    string UpdatedBy) : IRequest;
+    string UpdatedBy) : ICommand;

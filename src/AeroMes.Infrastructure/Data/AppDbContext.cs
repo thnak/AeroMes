@@ -8,13 +8,13 @@ using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.ValueObjects;
 using AeroMes.Domain.Quality;
 using AeroMes.Infrastructure.Identity;
-using MediatR;
+using LiteBus.Events.Abstractions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace AeroMes.Infrastructure.Data;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options, IPublisher publisher)
+public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator eventMediator)
     : IdentityDbContext<ApplicationUser>(options), IUnitOfWork
 {
 
@@ -68,7 +68,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IPublisher pub
         entities.ForEach(e => e.ClearDomainEvents());
 
         foreach (var domainEvent in events)
-            await publisher.Publish(domainEvent, ct);
+            await eventMediator.PublishAsync(domainEvent, null, ct);
     }
 
     protected override void OnModelCreating(ModelBuilder b)

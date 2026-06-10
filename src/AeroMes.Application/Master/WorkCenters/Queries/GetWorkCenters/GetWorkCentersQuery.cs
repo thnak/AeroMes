@@ -1,8 +1,8 @@
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Master.WorkCenters.Queries.GetWorkCenters;
 
-public record GetWorkCentersQuery(bool ActiveOnly = true) : IRequest<IReadOnlyList<WorkCenterDto>>;
+public record GetWorkCentersQuery(bool ActiveOnly = true) : IQuery<IReadOnlyList<WorkCenterDto>>;
 
 public record WorkCenterDto(
     int WorkCenterID,

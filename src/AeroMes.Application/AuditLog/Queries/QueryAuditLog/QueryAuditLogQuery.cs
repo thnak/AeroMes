@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Domain.Auth;
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.AuditLog.Queries.QueryAuditLog;
 
 public record QueryAuditLogQuery(
     string? ActorId, string? EventType, string? TargetType,
     DateTime? From, DateTime? To, int Page, int PageSize)
-    : IRequest<PagedResult<SecurityAuditLog>>;
+    : IQuery<PagedResult<SecurityAuditLog>>;

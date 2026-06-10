@@ -1,15 +1,15 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.BomItems.Commands.CreateBomItem;
 
 public class CreateBomItemHandler(
     IBomItemRepository repo,
-    IUnitOfWork uow) : IRequestHandler<CreateBomItemCommand, int>
+    IUnitOfWork uow) : ICommandHandler<CreateBomItemCommand, int>
 {
-    public async Task<int> Handle(CreateBomItemCommand cmd, CancellationToken ct)
+    public async Task<int> HandleAsync(CreateBomItemCommand cmd, CancellationToken ct)
     {
         var entity = BomItem.Create(
             cmd.ParentProductCode,

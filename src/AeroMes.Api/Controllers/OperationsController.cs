@@ -2,7 +2,8 @@ using AeroMes.Application.Master.Operations.Commands.CreateOperation;
 using AeroMes.Application.Master.Operations.Commands.DeleteOperation;
 using AeroMes.Application.Master.Operations.Commands.UpdateOperation;
 using AeroMes.Application.Master.Operations.Queries.GetOperations;
-using MediatR;
+using LiteBus.Commands.Abstractions;
+using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,13 +12,14 @@ namespace AeroMes.Api.Controllers;
 [ApiController]
 [Route("api/v1/operations")]
 [Authorize]
-public class OperationsController(IMediator mediator) : ControllerBase
+public class OperationsController(ICommandMediator commandMediator,
+    IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<OperationDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, CancellationToken ct = default)
-        => Ok(await mediator.Send(new GetOperationsQuery(activeOnly), ct));
+        => Ok(await queryMediator.QueryAsync(new GetOperationsQuery(activeOnly), null, ct));
 
     [HttpPost]
     [ProducesResponseType<OperationCreatedResult>(StatusCodes.Status201Created)]
@@ -25,7 +27,7 @@ public class OperationsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateOperationRequest req, CancellationToken ct)
     {
-        var code = await mediator.Send(new CreateOperationCommand(req.Code, req.Name, req.Description), ct);
+        var code = await commandMediator.SendAsync(new CreateOperationCommand(req.Code, req.Name, req.Description), null, ct);
         return CreatedAtAction(nameof(GetAll), null, new OperationCreatedResult(code));
     }
 
@@ -36,7 +38,7 @@ public class OperationsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateOperationRequest req, CancellationToken ct)
     {
-        await mediator.Send(new UpdateOperationCommand(code, req.Name, req.Description), ct);
+        await commandMediator.SendAsync(new UpdateOperationCommand(code, req.Name, req.Description), null, ct);
         return NoContent();
     }
 
@@ -46,7 +48,7 @@ public class OperationsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(string code, CancellationToken ct)
     {
-        await mediator.Send(new DeleteOperationCommand(code), ct);
+        await commandMediator.SendAsync(new DeleteOperationCommand(code), null, ct);
         return NoContent();
     }
 }

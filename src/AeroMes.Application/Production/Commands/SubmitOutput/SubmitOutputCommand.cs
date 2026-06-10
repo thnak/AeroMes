@@ -1,4 +1,4 @@
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Production.Commands.SubmitOutput;
 
@@ -10,7 +10,7 @@ public record SubmitOutputCommand(
     string? Notes,
     string? IdempotencyKey,
     DateTime? Timestamp,
-    List<DefectEntry> Defects) : IRequest<SubmitOutputResult>;
+    List<DefectEntry> Defects) : ICommand<SubmitOutputResult>;
 
 public record DefectEntry(string DefectCode, int Qty);
 

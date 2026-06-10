@@ -1,7 +1,7 @@
 using AeroMes.Application.Auth;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Auth.PermissionOverrides.Commands.RemovePermissionOverride;
 
@@ -10,9 +10,9 @@ public class RemovePermissionOverrideHandler(
     IPermissionService permissionService,
     IUnitOfWork uow,
     IAuditLogger auditLogger)
-    : IRequestHandler<RemovePermissionOverrideCommand>
+    : ICommandHandler<RemovePermissionOverrideCommand>
 {
-    public async Task Handle(RemovePermissionOverrideCommand cmd, CancellationToken ct)
+    public async Task HandleAsync(RemovePermissionOverrideCommand cmd, CancellationToken ct)
     {
         var entity = await repo.GetByIdAsync(cmd.OverrideId, cmd.UserId, ct)
             ?? throw new EntityNotFoundException("PermissionOverride", cmd.OverrideId);

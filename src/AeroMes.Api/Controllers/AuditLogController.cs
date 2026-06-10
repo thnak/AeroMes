@@ -3,7 +3,7 @@ using AeroMes.Application.AuditLog.Queries.ExportAuditLog;
 using AeroMes.Application.AuditLog.Queries.GetAuditLogByUser;
 using AeroMes.Application.AuditLog.Queries.QueryAuditLog;
 using AeroMes.Domain.Auth;
-using MediatR;
+using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
@@ -13,7 +13,7 @@ namespace AeroMes.Api.Controllers;
 [ApiController]
 [Route("api/v1/audit-log")]
 [Authorize]
-public class AuditLogController(IMediator mediator) : ControllerBase
+public class AuditLogController(IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(Permissions.SystemConfigure)]
@@ -28,7 +28,7 @@ public class AuditLogController(IMediator mediator) : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
     {
-        var result = await mediator.Send(
+        var result = await queryMediator.QueryAsync(
             new QueryAuditLogQuery(actorId, eventType, targetType, from, to, page, pageSize));
         return Ok(result);
     }
@@ -40,7 +40,7 @@ public class AuditLogController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GetByUser(string userId,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
     {
-        var result = await mediator.Send(new GetAuditLogByUserQuery(userId, page, pageSize));
+        var result = await queryMediator.QueryAsync(new GetAuditLogByUserQuery(userId, page, pageSize));
         return Ok(result);
     }
 
@@ -50,7 +50,7 @@ public class AuditLogController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Export([FromQuery] DateTime? from, [FromQuery] DateTime? to)
     {
-        var items = await mediator.Send(new ExportAuditLogQuery(from, to));
+        var items = await queryMediator.QueryAsync(new ExportAuditLogQuery(from, to));
 
         var csv = new StringBuilder();
         csv.AppendLine("AuditId,EventType,ActorId,ActorType,ActorIp,TargetType,TargetId,Outcome,FailureReason,OccurredAt");

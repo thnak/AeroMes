@@ -1,6 +1,9 @@
 using AeroMes.Application.Common.Behaviors;
 using FluentValidation;
-using MediatR;
+using LiteBus.Commands;
+using LiteBus.Events;
+using LiteBus.Extensions.Microsoft.DependencyInjection;
+using LiteBus.Queries;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AeroMes.Application;
@@ -11,10 +14,21 @@ public static class DependencyInjection
     {
         var assembly = typeof(DependencyInjection).Assembly;
 
-        services.AddMediatR(cfg =>
+        services.AddLiteBus(liteBus =>
         {
-            cfg.RegisterServicesFromAssembly(assembly);
-            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+            liteBus.AddCommandModule(module =>
+            {
+                module.Register(typeof(FluentValidationPreHandler<>));
+                module.RegisterFromAssembly(assembly);
+            });
+            liteBus.AddQueryModule(module =>
+            {
+                module.RegisterFromAssembly(assembly);
+            });
+            liteBus.AddEventModule(module =>
+            {
+                module.RegisterFromAssembly(assembly);
+            });
         });
 
         services.AddValidatorsFromAssembly(assembly);

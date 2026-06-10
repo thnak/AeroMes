@@ -3,7 +3,7 @@ using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Jobs.Commands.StartJob;
 
@@ -12,9 +12,9 @@ public class StartJobHandler(
     IMachineRepository machineRepo,
     IJobRepository jobRepo,
     IUnitOfWork uow)
-    : IRequestHandler<StartJobCommand, StartJobResult>
+    : ICommandHandler<StartJobCommand, StartJobResult>
 {
-    public async Task<StartJobResult> Handle(StartJobCommand cmd, CancellationToken ct)
+    public async Task<StartJobResult> HandleAsync(StartJobCommand cmd, CancellationToken ct)
     {
         var workOrder = await workOrderRepo.GetByIdAsync(cmd.WorkOrderId, ct)
             ?? throw new EntityNotFoundException(nameof(WorkOrder), cmd.WorkOrderId);

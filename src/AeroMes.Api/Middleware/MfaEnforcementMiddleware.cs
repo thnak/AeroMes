@@ -28,6 +28,14 @@ public class MfaEnforcementMiddleware(RequestDelegate next, IConfiguration confi
         {
             var path = ctx.Request.Path.Value?.ToLowerInvariant() ?? string.Empty;
 
+            // Non-API paths serve the SPA shell — let them through; the client handles
+            // auth state via /api/v1/auth/me and redirects to the MFA page itself.
+            if (!path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase))
+            {
+                await next(ctx);
+                return;
+            }
+
             // Block mfa_pending tokens everywhere except MFA verify endpoints
             if (ctx.User.HasClaim("mfa_pending", "true"))
             {

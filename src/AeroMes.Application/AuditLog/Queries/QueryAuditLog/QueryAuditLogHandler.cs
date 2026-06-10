@@ -1,14 +1,14 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Auth;
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.AuditLog.Queries.QueryAuditLog;
 
 public class QueryAuditLogHandler(IAuditLogRepository repo)
-    : IRequestHandler<QueryAuditLogQuery, PagedResult<SecurityAuditLog>>
+    : IQueryHandler<QueryAuditLogQuery, PagedResult<SecurityAuditLog>>
 {
-    public async Task<PagedResult<SecurityAuditLog>> Handle(QueryAuditLogQuery q, CancellationToken ct)
+    public async Task<PagedResult<SecurityAuditLog>> HandleAsync(QueryAuditLogQuery q, CancellationToken ct)
     {
         var (items, total) = await repo.QueryAsync(
             q.ActorId, q.EventType, q.TargetType,

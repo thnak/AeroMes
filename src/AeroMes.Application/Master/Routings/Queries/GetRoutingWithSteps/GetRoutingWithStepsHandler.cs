@@ -1,12 +1,12 @@
 using AeroMes.Domain.Master.Repositories;
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Master.Routings.Queries.GetRoutingWithSteps;
 
 public class GetRoutingWithStepsHandler(IRoutingRepository repo)
-    : IRequestHandler<GetRoutingWithStepsQuery, RoutingDetailDto?>
+    : IQueryHandler<GetRoutingWithStepsQuery, RoutingDetailDto?>
 {
-    public async Task<RoutingDetailDto?> Handle(GetRoutingWithStepsQuery q, CancellationToken ct)
+    public async Task<RoutingDetailDto?> HandleAsync(GetRoutingWithStepsQuery q, CancellationToken ct)
     {
         var routing = await repo.GetByIdWithStepsAsync(q.RoutingId, ct);
         if (routing is null) return null;

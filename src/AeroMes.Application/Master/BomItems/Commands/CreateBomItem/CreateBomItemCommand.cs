@@ -1,4 +1,4 @@
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.BomItems.Commands.CreateBomItem;
 
@@ -7,4 +7,4 @@ public record CreateBomItemCommand(
     string ChildProductCode,
     decimal RequiredQty,
     decimal ScrapFactor,
-    string? CreatedBy) : IRequest<int>;
+    string? CreatedBy) : ICommand<int>;

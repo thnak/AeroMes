@@ -1,14 +1,14 @@
 using AeroMes.Domain.Production.Repositories;
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Production.Queries.GetOee;
 
 public class GetOeeHandler(
     IProductionLogRepository productionLogRepo,
     IDowntimeLogRepository downtimeLogRepo)
-    : IRequestHandler<GetOeeQuery, OeeResult>
+    : IQueryHandler<GetOeeQuery, OeeResult>
 {
-    public async Task<OeeResult> Handle(GetOeeQuery q, CancellationToken ct)
+    public async Task<OeeResult> HandleAsync(GetOeeQuery q, CancellationToken ct)
     {
         var totalPlanned = (q.ShiftEnd - q.ShiftStart).TotalMinutes;
 

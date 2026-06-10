@@ -1,15 +1,15 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Products.Commands.UpdateProduct;
 
 public class UpdateProductHandler(
     IProductRepository repo,
-    IUnitOfWork uow) : IRequestHandler<UpdateProductCommand>
+    IUnitOfWork uow) : ICommandHandler<UpdateProductCommand>
 {
-    public async Task Handle(UpdateProductCommand cmd, CancellationToken ct)
+    public async Task HandleAsync(UpdateProductCommand cmd, CancellationToken ct)
     {
         var entity = await repo.GetByCodeAsync(cmd.Code, ct)
             ?? throw new EntityNotFoundException("Product", cmd.Code);

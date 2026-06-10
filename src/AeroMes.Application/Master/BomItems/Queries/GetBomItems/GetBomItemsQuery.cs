@@ -1,8 +1,8 @@
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Master.BomItems.Queries.GetBomItems;
 
-public record GetBomItemsQuery(string ParentProductCode) : IRequest<IReadOnlyList<BomItemDto>>;
+public record GetBomItemsQuery(string ParentProductCode) : IQuery<IReadOnlyList<BomItemDto>>;
 
 public record BomItemDto(
     int BomID,

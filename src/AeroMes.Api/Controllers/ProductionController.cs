@@ -2,7 +2,8 @@ using AeroMes.Api.Auth;
 using AeroMes.Application.Common;
 using AeroMes.Application.Production.Commands.SubmitOutput;
 using AeroMes.Application.Production.Queries.GetOee;
-using MediatR;
+using LiteBus.Commands.Abstractions;
+using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,7 +12,8 @@ namespace AeroMes.Api.Controllers;
 [ApiController]
 [Route("api/v1/production")]
 [Authorize]
-public class ProductionController(IMediator mediator) : ControllerBase
+public class ProductionController(ICommandMediator commandMediator,
+    IQueryMediator queryMediator) : ControllerBase
 {
     [HttpPost("submit-output")]
     [RequirePermission(Permissions.ProductionSubmitOutput)]
@@ -35,7 +37,7 @@ public class ProductionController(IMediator mediator) : ControllerBase
             request.Timestamp,
             request.Defects.Select(d => new DefectEntry(d.DefectCode, d.Qty)).ToList());
 
-        var result = await mediator.Send(cmd, ct);
+        var result = await commandMediator.SendAsync(cmd, null, ct);
         return StatusCode(StatusCodes.Status201Created, new ApiResponse<SubmitOutputResult>(true,
             "Production output recorded successfully.", result));
     }
@@ -53,8 +55,8 @@ public class ProductionController(IMediator mediator) : ControllerBase
         [FromQuery] double cycleTimeSeconds,
         CancellationToken ct)
     {
-        var result = await mediator.Send(
-            new GetOeeQuery(machineCode, shiftStart, shiftEnd, cycleTimeSeconds), ct);
+        var result = await queryMediator.QueryAsync(
+            new GetOeeQuery(machineCode, shiftStart, shiftEnd, cycleTimeSeconds), null, ct);
         return Ok(new ApiResponse<OeeResult>(true, "OK", result));
     }
 }

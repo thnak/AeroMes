@@ -2,7 +2,8 @@ using AeroMes.Api.Auth;
 using AeroMes.Application.Common;
 using AeroMes.Application.WorkOrders.Commands.StartWorkOrder;
 using AeroMes.Application.WorkOrders.Queries.GetWorkOrders;
-using MediatR;
+using LiteBus.Commands.Abstractions;
+using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,7 +12,7 @@ namespace AeroMes.Api.Controllers;
 [ApiController]
 [Route("api/v1/work-orders")]
 [Authorize]
-public class WorkOrdersController(IMediator mediator) : ControllerBase
+public class WorkOrdersController(ICommandMediator commandMediator, IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(Permissions.WorkOrderRead)]
@@ -22,7 +23,7 @@ public class WorkOrdersController(IMediator mediator) : ControllerBase
         [FromQuery] string? status,
         CancellationToken ct)
     {
-        var result = await mediator.Send(new GetWorkOrdersQuery(status), ct);
+        var result = await queryMediator.QueryAsync(new GetWorkOrdersQuery(status), null, ct);
         return Ok(new ApiResponse<IReadOnlyList<WorkOrderDto>>(true, "OK", result));
     }
 
@@ -38,8 +39,8 @@ public class WorkOrdersController(IMediator mediator) : ControllerBase
         [FromBody] StartWorkOrderRequest request,
         CancellationToken ct)
     {
-        var result = await mediator.Send(
-            new StartWorkOrderCommand(id, request.OperatorId, request.Timestamp), ct);
+        var result = await commandMediator.SendAsync(
+            new StartWorkOrderCommand(id, request.OperatorId, request.Timestamp), null, ct);
         return Ok(new ApiResponse<StartWorkOrderResult>(true, "Work Order started successfully.", result));
     }
 }

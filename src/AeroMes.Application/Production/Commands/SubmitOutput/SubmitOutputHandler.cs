@@ -3,7 +3,7 @@ using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
 using AeroMes.Domain.Quality.Repositories;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Production.Commands.SubmitOutput;
 
@@ -13,9 +13,9 @@ public class SubmitOutputHandler(
     IProductionLogRepository productionLogRepo,
     IDefectCodeRepository defectCodeRepo,
     IUnitOfWork uow)
-    : IRequestHandler<SubmitOutputCommand, SubmitOutputResult>
+    : ICommandHandler<SubmitOutputCommand, SubmitOutputResult>
 {
-    public async Task<SubmitOutputResult> Handle(SubmitOutputCommand cmd, CancellationToken ct)
+    public async Task<SubmitOutputResult> HandleAsync(SubmitOutputCommand cmd, CancellationToken ct)
     {
         // Idempotency guard
         if (cmd.IdempotencyKey is not null &&

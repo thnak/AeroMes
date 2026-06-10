@@ -1,5 +1,5 @@
 using AeroMes.Domain.Master;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.StorageLocations.Commands.UpdateStorageLocation;
 
@@ -7,4 +7,4 @@ public record UpdateStorageLocationCommand(
     int Id,
     string Name,
     LocationType LocationType,
-    int? WorkCenterId) : IRequest;
+    int? WorkCenterId) : ICommand;

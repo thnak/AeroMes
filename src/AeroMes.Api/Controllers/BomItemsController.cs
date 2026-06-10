@@ -2,7 +2,8 @@ using AeroMes.Application.Master.BomItems.Commands.CreateBomItem;
 using AeroMes.Application.Master.BomItems.Commands.DeleteBomItem;
 using AeroMes.Application.Master.BomItems.Commands.UpdateBomItem;
 using AeroMes.Application.Master.BomItems.Queries.GetBomItems;
-using MediatR;
+using LiteBus.Commands.Abstractions;
+using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,13 +12,14 @@ namespace AeroMes.Api.Controllers;
 [ApiController]
 [Route("api/v1/bom-items")]
 [Authorize]
-public class BomItemsController(IMediator mediator) : ControllerBase
+public class BomItemsController(ICommandMediator commandMediator,
+    IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet("{parentCode}")]
     [ProducesResponseType<IReadOnlyList<BomItemDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetByParent(string parentCode, CancellationToken ct)
-        => Ok(await mediator.Send(new GetBomItemsQuery(parentCode), ct));
+        => Ok(await queryMediator.QueryAsync(new GetBomItemsQuery(parentCode), null, ct));
 
     [HttpPost]
     [ProducesResponseType<BomItemCreatedResult>(StatusCodes.Status201Created)]
@@ -25,8 +27,8 @@ public class BomItemsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateBomItemRequest req, CancellationToken ct)
     {
-        var id = await mediator.Send(
-            new CreateBomItemCommand(req.ParentProductCode, req.ChildProductCode, req.RequiredQty, req.ScrapFactor, User.Identity?.Name), ct);
+        var id = await commandMediator.SendAsync(
+            new CreateBomItemCommand(req.ParentProductCode, req.ChildProductCode, req.RequiredQty, req.ScrapFactor, User.Identity?.Name), null, ct);
         return CreatedAtAction(nameof(GetByParent), new { parentCode = req.ParentProductCode }, new BomItemCreatedResult(id));
     }
 
@@ -37,7 +39,7 @@ public class BomItemsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateBomItemRequest req, CancellationToken ct)
     {
-        await mediator.Send(new UpdateBomItemCommand(id, req.RequiredQty, req.ScrapFactor, User.Identity?.Name ?? "system"), ct);
+        await commandMediator.SendAsync(new UpdateBomItemCommand(id, req.RequiredQty, req.ScrapFactor, User.Identity?.Name ?? "system"), null, ct);
         return NoContent();
     }
 
@@ -47,7 +49,7 @@ public class BomItemsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        await mediator.Send(new DeleteBomItemCommand(id), ct);
+        await commandMediator.SendAsync(new DeleteBomItemCommand(id), null, ct);
         return NoContent();
     }
 }

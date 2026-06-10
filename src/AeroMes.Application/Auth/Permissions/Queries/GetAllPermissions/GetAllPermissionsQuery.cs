@@ -1,5 +1,5 @@
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Auth.Permissions.Queries.GetAllPermissions;
 
-public record GetAllPermissionsQuery : IRequest<IReadOnlyList<PermissionDto>>;
+public record GetAllPermissionsQuery : IQuery<IReadOnlyList<PermissionDto>>;

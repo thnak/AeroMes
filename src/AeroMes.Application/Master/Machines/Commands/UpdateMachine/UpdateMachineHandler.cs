@@ -1,15 +1,15 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Machines.Commands.UpdateMachine;
 
 public class UpdateMachineHandler(
     IMachineRepository repo,
-    IUnitOfWork uow) : IRequestHandler<UpdateMachineCommand>
+    IUnitOfWork uow) : ICommandHandler<UpdateMachineCommand>
 {
-    public async Task Handle(UpdateMachineCommand cmd, CancellationToken ct)
+    public async Task HandleAsync(UpdateMachineCommand cmd, CancellationToken ct)
     {
         var entity = await repo.GetByCodeAsync(cmd.Code, ct)
             ?? throw new EntityNotFoundException("Machine", cmd.Code);

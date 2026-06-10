@@ -1,8 +1,8 @@
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Master.Products.Queries.GetProducts;
 
-public record GetProductsQuery(bool ActiveOnly = true) : IRequest<IReadOnlyList<ProductDto>>;
+public record GetProductsQuery(bool ActiveOnly = true) : IQuery<IReadOnlyList<ProductDto>>;
 
 public record ProductDto(
     string ProductCode,

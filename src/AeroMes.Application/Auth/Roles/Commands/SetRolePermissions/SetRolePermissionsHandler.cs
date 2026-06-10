@@ -1,7 +1,7 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Auth;
 using AeroMes.Domain.Exceptions;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Auth.Roles.Commands.SetRolePermissions;
 
@@ -10,9 +10,9 @@ public class SetRolePermissionsHandler(
     IPermissionRepository repo,
     IUnitOfWork uow,
     IAuditLogger auditLogger)
-    : IRequestHandler<SetRolePermissionsCommand>
+    : ICommandHandler<SetRolePermissionsCommand>
 {
-    public async Task Handle(SetRolePermissionsCommand cmd, CancellationToken ct)
+    public async Task HandleAsync(SetRolePermissionsCommand cmd, CancellationToken ct)
     {
         if (!await roles.ExistsAsync(cmd.RoleId, ct))
             throw new EntityNotFoundException("Role", cmd.RoleId);

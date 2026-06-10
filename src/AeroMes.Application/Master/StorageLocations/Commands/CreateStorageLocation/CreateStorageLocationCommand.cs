@@ -1,5 +1,5 @@
 using AeroMes.Domain.Master;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.StorageLocations.Commands.CreateStorageLocation;
 
@@ -7,4 +7,4 @@ public record CreateStorageLocationCommand(
     string Code,
     string Name,
     LocationType LocationType,
-    int? WorkCenterId) : IRequest<int>;
+    int? WorkCenterId) : ICommand<int>;

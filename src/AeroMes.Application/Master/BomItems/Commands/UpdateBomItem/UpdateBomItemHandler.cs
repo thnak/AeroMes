@@ -1,15 +1,15 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.BomItems.Commands.UpdateBomItem;
 
 public class UpdateBomItemHandler(
     IBomItemRepository repo,
-    IUnitOfWork uow) : IRequestHandler<UpdateBomItemCommand>
+    IUnitOfWork uow) : ICommandHandler<UpdateBomItemCommand>
 {
-    public async Task Handle(UpdateBomItemCommand cmd, CancellationToken ct)
+    public async Task HandleAsync(UpdateBomItemCommand cmd, CancellationToken ct)
     {
         var entity = await repo.GetByIdAsync(cmd.BomId, ct)
             ?? throw new EntityNotFoundException("BomItem", cmd.BomId);

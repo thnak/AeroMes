@@ -2,7 +2,7 @@ using AeroMes.Api.Auth;
 using AeroMes.Application.Common;
 using AeroMes.Application.Jobs.Commands.FinishJob;
 using AeroMes.Application.Jobs.Commands.StartJob;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,7 +11,7 @@ namespace AeroMes.Api.Controllers;
 [ApiController]
 [Route("api/v1/jobs")]
 [Authorize]
-public class JobsController(IMediator mediator) : ControllerBase
+public class JobsController(ICommandMediator commandMediator) : ControllerBase
 {
     [HttpPost]
     [RequirePermission(Permissions.JobStart)]
@@ -24,12 +24,12 @@ public class JobsController(IMediator mediator) : ControllerBase
         [FromBody] StartJobRequest request,
         CancellationToken ct)
     {
-        var result = await mediator.Send(new StartJobCommand(
+        var result = await commandMediator.SendAsync(new StartJobCommand(
             request.WorkOrderId,
             request.MachineCode,
             request.ShiftCode,
             request.OperatorId,
-            request.StartTime), ct);
+            request.StartTime), null, ct);
 
         return StatusCode(StatusCodes.Status201Created, new ApiResponse<StartJobResult>(true, "Job started.", result));
     }
@@ -46,7 +46,7 @@ public class JobsController(IMediator mediator) : ControllerBase
         [FromBody] FinishJobRequest request,
         CancellationToken ct)
     {
-        var result = await mediator.Send(new FinishJobCommand(jobId, request.EndTime), ct);
+        var result = await commandMediator.SendAsync(new FinishJobCommand(jobId, request.EndTime), null, ct);
         return Ok(new ApiResponse<FinishJobResult>(true, "Job finished.", result));
     }
 }

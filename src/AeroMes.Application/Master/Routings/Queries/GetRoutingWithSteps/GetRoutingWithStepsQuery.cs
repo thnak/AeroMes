@@ -1,8 +1,8 @@
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Master.Routings.Queries.GetRoutingWithSteps;
 
-public record GetRoutingWithStepsQuery(int RoutingId) : IRequest<RoutingDetailDto?>;
+public record GetRoutingWithStepsQuery(int RoutingId) : IQuery<RoutingDetailDto?>;
 
 public record RoutingDetailDto(
     int RoutingID,

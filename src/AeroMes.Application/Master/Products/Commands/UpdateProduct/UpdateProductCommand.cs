@@ -1,4 +1,4 @@
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Products.Commands.UpdateProduct;
 
@@ -8,4 +8,4 @@ public record UpdateProductCommand(
     string Unit,
     bool IsFinishedGood,
     string? BarcodePattern,
-    string UpdatedBy) : IRequest;
+    string UpdatedBy) : ICommand;

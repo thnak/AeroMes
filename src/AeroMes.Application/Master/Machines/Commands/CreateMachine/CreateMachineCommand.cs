@@ -1,4 +1,4 @@
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Machines.Commands.CreateMachine;
 
@@ -8,4 +8,4 @@ public record CreateMachineCommand(
     int WorkCenterId,
     string? Brand,
     string? Model,
-    string? CreatedBy) : IRequest<string>;
+    string? CreatedBy) : ICommand<string>;

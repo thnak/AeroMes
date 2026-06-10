@@ -1,15 +1,15 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Auth.Sessions.Queries.GetUserSessions;
 
 public class GetUserSessionsHandler(
     IUserRepository users,
     IRefreshTokenRepository repo)
-    : IRequestHandler<GetUserSessionsQuery, IReadOnlyList<SessionDto>>
+    : IQueryHandler<GetUserSessionsQuery, IReadOnlyList<SessionDto>>
 {
-    public async Task<IReadOnlyList<SessionDto>> Handle(GetUserSessionsQuery q, CancellationToken ct)
+    public async Task<IReadOnlyList<SessionDto>> HandleAsync(GetUserSessionsQuery q, CancellationToken ct)
     {
         if (!await users.ExistsAsync(q.UserId, ct))
             throw new EntityNotFoundException("User", q.UserId);

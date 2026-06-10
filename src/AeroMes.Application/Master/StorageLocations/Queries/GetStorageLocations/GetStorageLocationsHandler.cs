@@ -1,12 +1,12 @@
 using AeroMes.Domain.Master.Repositories;
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Master.StorageLocations.Queries.GetStorageLocations;
 
 public class GetStorageLocationsHandler(IStorageLocationRepository repo)
-    : IRequestHandler<GetStorageLocationsQuery, IReadOnlyList<StorageLocationDto>>
+    : IQueryHandler<GetStorageLocationsQuery, IReadOnlyList<StorageLocationDto>>
 {
-    public async Task<IReadOnlyList<StorageLocationDto>> Handle(GetStorageLocationsQuery q, CancellationToken ct)
+    public async Task<IReadOnlyList<StorageLocationDto>> HandleAsync(GetStorageLocationsQuery q, CancellationToken ct)
     {
         var items = await repo.GetAllAsync(q.ActiveOnly, ct);
         return items.Select(x => new StorageLocationDto(

@@ -1,8 +1,8 @@
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Master.StorageLocations.Queries.GetStorageLocations;
 
-public record GetStorageLocationsQuery(bool ActiveOnly = true) : IRequest<IReadOnlyList<StorageLocationDto>>;
+public record GetStorageLocationsQuery(bool ActiveOnly = true) : IQuery<IReadOnlyList<StorageLocationDto>>;
 
 public record StorageLocationDto(
     int LocationID,

@@ -5,7 +5,8 @@ using AeroMes.Application.Master.Routings.Commands.DeleteRoutingStep;
 using AeroMes.Application.Master.Routings.Commands.UpdateRouting;
 using AeroMes.Application.Master.Routings.Queries.GetRoutings;
 using AeroMes.Application.Master.Routings.Queries.GetRoutingWithSteps;
-using MediatR;
+using LiteBus.Commands.Abstractions;
+using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,13 +15,14 @@ namespace AeroMes.Api.Controllers;
 [ApiController]
 [Route("api/v1/routings")]
 [Authorize]
-public class RoutingsController(IMediator mediator) : ControllerBase
+public class RoutingsController(ICommandMediator commandMediator,
+    IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<RoutingDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, CancellationToken ct = default)
-        => Ok(await mediator.Send(new GetRoutingsQuery(activeOnly), ct));
+        => Ok(await queryMediator.QueryAsync(new GetRoutingsQuery(activeOnly), null, ct));
 
     [HttpGet("{id:int}")]
     [ProducesResponseType<RoutingDetailDto>(StatusCodes.Status200OK)]
@@ -28,7 +30,7 @@ public class RoutingsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetWithSteps(int id, CancellationToken ct)
     {
-        var result = await mediator.Send(new GetRoutingWithStepsQuery(id), ct);
+        var result = await queryMediator.QueryAsync(new GetRoutingWithStepsQuery(id), null, ct);
         return result is null ? NotFound() : Ok(result);
     }
 
@@ -38,8 +40,8 @@ public class RoutingsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateRoutingRequest req, CancellationToken ct)
     {
-        var id = await mediator.Send(
-            new CreateRoutingCommand(req.Code, req.Name, req.ProductCode, req.IsDefault, User.Identity?.Name), ct);
+        var id = await commandMediator.SendAsync(
+            new CreateRoutingCommand(req.Code, req.Name, req.ProductCode, req.IsDefault, User.Identity?.Name), null, ct);
         return CreatedAtAction(nameof(GetWithSteps), new { id }, new RoutingCreatedResult(id));
     }
 
@@ -50,7 +52,7 @@ public class RoutingsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateRoutingRequest req, CancellationToken ct)
     {
-        await mediator.Send(new UpdateRoutingCommand(id, req.Name, req.IsDefault, User.Identity?.Name ?? "system"), ct);
+        await commandMediator.SendAsync(new UpdateRoutingCommand(id, req.Name, req.IsDefault, User.Identity?.Name ?? "system"), null, ct);
         return NoContent();
     }
 
@@ -60,7 +62,7 @@ public class RoutingsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        await mediator.Send(new DeleteRoutingCommand(id), ct);
+        await commandMediator.SendAsync(new DeleteRoutingCommand(id), null, ct);
         return NoContent();
     }
 
@@ -71,8 +73,8 @@ public class RoutingsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> AddStep(int id, [FromBody] AddRoutingStepRequest req, CancellationToken ct)
     {
-        var stepId = await mediator.Send(
-            new AddRoutingStepCommand(id, req.StepNumber, req.OperationCode, req.DefaultWorkCenterId, req.StandardCycleTime, req.IsQcRequired), ct);
+        var stepId = await commandMediator.SendAsync(
+            new AddRoutingStepCommand(id, req.StepNumber, req.OperationCode, req.DefaultWorkCenterId, req.StandardCycleTime, req.IsQcRequired), null, ct);
         return CreatedAtAction(nameof(GetWithSteps), new { id }, new RoutingStepCreatedResult(stepId));
     }
 
@@ -82,7 +84,7 @@ public class RoutingsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DeleteStep(int stepId, CancellationToken ct)
     {
-        await mediator.Send(new DeleteRoutingStepCommand(stepId), ct);
+        await commandMediator.SendAsync(new DeleteRoutingStepCommand(stepId), null, ct);
         return NoContent();
     }
 }

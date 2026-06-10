@@ -1,15 +1,15 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Auth.PermissionOverrides.Queries.GetUserPermissionOverrides;
 
 public class GetUserPermissionOverridesHandler(
     IUserRepository users,
     IPermissionOverrideRepository repo)
-    : IRequestHandler<GetUserPermissionOverridesQuery, IReadOnlyList<PermissionOverrideDto>>
+    : IQueryHandler<GetUserPermissionOverridesQuery, IReadOnlyList<PermissionOverrideDto>>
 {
-    public async Task<IReadOnlyList<PermissionOverrideDto>> Handle(
+    public async Task<IReadOnlyList<PermissionOverrideDto>> HandleAsync(
         GetUserPermissionOverridesQuery q, CancellationToken ct)
     {
         if (!await users.ExistsAsync(q.UserId, ct))

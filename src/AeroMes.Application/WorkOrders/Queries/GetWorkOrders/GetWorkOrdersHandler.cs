@@ -1,13 +1,13 @@
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.WorkOrders.Queries.GetWorkOrders;
 
 public class GetWorkOrdersHandler(IWorkOrderRepository workOrderRepo)
-    : IRequestHandler<GetWorkOrdersQuery, IReadOnlyList<WorkOrderDto>>
+    : IQueryHandler<GetWorkOrdersQuery, IReadOnlyList<WorkOrderDto>>
 {
-    public async Task<IReadOnlyList<WorkOrderDto>> Handle(GetWorkOrdersQuery q, CancellationToken ct)
+    public async Task<IReadOnlyList<WorkOrderDto>> HandleAsync(GetWorkOrdersQuery q, CancellationToken ct)
     {
         var status = Enum.TryParse<WorkOrderStatus>(q.Status, ignoreCase: true, out var parsed)
             ? parsed

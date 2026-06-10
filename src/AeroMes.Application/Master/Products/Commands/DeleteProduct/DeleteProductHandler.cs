@@ -1,15 +1,15 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Products.Commands.DeleteProduct;
 
 public class DeleteProductHandler(
     IProductRepository repo,
-    IUnitOfWork uow) : IRequestHandler<DeleteProductCommand>
+    IUnitOfWork uow) : ICommandHandler<DeleteProductCommand>
 {
-    public async Task Handle(DeleteProductCommand cmd, CancellationToken ct)
+    public async Task HandleAsync(DeleteProductCommand cmd, CancellationToken ct)
     {
         var entity = await repo.GetByCodeAsync(cmd.Code, ct)
             ?? throw new EntityNotFoundException("Product", cmd.Code);

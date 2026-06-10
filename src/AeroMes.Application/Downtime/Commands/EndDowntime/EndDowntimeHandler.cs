@@ -2,16 +2,16 @@ using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Downtime.Commands.EndDowntime;
 
 public class EndDowntimeHandler(
     IDowntimeLogRepository downtimeRepo,
     IUnitOfWork uow)
-    : IRequestHandler<EndDowntimeCommand, EndDowntimeResult>
+    : ICommandHandler<EndDowntimeCommand, EndDowntimeResult>
 {
-    public async Task<EndDowntimeResult> Handle(EndDowntimeCommand cmd, CancellationToken ct)
+    public async Task<EndDowntimeResult> HandleAsync(EndDowntimeCommand cmd, CancellationToken ct)
     {
         var log = await downtimeRepo.GetByIdAsync(cmd.DowntimeLogId, ct)
             ?? throw new EntityNotFoundException(nameof(DowntimeLog), cmd.DowntimeLogId);

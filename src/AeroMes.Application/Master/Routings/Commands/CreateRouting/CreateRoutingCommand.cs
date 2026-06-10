@@ -1,4 +1,4 @@
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Routings.Commands.CreateRouting;
 
@@ -7,4 +7,4 @@ public record CreateRoutingCommand(
     string Name,
     string ProductCode,
     bool IsDefault,
-    string? CreatedBy) : IRequest<int>;
+    string? CreatedBy) : ICommand<int>;

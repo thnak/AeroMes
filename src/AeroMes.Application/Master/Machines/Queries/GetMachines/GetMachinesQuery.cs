@@ -1,8 +1,8 @@
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Master.Machines.Queries.GetMachines;
 
-public record GetMachinesQuery(bool ActiveOnly = true) : IRequest<IReadOnlyList<MachineDto>>;
+public record GetMachinesQuery(bool ActiveOnly = true) : IQuery<IReadOnlyList<MachineDto>>;
 
 public record MachineDto(
     string MachineCode,

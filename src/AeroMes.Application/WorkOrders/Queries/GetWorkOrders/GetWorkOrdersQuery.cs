@@ -1,8 +1,8 @@
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.WorkOrders.Queries.GetWorkOrders;
 
-public record GetWorkOrdersQuery(string? Status) : IRequest<IReadOnlyList<WorkOrderDto>>;
+public record GetWorkOrdersQuery(string? Status) : IQuery<IReadOnlyList<WorkOrderDto>>;
 
 public record WorkOrderDto(
     int WOID,

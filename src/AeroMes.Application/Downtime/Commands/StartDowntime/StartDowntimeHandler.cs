@@ -3,7 +3,7 @@ using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Downtime.Commands.StartDowntime;
 
@@ -11,9 +11,9 @@ public class StartDowntimeHandler(
     IMachineRepository machineRepo,
     IDowntimeLogRepository downtimeRepo,
     IUnitOfWork uow)
-    : IRequestHandler<StartDowntimeCommand, long>
+    : ICommandHandler<StartDowntimeCommand, long>
 {
-    public async Task<long> Handle(StartDowntimeCommand cmd, CancellationToken ct)
+    public async Task<long> HandleAsync(StartDowntimeCommand cmd, CancellationToken ct)
     {
         if (!await machineRepo.ExistsAsync(cmd.MachineCode, ct))
             throw new EntityNotFoundException("Machine", cmd.MachineCode);

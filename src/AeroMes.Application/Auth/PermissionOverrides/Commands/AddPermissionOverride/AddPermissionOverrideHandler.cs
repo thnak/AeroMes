@@ -1,7 +1,7 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Auth;
 using AeroMes.Domain.Exceptions;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Auth.PermissionOverrides.Commands.AddPermissionOverride;
 
@@ -12,9 +12,9 @@ public class AddPermissionOverrideHandler(
     IPermissionService permissionService,
     IUnitOfWork uow,
     IAuditLogger auditLogger)
-    : IRequestHandler<AddPermissionOverrideCommand, PermissionOverrideDto>
+    : ICommandHandler<AddPermissionOverrideCommand, PermissionOverrideDto>
 {
-    public async Task<PermissionOverrideDto> Handle(AddPermissionOverrideCommand cmd, CancellationToken ct)
+    public async Task<PermissionOverrideDto> HandleAsync(AddPermissionOverrideCommand cmd, CancellationToken ct)
     {
         if (!await users.ExistsAsync(cmd.UserId, ct))
             throw new EntityNotFoundException("User", cmd.UserId);

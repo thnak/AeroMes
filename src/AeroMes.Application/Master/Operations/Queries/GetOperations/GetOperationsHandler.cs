@@ -1,12 +1,12 @@
 using AeroMes.Domain.Master.Repositories;
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Master.Operations.Queries.GetOperations;
 
 public class GetOperationsHandler(IOperationRepository repo)
-    : IRequestHandler<GetOperationsQuery, IReadOnlyList<OperationDto>>
+    : IQueryHandler<GetOperationsQuery, IReadOnlyList<OperationDto>>
 {
-    public async Task<IReadOnlyList<OperationDto>> Handle(GetOperationsQuery q, CancellationToken ct)
+    public async Task<IReadOnlyList<OperationDto>> HandleAsync(GetOperationsQuery q, CancellationToken ct)
     {
         var items = await repo.GetAllAsync(q.ActiveOnly, ct);
         return items.Select(x => new OperationDto(

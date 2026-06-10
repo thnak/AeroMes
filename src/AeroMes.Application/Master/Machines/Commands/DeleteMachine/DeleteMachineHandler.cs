@@ -1,15 +1,15 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Machines.Commands.DeleteMachine;
 
 public class DeleteMachineHandler(
     IMachineRepository repo,
-    IUnitOfWork uow) : IRequestHandler<DeleteMachineCommand>
+    IUnitOfWork uow) : ICommandHandler<DeleteMachineCommand>
 {
-    public async Task Handle(DeleteMachineCommand cmd, CancellationToken ct)
+    public async Task HandleAsync(DeleteMachineCommand cmd, CancellationToken ct)
     {
         var entity = await repo.GetByCodeAsync(cmd.Code, ct)
             ?? throw new EntityNotFoundException("Machine", cmd.Code);

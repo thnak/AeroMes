@@ -4,7 +4,8 @@ using AeroMes.Application.Auth.Permissions.Queries.GetAllPermissions;
 using AeroMes.Application.Auth.Roles.Commands.SetRolePermissions;
 using AeroMes.Application.Auth.Roles.Queries.GetRolePermissions;
 using AeroMes.Application.Common;
-using MediatR;
+using LiteBus.Commands.Abstractions;
+using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +19,8 @@ namespace AeroMes.Api.Controllers;
 [Authorize]
 public class RolesController(
     RoleManager<IdentityRole> roleManager,
-    IMediator mediator) : ControllerBase
+    ICommandMediator commandMediator,
+    IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(Permissions.RoleRead)]
@@ -74,7 +76,7 @@ public class RolesController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetPermissions(string id)
     {
-        var result = await mediator.Send(new GetRolePermissionsQuery(id));
+        var result = await queryMediator.QueryAsync(new GetRolePermissionsQuery(id));
         return Ok(result);
     }
 
@@ -86,7 +88,7 @@ public class RolesController(
     public async Task<IActionResult> SetPermissions(string id, [FromBody] SetPermissionsRequest request)
     {
         var actorId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        await mediator.Send(new SetRolePermissionsCommand(id, request.PermissionCodes, actorId));
+        await commandMediator.SendAsync(new SetRolePermissionsCommand(id, request.PermissionCodes, actorId));
         return NoContent();
     }
 }
@@ -94,7 +96,7 @@ public class RolesController(
 [ApiController]
 [Route("api/v1/auth/permissions")]
 [Authorize]
-public class PermissionsController(IMediator mediator) : ControllerBase
+public class PermissionsController(IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(Permissions.PermissionRead)]
@@ -102,7 +104,7 @@ public class PermissionsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll()
     {
-        var result = await mediator.Send(new GetAllPermissionsQuery());
+        var result = await queryMediator.QueryAsync(new GetAllPermissionsQuery());
         return Ok(result);
     }
 }

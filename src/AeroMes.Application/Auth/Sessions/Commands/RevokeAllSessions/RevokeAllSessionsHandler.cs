@@ -1,6 +1,6 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Auth.Sessions.Commands.RevokeAllSessions;
 
@@ -8,9 +8,9 @@ public class RevokeAllSessionsHandler(
     IUserRepository users,
     IRefreshTokenRepository repo,
     IUnitOfWork uow)
-    : IRequestHandler<RevokeAllSessionsCommand>
+    : ICommandHandler<RevokeAllSessionsCommand>
 {
-    public async Task Handle(RevokeAllSessionsCommand cmd, CancellationToken ct)
+    public async Task HandleAsync(RevokeAllSessionsCommand cmd, CancellationToken ct)
     {
         if (!await users.ExistsAsync(cmd.UserId, ct))
             throw new EntityNotFoundException("User", cmd.UserId);

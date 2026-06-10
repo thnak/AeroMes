@@ -1,5 +1,5 @@
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Routings.Commands.DeleteRouting;
 
-public record DeleteRoutingCommand(int Id) : IRequest;
+public record DeleteRoutingCommand(int Id) : ICommand;

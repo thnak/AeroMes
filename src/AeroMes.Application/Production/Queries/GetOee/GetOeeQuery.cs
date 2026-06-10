@@ -1,4 +1,4 @@
-using MediatR;
+using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Production.Queries.GetOee;
 
@@ -6,7 +6,7 @@ public record GetOeeQuery(
     string MachineCode,
     DateTime ShiftStart,
     DateTime ShiftEnd,
-    double DesignedCycleTimeSeconds) : IRequest<OeeResult>;
+    double DesignedCycleTimeSeconds) : IQuery<OeeResult>;
 
 public record OeeResult(
     string MachineCode,

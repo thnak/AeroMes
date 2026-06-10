@@ -2,15 +2,15 @@ using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Routings.Commands.AddRoutingStep;
 
 public class AddRoutingStepHandler(
     IRoutingRepository repo,
-    IUnitOfWork uow) : IRequestHandler<AddRoutingStepCommand, int>
+    IUnitOfWork uow) : ICommandHandler<AddRoutingStepCommand, int>
 {
-    public async Task<int> Handle(AddRoutingStepCommand cmd, CancellationToken ct)
+    public async Task<int> HandleAsync(AddRoutingStepCommand cmd, CancellationToken ct)
     {
         if (!await repo.ExistsAsync(cmd.RoutingId, ct))
             throw new EntityNotFoundException("Routing", cmd.RoutingId);

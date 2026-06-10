@@ -12,7 +12,8 @@ using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Auth;
 using AeroMes.Infrastructure.Identity;
-using MediatR;
+using LiteBus.Commands.Abstractions;
+using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +29,8 @@ public class UsersController(
     RoleManager<IdentityRole> roleManager,
     IPermissionService permissionService,
     IAuditLogger auditLogger,
-    IMediator mediator) : ControllerBase
+    ICommandMediator commandMediator,
+    IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(Permissions.UserRead)]
@@ -280,7 +282,7 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPermissionOverrides(string id)
     {
-        var result = await mediator.Send(new GetUserPermissionOverridesQuery(id));
+        var result = await queryMediator.QueryAsync(new GetUserPermissionOverridesQuery(id));
         return Ok(result);
     }
 
@@ -295,7 +297,7 @@ public class UsersController(
         string id, [FromBody] AddPermissionOverrideRequest request)
     {
         var actorId = userManager.GetUserId(User) ?? "system";
-        var result = await mediator.Send(new AddPermissionOverrideCommand(
+        var result = await commandMediator.SendAsync(new AddPermissionOverrideCommand(
             id, request.PermissionCode, request.Effect, request.ExpiresAt, actorId));
         return StatusCode(StatusCodes.Status201Created, result);
     }
@@ -308,7 +310,7 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RemovePermissionOverride(string id, int overrideId)
     {
-        await mediator.Send(new RemovePermissionOverrideCommand(id, overrideId, userManager.GetUserId(User)));
+        await commandMediator.SendAsync(new RemovePermissionOverrideCommand(id, overrideId, userManager.GetUserId(User)));
         return NoContent();
     }
 
@@ -322,7 +324,7 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetSessions(string id)
     {
-        var result = await mediator.Send(new GetUserSessionsQuery(id));
+        var result = await queryMediator.QueryAsync(new GetUserSessionsQuery(id));
         return Ok(result);
     }
 
@@ -334,7 +336,7 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RevokeSession(string id, long tokenId)
     {
-        await mediator.Send(new RevokeSessionCommand(id, tokenId));
+        await commandMediator.SendAsync(new RevokeSessionCommand(id, tokenId));
         return NoContent();
     }
 
@@ -346,7 +348,7 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RevokeAllSessions(string id)
     {
-        await mediator.Send(new RevokeAllSessionsCommand(id));
+        await commandMediator.SendAsync(new RevokeAllSessionsCommand(id));
         return NoContent();
     }
 

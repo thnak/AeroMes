@@ -2,16 +2,16 @@ using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
-using MediatR;
+using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.WorkOrders.Commands.StartWorkOrder;
 
 public class StartWorkOrderHandler(
     IWorkOrderRepository workOrderRepo,
     IUnitOfWork uow)
-    : IRequestHandler<StartWorkOrderCommand, StartWorkOrderResult>
+    : ICommandHandler<StartWorkOrderCommand, StartWorkOrderResult>
 {
-    public async Task<StartWorkOrderResult> Handle(StartWorkOrderCommand cmd, CancellationToken ct)
+    public async Task<StartWorkOrderResult> HandleAsync(StartWorkOrderCommand cmd, CancellationToken ct)
     {
         var workOrder = await workOrderRepo.GetByIdAsync(cmd.WorkOrderId, ct)
             ?? throw new EntityNotFoundException(nameof(WorkOrder), cmd.WorkOrderId);
