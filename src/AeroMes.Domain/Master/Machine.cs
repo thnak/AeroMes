@@ -1,5 +1,4 @@
 using AeroMes.Domain.Common;
-using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Domain.Master;
 
@@ -26,11 +25,6 @@ public class Machine : AuditableEntity
         string? model = null,
         string? createdBy = null)
     {
-        if (string.IsNullOrWhiteSpace(code))
-            throw new DomainException("Machine code is required.");
-        if (string.IsNullOrWhiteSpace(name))
-            throw new DomainException("Machine name is required.");
-
         return new Machine
         {
             MachineCode = code.Trim().ToUpperInvariant(),
@@ -47,8 +41,6 @@ public class Machine : AuditableEntity
 
     public void UpdateDetails(string name, int workCenterId, string? brand, string? model, string updatedBy)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new DomainException("Machine name is required.");
         MachineName = name.Trim();
         WorkCenterID = workCenterId;
         Brand = brand;

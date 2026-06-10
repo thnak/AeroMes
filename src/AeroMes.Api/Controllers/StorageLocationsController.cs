@@ -7,6 +7,7 @@ using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace AeroMes.Api.Controllers;
 
@@ -50,7 +51,7 @@ public class StorageLocationsController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new DeleteStorageLocationCommand(id), null, ct);
+        await commandMediator.SendAsync(new DeleteStorageLocationCommand(id, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
         return NoContent();
     }
 }

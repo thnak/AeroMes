@@ -1,5 +1,4 @@
 using AeroMes.Domain.Common;
-using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Domain.Master;
 
@@ -22,13 +21,6 @@ public class Product : AuditableEntity
         string? barcodePattern = null,
         string? createdBy = null)
     {
-        if (string.IsNullOrWhiteSpace(code))
-            throw new DomainException("Product code is required.");
-        if (string.IsNullOrWhiteSpace(name))
-            throw new DomainException("Product name is required.");
-        if (string.IsNullOrWhiteSpace(unit))
-            throw new DomainException("Product unit is required.");
-
         return new Product
         {
             ProductCode = code.Trim().ToUpperInvariant(),
@@ -44,10 +36,6 @@ public class Product : AuditableEntity
 
     public void UpdateDetails(string name, string unit, bool isFinishedGood, string? barcodePattern, string updatedBy)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new DomainException("Product name is required.");
-        if (string.IsNullOrWhiteSpace(unit))
-            throw new DomainException("Product unit is required.");
         ProductName = name.Trim();
         ProductUnit = unit.Trim();
         IsFinishedGood = isFinishedGood;

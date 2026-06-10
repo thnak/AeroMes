@@ -13,7 +13,7 @@ public class DeleteMachineHandler(
     {
         var entity = await repo.GetByCodeAsync(cmd.Code, ct)
             ?? throw new EntityNotFoundException("Machine", cmd.Code);
-        entity.Deactivate();
+        entity.SoftDelete(cmd.DeletedBy);
         await uow.SaveChangesAsync(ct);
     }
 }

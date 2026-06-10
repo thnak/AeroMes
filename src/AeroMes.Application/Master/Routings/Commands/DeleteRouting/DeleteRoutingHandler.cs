@@ -13,7 +13,7 @@ public class DeleteRoutingHandler(
     {
         var entity = await repo.GetByIdAsync(cmd.Id, ct)
             ?? throw new EntityNotFoundException("Routing", cmd.Id);
-        entity.Deactivate();
+        entity.SoftDelete(cmd.DeletedBy);
         await uow.SaveChangesAsync(ct);
     }
 }

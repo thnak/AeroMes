@@ -13,7 +13,7 @@ public class DeleteProductHandler(
     {
         var entity = await repo.GetByCodeAsync(cmd.Code, ct)
             ?? throw new EntityNotFoundException("Product", cmd.Code);
-        entity.Deactivate();
+        entity.SoftDelete(cmd.DeletedBy);
         await uow.SaveChangesAsync(ct);
     }
 }

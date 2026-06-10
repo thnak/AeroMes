@@ -205,7 +205,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.WorkCenterCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.WorkCenterName).HasMaxLength(100).IsRequired();
             e.Property(x => x.Description).HasMaxLength(255);
-            e.HasIndex(x => x.WorkCenterCode).IsUnique();
+            e.HasIndex(x => x.WorkCenterCode).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasQueryFilter(x => !x.IsDeleted);
         });
 
         b.Entity<Machine>(e =>
@@ -221,6 +222,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.HasOne(x => x.WorkCenter)
                 .WithMany()
                 .HasForeignKey(x => x.WorkCenterID);
+            e.HasQueryFilter(x => !x.IsDeleted);
         });
 
         b.Entity<Product>(e =>
@@ -231,6 +233,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.ProductName).HasMaxLength(200).IsRequired();
             e.Property(x => x.ProductUnit).HasMaxLength(20).IsRequired();
             e.Property(x => x.BarcodePattern).HasMaxLength(100);
+            e.HasQueryFilter(x => !x.IsDeleted);
         });
 
         b.Entity<BomItem>(e =>
@@ -241,7 +244,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.ChildProductCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.RequiredQty).HasColumnType("NUMERIC(18,4)");
             e.Property(x => x.ScrapFactor).HasColumnType("NUMERIC(5,2)");
-            e.HasIndex(x => new { x.ParentProductCode, x.ChildProductCode }).IsUnique();
+            e.HasIndex(x => new { x.ParentProductCode, x.ChildProductCode }).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasQueryFilter(x => !x.IsDeleted);
 
             e.HasOne<Product>().WithMany()
                 .HasForeignKey(x => x.ParentProductCode);
@@ -257,6 +261,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.OperationCode).HasMaxLength(30).ValueGeneratedNever();
             e.Property(x => x.OperationName).HasMaxLength(100).IsRequired();
             e.Property(x => x.Description).HasMaxLength(255);
+            e.HasQueryFilter(x => !x.IsDeleted);
         });
 
         b.Entity<Routing>(e =>
@@ -266,7 +271,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.RoutingCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.RoutingName).HasMaxLength(150).IsRequired();
             e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
-            e.HasIndex(x => x.RoutingCode).IsUnique();
+            e.HasIndex(x => x.RoutingCode).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasQueryFilter(x => !x.IsDeleted);
 
             e.HasOne<Product>().WithMany()
                 .HasForeignKey(x => x.ProductCode);
@@ -302,7 +308,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.LocationCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.LocationName).HasMaxLength(100).IsRequired();
             e.Property(x => x.LocationType).HasConversion<string>().HasMaxLength(20);
-            e.HasIndex(x => x.LocationCode).IsUnique();
+            e.HasIndex(x => x.LocationCode).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasQueryFilter(x => !x.IsDeleted);
 
             e.HasOne(x => x.WorkCenter)
                 .WithMany()

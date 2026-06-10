@@ -13,7 +13,7 @@ public class DeleteOperationHandler(
     {
         var entity = await repo.GetByCodeAsync(cmd.Code, ct)
             ?? throw new EntityNotFoundException("Operation", cmd.Code);
-        entity.Deactivate();
+        entity.SoftDelete(cmd.DeletedBy);
         await uow.SaveChangesAsync(ct);
     }
 }

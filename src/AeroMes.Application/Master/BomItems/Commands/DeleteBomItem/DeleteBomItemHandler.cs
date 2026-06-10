@@ -13,7 +13,7 @@ public class DeleteBomItemHandler(
     {
         var entity = await repo.GetByIdAsync(cmd.BomId, ct)
             ?? throw new EntityNotFoundException("BomItem", cmd.BomId);
-        entity.Deactivate();
+        entity.SoftDelete(cmd.DeletedBy);
         await uow.SaveChangesAsync(ct);
     }
 }

@@ -6,6 +6,7 @@ using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace AeroMes.Api.Controllers;
 
@@ -48,7 +49,7 @@ public class WorkCentersController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new DeleteWorkCenterCommand(id), null, ct);
+        await commandMediator.SendAsync(new DeleteWorkCenterCommand(id, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
         return NoContent();
     }
 }

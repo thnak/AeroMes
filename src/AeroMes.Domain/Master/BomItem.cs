@@ -1,5 +1,4 @@
 using AeroMes.Domain.Common;
-using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Domain.Master;
 
@@ -21,17 +20,6 @@ public class BomItem : AuditableEntity
         decimal scrapFactor = 0m,
         string? createdBy = null)
     {
-        if (string.IsNullOrWhiteSpace(parentCode))
-            throw new DomainException("Parent product code is required.");
-        if (string.IsNullOrWhiteSpace(childCode))
-            throw new DomainException("Child product code is required.");
-        if (parentCode.Equals(childCode, StringComparison.OrdinalIgnoreCase))
-            throw new DomainException("Parent and child product cannot be the same.");
-        if (requiredQty <= 0)
-            throw new DomainException($"Required quantity must be positive. Got: {requiredQty}.");
-        if (scrapFactor < 0)
-            throw new DomainException($"Scrap factor cannot be negative. Got: {scrapFactor}.");
-
         return new BomItem
         {
             ParentProductCode = parentCode.Trim().ToUpperInvariant(),
@@ -46,10 +34,6 @@ public class BomItem : AuditableEntity
 
     public void UpdateQty(decimal requiredQty, decimal scrapFactor, string updatedBy)
     {
-        if (requiredQty <= 0)
-            throw new DomainException($"Required quantity must be positive. Got: {requiredQty}.");
-        if (scrapFactor < 0)
-            throw new DomainException($"Scrap factor cannot be negative. Got: {scrapFactor}.");
         RequiredQty = requiredQty;
         ScrapFactor = scrapFactor;
         Touch(updatedBy);

@@ -5,7 +5,7 @@ namespace AeroMes.Domain.Master;
 
 public enum LocationType { RawMaterial, Wip, FinishedGoods, Scrap }
 
-public class StorageLocation : Entity
+public class StorageLocation : AuditableEntity
 {
     public int LocationID { get; private set; }
     public string LocationCode { get; private set; } = string.Empty;
@@ -23,12 +23,9 @@ public class StorageLocation : Entity
         string code,
         string name,
         LocationType type,
-        int? workCenterId = null)
+        int? workCenterId = null,
+        string? createdBy = null)
     {
-        if (string.IsNullOrWhiteSpace(code))
-            throw new DomainException("Location code is required.");
-        if (string.IsNullOrWhiteSpace(name))
-            throw new DomainException("Location name is required.");
         if (type == LocationType.Wip && workCenterId is null)
             throw new DomainException("WIP location must reference a WorkCenter.");
 
@@ -39,13 +36,13 @@ public class StorageLocation : Entity
             LocationType = type,
             WorkCenterID = type == LocationType.Wip ? workCenterId : null,
             IsActive = true,
+            CreatedBy = createdBy,
+            CreatedAt = DateTime.UtcNow,
         };
     }
 
     public void UpdateDetails(string name, LocationType type, int? workCenterId)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new DomainException("Location name is required.");
         if (type == LocationType.Wip && workCenterId is null)
             throw new DomainException("WIP location must reference a WorkCenter.");
         LocationName = name.Trim();

@@ -1,5 +1,4 @@
 using AeroMes.Domain.Common;
-using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Domain.Master;
 
@@ -15,11 +14,6 @@ public class WorkCenter : AuditableEntity
 
     public static WorkCenter Create(string code, string name, string? description = null, string? createdBy = null)
     {
-        if (string.IsNullOrWhiteSpace(code))
-            throw new DomainException("WorkCenter code is required.");
-        if (string.IsNullOrWhiteSpace(name))
-            throw new DomainException("WorkCenter name is required.");
-
         return new WorkCenter
         {
             WorkCenterCode = code.Trim().ToUpperInvariant(),
@@ -33,8 +27,6 @@ public class WorkCenter : AuditableEntity
 
     public void UpdateDetails(string name, string? description, string updatedBy)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new DomainException("WorkCenter name is required.");
         WorkCenterName = name.Trim();
         Description = description;
         Touch(updatedBy);

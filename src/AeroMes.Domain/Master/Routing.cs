@@ -1,5 +1,4 @@
 using AeroMes.Domain.Common;
-using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Domain.Master;
 
@@ -25,13 +24,6 @@ public class Routing : AuditableEntity
         bool isDefault = true,
         string? createdBy = null)
     {
-        if (string.IsNullOrWhiteSpace(code))
-            throw new DomainException("Routing code is required.");
-        if (string.IsNullOrWhiteSpace(name))
-            throw new DomainException("Routing name is required.");
-        if (string.IsNullOrWhiteSpace(productCode))
-            throw new DomainException("Product code is required.");
-
         return new Routing
         {
             RoutingCode = code.Trim().ToUpperInvariant(),
@@ -46,8 +38,6 @@ public class Routing : AuditableEntity
 
     public void UpdateDetails(string name, bool isDefault, string updatedBy)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new DomainException("Routing name is required.");
         RoutingName = name.Trim();
         IsDefault = isDefault;
         Touch(updatedBy);
