@@ -5,6 +5,7 @@ using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using AeroMes.Api.Auth;
 
 namespace AeroMes.Api.Controllers;
 
@@ -14,11 +15,13 @@ namespace AeroMes.Api.Controllers;
 public class MachineProductConfigsController(ICommandMediator commandMediator, IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(Permissions.MasterDataRead)]
     [ProducesResponseType<IReadOnlyList<MachineProductConfigDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(string machineCode, CancellationToken ct = default)
         => Ok(await queryMediator.QueryAsync(new GetMachineProductConfigsQuery(machineCode), null, ct));
 
     [HttpPut("{productCode}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Upsert(string machineCode, string productCode,
@@ -32,6 +35,7 @@ public class MachineProductConfigsController(ICommandMediator commandMediator, I
     }
 
     [HttpDelete("{productCode}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(string machineCode, string productCode, CancellationToken ct)

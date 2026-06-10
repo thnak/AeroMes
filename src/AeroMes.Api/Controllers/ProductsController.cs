@@ -10,6 +10,7 @@ using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using AeroMes.Api.Auth;
 
 namespace AeroMes.Api.Controllers;
 
@@ -20,6 +21,7 @@ public class ProductsController(ICommandMediator commandMediator,
     IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(Permissions.MasterDataRead)]
     [ProducesResponseType<IReadOnlyList<ProductDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(
         [FromQuery] bool activeOnly = true,
@@ -30,6 +32,7 @@ public class ProductsController(ICommandMediator commandMediator,
         => Ok(await queryMediator.QueryAsync(new GetProductsQuery(activeOnly, itemType, categoryId, lifecycleStatus), null, ct));
 
     [HttpGet("{code}")]
+    [RequirePermission(Permissions.MasterDataRead)]
     [ProducesResponseType<ProductDetailDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByCode(string code, CancellationToken ct)
@@ -39,6 +42,7 @@ public class ProductsController(ICommandMediator commandMediator,
     }
 
     [HttpPost]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType<ProductCreatedResult>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateProductRequest req, CancellationToken ct)
@@ -52,6 +56,7 @@ public class ProductsController(ICommandMediator commandMediator,
     }
 
     [HttpPut("{code}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
@@ -69,6 +74,7 @@ public class ProductsController(ICommandMediator commandMediator,
     }
 
     [HttpPut("{code}/lifecycle")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
@@ -80,6 +86,7 @@ public class ProductsController(ICommandMediator commandMediator,
     }
 
     [HttpDelete("{code}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(string code, CancellationToken ct)

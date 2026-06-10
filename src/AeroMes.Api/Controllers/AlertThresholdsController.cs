@@ -8,6 +8,7 @@ using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using AeroMes.Api.Auth;
 
 namespace AeroMes.Api.Controllers;
 
@@ -17,11 +18,13 @@ namespace AeroMes.Api.Controllers;
 public class AlertThresholdsController(ICommandMediator commandMediator, IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(Permissions.MasterDataRead)]
     [ProducesResponseType<IReadOnlyList<AlertThresholdDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, CancellationToken ct = default)
         => Ok(await queryMediator.QueryAsync(new GetAlertThresholdsQuery(activeOnly), null, ct));
 
     [HttpPost]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType<AlertThresholdCreatedResult>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateAlertThresholdRequest req, CancellationToken ct)
@@ -33,6 +36,7 @@ public class AlertThresholdsController(ICommandMediator commandMediator, IQueryM
     }
 
     [HttpPut("{id:int}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
@@ -45,6 +49,7 @@ public class AlertThresholdsController(ICommandMediator commandMediator, IQueryM
     }
 
     [HttpDelete("{id:int}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)

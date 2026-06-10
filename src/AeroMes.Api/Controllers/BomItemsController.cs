@@ -6,6 +6,7 @@ using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using AeroMes.Api.Auth;
 
 namespace AeroMes.Api.Controllers;
 
@@ -16,12 +17,14 @@ public class BomItemsController(ICommandMediator commandMediator,
     IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet("{parentCode}")]
+    [RequirePermission(Permissions.MasterDataRead)]
     [ProducesResponseType<IReadOnlyList<BomItemDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetByParent(string parentCode, CancellationToken ct)
         => Ok(await queryMediator.QueryAsync(new GetBomItemsQuery(parentCode), null, ct));
 
     [HttpPost]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType<BomItemCreatedResult>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -33,6 +36,7 @@ public class BomItemsController(ICommandMediator commandMediator,
     }
 
     [HttpPut("{id:int}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
@@ -44,6 +48,7 @@ public class BomItemsController(ICommandMediator commandMediator,
     }
 
     [HttpDelete("{id:int}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

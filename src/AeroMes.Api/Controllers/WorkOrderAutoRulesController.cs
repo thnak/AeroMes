@@ -6,6 +6,7 @@ using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using AeroMes.Api.Auth;
 
 namespace AeroMes.Api.Controllers;
 
@@ -15,11 +16,13 @@ namespace AeroMes.Api.Controllers;
 public class WorkOrderAutoRulesController(ICommandMediator commandMediator, IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(Permissions.MasterDataRead)]
     [ProducesResponseType<IReadOnlyList<WorkOrderAutoRulesDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
         => Ok(await queryMediator.QueryAsync(new GetWorkOrderAutoRulesQuery(), null, ct));
 
     [HttpPut]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType<WorkOrderAutoRulesUpsertResult>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Upsert([FromBody] UpsertWorkOrderAutoRulesRequest req, CancellationToken ct)
@@ -32,6 +35,7 @@ public class WorkOrderAutoRulesController(ICommandMediator commandMediator, IQue
     }
 
     [HttpDelete("{id:int}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)

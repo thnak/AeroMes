@@ -7,6 +7,7 @@ using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using AeroMes.Api.Auth;
 
 namespace AeroMes.Api.Controllers;
 
@@ -17,11 +18,13 @@ public class ProductCategoriesController(ICommandMediator commandMediator,
     IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(Permissions.MasterDataRead)]
     [ProducesResponseType<IReadOnlyList<ProductCategoryDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, CancellationToken ct = default)
         => Ok(await queryMediator.QueryAsync(new GetProductCategoriesQuery(activeOnly), null, ct));
 
     [HttpPost]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType<ProductCategoryCreatedResult>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateProductCategoryRequest req, CancellationToken ct)
@@ -32,6 +35,7 @@ public class ProductCategoriesController(ICommandMediator commandMediator,
     }
 
     [HttpPut("{id:int}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
@@ -43,6 +47,7 @@ public class ProductCategoriesController(ICommandMediator commandMediator,
     }
 
     [HttpDelete("{id:int}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)

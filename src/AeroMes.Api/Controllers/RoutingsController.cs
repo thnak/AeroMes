@@ -10,6 +10,7 @@ using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using AeroMes.Api.Auth;
 
 namespace AeroMes.Api.Controllers;
 
@@ -20,12 +21,14 @@ public class RoutingsController(ICommandMediator commandMediator,
     IQueryMediator queryMediator) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(Permissions.MasterDataRead)]
     [ProducesResponseType<IReadOnlyList<RoutingDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, CancellationToken ct = default)
         => Ok(await queryMediator.QueryAsync(new GetRoutingsQuery(activeOnly), null, ct));
 
     [HttpGet("{id:int}")]
+    [RequirePermission(Permissions.MasterDataRead)]
     [ProducesResponseType<RoutingDetailDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -36,6 +39,7 @@ public class RoutingsController(ICommandMediator commandMediator,
     }
 
     [HttpPost]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType<RoutingCreatedResult>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -47,6 +51,7 @@ public class RoutingsController(ICommandMediator commandMediator,
     }
 
     [HttpPut("{id:int}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
@@ -58,6 +63,7 @@ public class RoutingsController(ICommandMediator commandMediator,
     }
 
     [HttpDelete("{id:int}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -68,6 +74,7 @@ public class RoutingsController(ICommandMediator commandMediator,
     }
 
     [HttpPost("{id:int}/steps")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType<RoutingStepCreatedResult>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
@@ -80,6 +87,7 @@ public class RoutingsController(ICommandMediator commandMediator,
     }
 
     [HttpDelete("steps/{stepId:int}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
