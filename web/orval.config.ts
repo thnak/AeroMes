@@ -3,11 +3,10 @@ import { defineConfig } from 'orval';
 export default defineConfig({
   aeromes: {
     input: {
-      // .NET 10 AddOpenApi() default endpoint.
-      // For local dev, API must be running: dotnet run --project src/AeroMes.Api
-      target: process.env.VITE_API_BASE_URL
-        ? `${process.env.VITE_API_BASE_URL}/openapi/v1.json`
-        : 'http://localhost:5170/openapi/v1.json',
+      // Use local spec snapshot by default (no server required).
+      // Refresh it with: npm run fetch:spec
+      // Override with OPENAPI_SPEC env var to point at a live server.
+      target: process.env.OPENAPI_SPEC ?? '../aeromes-openapi.json',
     },
     output: {
       // One file per API tag (matches controller names), e.g.:

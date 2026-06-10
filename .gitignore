@@ -11,6 +11,9 @@ TestResults/
 **/appsettings.*.json
 !**/appsettings.Development.json
 
+# Generated OpenAPI spec snapshot (regenerate with: cd web && npm run fetch:spec)
+aeromes-openapi.json
+
 # Node / Frontend
 web/node_modules/
 web/dist/

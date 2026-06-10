@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "fetch:spec": "curl -sf http://localhost:5170/openapi/v1.json -o ../aeromes-openapi.json",
     "generate:api": "orval --config orval.config.ts",
     "generate:api:watch": "orval --config orval.config.ts --watch"
   },
