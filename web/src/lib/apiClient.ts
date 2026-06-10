@@ -25,7 +25,7 @@ export function getErrorMessage(err: unknown, fallback = 'An error occurred'): s
 }
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? '',
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
@@ -59,7 +59,7 @@ apiClient.interceptors.response.use(
 
     if (!refreshPromise) {
       refreshPromise = apiClient
-        .post<{ accessToken: string }>('/auth/refresh', {}, { _retry: true } as never)
+        .post<{ accessToken: string }>('/api/v1/auth/refresh', {}, { _retry: true } as never)
         .then((r) => {
           const token = r.data.accessToken;
           localStorage.setItem('accessToken', token);
