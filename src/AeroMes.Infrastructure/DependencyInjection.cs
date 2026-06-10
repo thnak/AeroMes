@@ -8,6 +8,7 @@ using AeroMes.Infrastructure.Identity;
 using AeroMes.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,8 +22,13 @@ public static class DependencyInjection
     {
         services.AddDbContext<AppDbContext>(opts =>
             opts.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection"),
-                sql => sql.EnableRetryOnFailure(3)));
+                    configuration.GetConnectionString("DefaultConnection"),
+                    sql => sql.EnableRetryOnFailure(3))
+                // Job, InventoryStock, RoutingStep extend plain Entity (no IsDeleted).
+                // Their required FK parents (Machine, StorageLocation, WorkCenter) have soft-delete
+                // filters. Deletion of those parents is guarded at the application layer.
+                .ConfigureWarnings(w => w.Ignore(
+                    CoreEventId.PossibleIncorrectRequiredNavigationWithQueryFilterInteractionWarning)));
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
 
