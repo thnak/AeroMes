@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using AeroMes.Api.Constants;
 using AeroMes.Api.Controllers;
-using Xunit;
 
 namespace AeroMes.IntegrationTests.Auth;
 
@@ -14,11 +14,11 @@ public class AuthFlowTests(AeroMesWebFactory factory)
     public async Task Login_WithValidCredentials_ReturnsAccessTokenAndRefreshCookie()
     {
         var response = await _client.PostAsJsonAsync("/api/v1/auth/login",
-            new { Email = "system@aeromes.local", Password = "ChangeMe123!" });
+            new LoginRequest( "system@aeromes.local", "ChangeMe123!" ), ApiJsonContext.Default.LoginRequest);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var body = await response.Content.ReadFromJsonAsync<LoginResponse>();
+        var body = await response.Content.ReadFromJsonAsync(ApiJsonContext.Default.LoginResponse);
         Assert.NotNull(body?.AccessToken);
         Assert.Equal("Bearer", body.TokenType);
         Assert.True(body.ExpiresIn > 0);

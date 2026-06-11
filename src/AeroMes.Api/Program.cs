@@ -13,10 +13,34 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using AeroMes.Api.Constants;
+using Microsoft.AspNetCore.Http.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.Configure<JsonOptions>(options =>
+{
+    options.SerializerOptions.DefaultIgnoreCondition =
+        JsonIgnoreCondition.WhenWritingNull;
+    options.SerializerOptions.PropertyNamingPolicy =
+        JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.TypeInfoResolverChain.Add(new ApiJsonContext());
+});
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.DefaultIgnoreCondition =
+        JsonIgnoreCondition.WhenWritingNull;
+    options.JsonSerializerOptions.PropertyNamingPolicy =
+        JsonNamingPolicy.CamelCase;
+    options.JsonSerializerOptions.TypeInfoResolverChain.Add(new ApiJsonContext());
+});
+builder.Services.ConfigureHttpJsonOptions(opts =>
+{
+    opts.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    opts.SerializerOptions.TypeInfoResolverChain.Add(new ApiJsonContext());
+});
 builder.Services.AddOpenApi(opts =>
 {
     opts.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
