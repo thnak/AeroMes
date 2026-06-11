@@ -14,7 +14,7 @@ public class AuthFlowTests(AeroMesWebFactory factory)
     public async Task Login_WithValidCredentials_ReturnsAccessTokenAndRefreshCookie()
     {
         var response = await _client.PostAsJsonAsync("/api/v1/auth/login",
-            new LoginRequest( "system@aeromes.local", "ChangeMe123!" ), ApiJsonContext.Default.LoginRequest);
+            new LoginRequest("system@aeromes.local", "ChangeMe123!"), ApiJsonContext.Default.LoginRequest);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -32,7 +32,7 @@ public class AuthFlowTests(AeroMesWebFactory factory)
     public async Task Login_WithInvalidPassword_Returns401()
     {
         var response = await _client.PostAsJsonAsync("/api/v1/auth/login",
-            new { Email = "system@aeromes.local", Password = "wrong-password" });
+            new LoginRequest("system@aeromes.local", "wrong-password"), ApiJsonContext.Default.LoginRequest);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -41,9 +41,9 @@ public class AuthFlowTests(AeroMesWebFactory factory)
     public async Task Login_ForcePasswordChange_FlagIsTrue_ForSeedAdmin()
     {
         var response = await _client.PostAsJsonAsync("/api/v1/auth/login",
-            new { Email = "system@aeromes.local", Password = "ChangeMe123!" });
+            new LoginRequest("system@aeromes.local", "ChangeMe123!"), ApiJsonContext.Default.LoginRequest);
 
-        var body = await response.Content.ReadFromJsonAsync<LoginResponse>();
+        var body = await response.Content.ReadFromJsonAsync(ApiJsonContext.Default.LoginResponse);
         Assert.True(body?.ForcePasswordChange);
     }
 
@@ -83,12 +83,17 @@ public class AuthFlowTests(AeroMesWebFactory factory)
     private async Task<string> GetAccessTokenAsync()
     {
         var response = await _client.PostAsJsonAsync("/api/v1/auth/login",
-            new { Email = "system@aeromes.local", Password = "ChangeMe123!" });
+            new LoginRequest("system@aeromes.local", "ChangeMe123!"), ApiJsonContext.Default.LoginRequest);
         var body = await response.Content.ReadFromJsonAsync<LoginResponse>();
         return body!.AccessToken;
     }
 
     private record LoginResponse(
-        string AccessToken, string TokenType, int ExpiresIn,
-        string Email, string FullName, string[] Roles, bool ForcePasswordChange);
+        string AccessToken,
+        string TokenType,
+        int ExpiresIn,
+        string Email,
+        string FullName,
+        string[] Roles,
+        bool ForcePasswordChange);
 }

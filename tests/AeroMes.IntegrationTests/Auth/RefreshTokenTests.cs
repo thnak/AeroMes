@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
-using Xunit;
+using AeroMes.Api.Constants;
+using AeroMes.Api.Controllers;
 
 namespace AeroMes.IntegrationTests.Auth;
 
@@ -16,12 +17,12 @@ public class RefreshTokenTests(AeroMesWebFactory factory)
             { HandleCookies = true });
 
         await client.PostAsJsonAsync("/api/v1/auth/login",
-            new { Email = "system@aeromes.local", Password = "ChangeMe123!" });
+            new LoginRequest("system@aeromes.local", "ChangeMe123!"), ApiJsonContext.Default.LoginRequest);
 
         var refreshResponse = await client.PostAsync("/api/v1/auth/refresh", null);
         Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
 
-        var body = await refreshResponse.Content.ReadFromJsonAsync<RefreshResponse>();
+        var body = await refreshResponse.Content.ReadFromJsonAsync(ApiJsonContext.Default.LoginResponse);
         Assert.NotNull(body?.AccessToken);
     }
 
@@ -43,7 +44,7 @@ public class RefreshTokenTests(AeroMesWebFactory factory)
 
         // Login — get initial refresh cookie
         await client.PostAsJsonAsync("/api/v1/auth/login",
-            new { Email = "system@aeromes.local", Password = "ChangeMe123!" });
+            new LoginRequest("system@aeromes.local", "ChangeMe123!"), ApiJsonContext.Default.LoginRequest);
 
         // Capture the first refresh cookie before rotation
         // First refresh — rotates the token
@@ -65,7 +66,7 @@ public class RefreshTokenTests(AeroMesWebFactory factory)
 
         // Step 1: Login — capture C1 from Set-Cookie header.
         var loginResp = await client.PostAsJsonAsync("/api/v1/auth/login",
-            new { Email = "system@aeromes.local", Password = "ChangeMe123!" });
+            new LoginRequest("system@aeromes.local", "ChangeMe123!"), ApiJsonContext.Default.LoginRequest);
         Assert.Equal(HttpStatusCode.OK, loginResp.StatusCode);
 
         var c1 = ExtractRefreshTokenValue(loginResp);
