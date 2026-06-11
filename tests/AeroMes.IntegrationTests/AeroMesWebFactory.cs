@@ -9,8 +9,7 @@ namespace AeroMes.IntegrationTests;
 
 public sealed class AeroMesWebFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly MsSqlContainer _container = new MsSqlBuilder()
-        .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+    private readonly MsSqlContainer _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
         .Build();
 
     public string ConnectionString => _container.GetConnectionString();
@@ -35,7 +34,10 @@ public sealed class AeroMesWebFactory : WebApplicationFactory<Program>, IAsyncLi
 
             services.AddDbContext<AppDbContext>(opts =>
                 opts.UseSqlServer(_container.GetConnectionString(),
-                    sql => sql.EnableRetryOnFailure(3)));
+                    sql =>
+                    {
+                        sql.EnableRetryOnFailure(3);
+                    }));
         });
 
         builder.UseSetting("Jwt:Key", "test-jwt-key-must-be-at-least-32-characters-long!");

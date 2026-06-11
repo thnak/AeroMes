@@ -153,6 +153,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         b.Entity<ApplicationUser>(e =>
         {
             e.Property(x => x.EmployeeCode).HasMaxLength(50);
+            e.Property(x => x.FullName).HasMaxLength(250);
             e.Property(x => x.Department).HasMaxLength(100);
             e.Property(x => x.PreferredLanguage).HasMaxLength(10);
             e.Property(x => x.AvatarUrl).HasMaxLength(500);
