@@ -1,8 +1,10 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 using AeroMes.Api.Controllers;
 
 namespace AeroMes.Api.Constants;
 
+[JsonSourceGenerationOptions(JsonSerializerDefaults.Web)]
 [JsonSerializable(typeof(ForgotPasswordRequest))]
 [JsonSerializable(typeof(ResetPasswordRequest))]
 [JsonSerializable(typeof(LoginRequest))]
