@@ -154,12 +154,12 @@ if (app.Environment.IsDevelopment())
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.UseMiddleware<ExceptionMiddleware>();   // must be first — catches all downstream exceptions
+app.Use(ExceptionMiddleware.InvokeAsync);   // must be first — catches all downstream exceptions
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseMiddleware<ForcePasswordChangeMiddleware>();
-app.UseMiddleware<MfaEnforcementMiddleware>();
+app.Use(ForcePasswordChangeMiddleware.InvokeAsync);
+app.Use(MfaEnforcementMiddleware.InvokeAsync);
 app.MapControllers();
 app.MapFallbackToFile("index.html");
 

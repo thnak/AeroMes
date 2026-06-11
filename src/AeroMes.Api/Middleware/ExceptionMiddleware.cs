@@ -1,17 +1,15 @@
 using AeroMes.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
+using AeroMes.Api.Constants;
 
 namespace AeroMes.Api.Middleware;
 
-public class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
+public class ExceptionMiddleware
 {
-    private static readonly JsonSerializerOptions JsonOpts =
-        new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-
-    public async Task InvokeAsync(HttpContext ctx)
+    public static async Task InvokeAsync(HttpContext ctx, RequestDelegate next)
     {
+        ILogger<ExceptionMiddleware> logger = ctx.RequestServices.GetRequiredService<ILogger<ExceptionMiddleware>>();
         try
         {
             await next(ctx);
@@ -23,8 +21,8 @@ public class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddlewa
                 "https://tools.ietf.org/html/rfc7807",
                 new Dictionary<string, string[]>(
                     ex.Errors.GroupBy(e => e.PropertyName)
-                             .Select(g => new KeyValuePair<string, string[]>(
-                                 g.Key, g.Select(e => e.ErrorMessage).ToArray()))));
+                        .Select(g => new KeyValuePair<string, string[]>(
+                            g.Key, g.Select(e => e.ErrorMessage).ToArray()))));
         }
         catch (EntityNotFoundException ex)
         {
@@ -64,6 +62,6 @@ public class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddlewa
         if (errors is not null)
             problem.Extensions["errors"] = errors;
 
-        return ctx.Response.WriteAsync(JsonSerializer.Serialize(problem, JsonOpts));
+        return ctx.Response.WriteAsJsonAsync(problem, ApiJsonContext.Default.ProblemDetails);
     }
 }

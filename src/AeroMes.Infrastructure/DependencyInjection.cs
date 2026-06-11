@@ -20,7 +20,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddDbContext<AppDbContext>(opts =>
+        services.AddDbContextPool<AppDbContext>(opts =>
             opts.UseSqlServer(
                     configuration.GetConnectionString("DefaultConnection"),
                     sql => sql.EnableRetryOnFailure(3))

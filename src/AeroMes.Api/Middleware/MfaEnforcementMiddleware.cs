@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using AeroMes.Api.Constants;
 
 namespace AeroMes.Api.Middleware;
 
@@ -8,7 +9,7 @@ namespace AeroMes.Api.Middleware;
 /// Also blocks tokens with <c>mfa_pending=true</c> from accessing any endpoint
 /// other than the MFA verification endpoints.
 /// </summary>
-public class MfaEnforcementMiddleware(RequestDelegate next, IConfiguration configuration)
+public class MfaEnforcementMiddleware
 {
     private static readonly HashSet<string> MfaAllowedPaths =
     [
@@ -22,8 +23,17 @@ public class MfaEnforcementMiddleware(RequestDelegate next, IConfiguration confi
         "/api/v1/auth/sessions",
     ];
 
-    public async Task InvokeAsync(HttpContext ctx)
+    public record MfaVerifyRequiredResponse(string Type, string Title, int Status, string Detail, string Code)
     {
+        public override string ToString()
+        {
+            return $"{{ type = {Type}, title = {Title}, status = {Status}, detail = {Detail}, code = {Code} }}";
+        }
+    }
+
+    public static async Task InvokeAsync(HttpContext ctx, RequestDelegate next)
+    {
+        IConfiguration configuration = ctx.RequestServices.GetRequiredService<IConfiguration>();
         if (ctx.User.Identity?.IsAuthenticated == true)
         {
             var path = ctx.Request.Path.Value?.ToLowerInvariant() ?? string.Empty;
@@ -43,14 +53,11 @@ public class MfaEnforcementMiddleware(RequestDelegate next, IConfiguration confi
                 {
                     ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     ctx.Response.ContentType = "application/problem+json";
-                    await ctx.Response.WriteAsJsonAsync(new
-                    {
-                        type = "https://tools.ietf.org/html/rfc7807",
-                        title = "MFA verification required.",
-                        status = 401,
-                        detail = "Complete MFA verification to obtain a full access token.",
-                        code = "MFA_PENDING",
-                    });
+                    await ctx.Response.WriteAsJsonAsync(
+                        new MfaVerifyRequiredResponse("https://tools.ietf.org/html/rfc7807",
+                            "MFA verification required.", 401,
+                            "Complete MFA verification to obtain a full access token.", "MFA_PENDING"),
+                        ApiJsonContext.Default.MfaVerifyRequiredResponse);
                     return;
                 }
             }
@@ -72,14 +79,11 @@ public class MfaEnforcementMiddleware(RequestDelegate next, IConfiguration confi
                     {
                         ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
                         ctx.Response.ContentType = "application/problem+json";
-                        await ctx.Response.WriteAsJsonAsync(new
-                        {
-                            type = "https://tools.ietf.org/html/rfc7807",
-                            title = "Multi-factor authentication required.",
-                            status = 403,
-                            detail = "Your role requires MFA. Please log in again and complete MFA verification.",
-                            code = "MFA_REQUIRED",
-                        });
+                        await ctx.Response.WriteAsJsonAsync(
+                            new MfaVerifyRequiredResponse("https://tools.ietf.org/html/rfc7807",
+                                "Multi-factor authentication required.", 403,
+                                "Your role requires MFA. Please log in again and complete MFA verification.",
+                                "MFA_REQUIRED"), ApiJsonContext.Default.MfaVerifyRequiredResponse);
                         return;
                     }
                 }
