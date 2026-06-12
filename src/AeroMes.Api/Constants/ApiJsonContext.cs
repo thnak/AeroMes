@@ -27,6 +27,10 @@ using AeroMes.Application.Master.Customers.Queries.LookupCustomerPart;
 using AeroMes.Application.Master.Employees.Queries.GetEmployeeById;
 using AeroMes.Application.Master.Employees.Queries.GetEmployees;
 using AeroMes.Application.Master.Employees.Queries.GetEmployeeSchedule;
+using AeroMes.Application.Master.OrgUnits.Commands.SyncOrgUnits;
+using AeroMes.Application.Master.OrgUnits.Queries.GetOrgUnitById;
+using AeroMes.Application.Master.OrgUnits.Queries.GetOrgUnits;
+using AeroMes.Application.Master.OrgUnits.Queries.GetOrgUnitTree;
 using AeroMes.Application.Master.ProductAttributes.Queries.GetProductAttributeById;
 using AeroMes.Application.Master.ProductAttributes.Queries.GetProductAttributes;
 using AeroMes.Application.Master.ProductAttributes.Queries.GetProductAttributeAssignments;
@@ -170,6 +174,12 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(SetEmployeeSkillRequest))]
 [JsonSerializable(typeof(AddShiftAssignmentRequest))]
 [JsonSerializable(typeof(EndShiftAssignmentRequest))]
+// org units
+[JsonSerializable(typeof(IReadOnlyList<OrgUnitDto>))]
+[JsonSerializable(typeof(IReadOnlyList<OrgUnitTreeDto>))]
+[JsonSerializable(typeof(OrgUnitDetailDto))]
+[JsonSerializable(typeof(SyncOrgUnitsRequest))]
+[JsonSerializable(typeof(SyncOrgUnitsResult))]
 // product attributes
 [JsonSerializable(typeof(IReadOnlyList<ProductAttributeDto>))]
 [JsonSerializable(typeof(ProductAttributeDetailDto))]

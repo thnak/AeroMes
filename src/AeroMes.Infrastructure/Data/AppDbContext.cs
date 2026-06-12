@@ -60,6 +60,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<ShiftAssignment> ShiftAssignments => Set<ShiftAssignment>();
     public DbSet<ProductAttribute> ProductAttributes => Set<ProductAttribute>();
     public DbSet<ProductAttributeAssignment> ProductAttributeAssignments => Set<ProductAttributeAssignment>();
+    public DbSet<OrgUnit> OrgUnits => Set<OrgUnit>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -862,6 +863,28 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .WithMany()
                 .HasForeignKey(x => x.OperationCode)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<OrgUnit>(e =>
+        {
+            e.ToTable("OrgUnits", "master");
+            e.HasKey(x => x.UnitId);
+            e.Property(x => x.UnitCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.UnitName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.UnitType).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.SourceSystemId).HasMaxLength(100).IsRequired();
+            e.HasIndex(x => x.UnitCode).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasIndex(x => x.ParentUnitId);
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne(x => x.Parent)
+                .WithMany(x => x.Children)
+                .HasForeignKey(x => x.ParentUnitId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.Navigation(x => x.Children)
+                .HasField("_children")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
         b.Entity<ShiftAssignment>(e =>
