@@ -75,7 +75,7 @@ function KpiCard({ label, value, sub, color, icon }: { label: string; value: str
   return (
     <Card variant="outlined" sx={{ height: '100%' }}>
       <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-        <Stack direction="row" alignItems="flex-start" justifyContent="space-between">
+        <Stack direction="row" sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <Box>
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               {label}
@@ -108,7 +108,7 @@ export default function DefectAnalysisPage() {
         subtitle="Defect trends, Pareto analysis and defect classification"
         breadcrumbs={[{ label: 'Quality' }, { label: 'Defect Analysis' }]}
         actions={
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <Stack direction="row" spacing={0.5}>
               {(['7d', '30d', '90d'] as const).map((r) => (
                 <Button
@@ -143,7 +143,7 @@ export default function DefectAnalysisPage() {
         <Grid size={{ xs: 12, md: 7 }}>
           <Card variant="outlined" sx={{ height: '100%' }}>
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
                 Defect Trend
               </Typography>
               <Box
@@ -170,14 +170,14 @@ export default function DefectAnalysisPage() {
         <Grid size={{ xs: 12, md: 5 }}>
           <Card variant="outlined" sx={{ height: '100%' }}>
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
                 Top Defects (Pareto)
               </Typography>
               <Stack spacing={1.5}>
                 {PARETO_DATA.map((item) => (
                   <Box key={item.code}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
-                      <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                         <Typography variant="caption" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, color: 'text.secondary' }}>
                           {item.code}
                         </Typography>
@@ -210,7 +210,7 @@ export default function DefectAnalysisPage() {
       {/* Defects by Category */}
       <Card variant="outlined" sx={{ mb: 2 }}>
         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
             Defects by Category
           </Typography>
           <Grid container spacing={2}>
@@ -230,7 +230,7 @@ export default function DefectAnalysisPage() {
                   <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     {cat.label}
                   </Typography>
-                  <Stack direction="row" alignItems="baseline" spacing={0.75} sx={{ mt: 0.5 }}>
+                  <Stack direction="row" spacing={0.75} sx={{ alignItems: 'baseline', mt: 0.5 }}>
                     <Typography variant="h6" sx={{ fontWeight: 700, color: cat.color }}>
                       {cat.count}
                     </Typography>
@@ -257,7 +257,7 @@ export default function DefectAnalysisPage() {
       {/* Recent Defect Log */}
       <Card variant="outlined">
         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
             Recent Defect Log
           </Typography>
           <Box sx={{ overflowX: 'auto' }}>
@@ -343,7 +343,7 @@ export default function DefectAnalysisPage() {
           </Box>
 
           <Divider sx={{ mt: 1.5, mb: 1 }} />
-          <Stack direction="row" justifyContent="flex-end">
+          <Stack direction="row" sx={{ justifyContent: 'flex-end' }}>
             <Button size="small" endIcon={<SolarIcon name="view" size={14} />} sx={{ fontSize: 12 }}>
               View All Defects
             </Button>

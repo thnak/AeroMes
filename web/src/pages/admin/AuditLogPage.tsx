@@ -520,7 +520,6 @@ export default function AuditLogPage() {
       to: draft.to ? draft.to.toISOString() : undefined,
       actorId: draft.actorId || undefined,
       targetType: draft.targetType || undefined,
-      outcome: draft.outcome || undefined,
     });
     setPaginationModel((prev) => ({ ...prev, page: 0 }));
   }
