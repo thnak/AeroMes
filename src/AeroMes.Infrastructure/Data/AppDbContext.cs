@@ -58,6 +58,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<Employee> Employees => Set<Employee>();
     public DbSet<EmployeeSkill> EmployeeSkills => Set<EmployeeSkill>();
     public DbSet<ShiftAssignment> ShiftAssignments => Set<ShiftAssignment>();
+    public DbSet<ProductAttribute> ProductAttributes => Set<ProductAttribute>();
+    public DbSet<ProductAttributeAssignment> ProductAttributeAssignments => Set<ProductAttributeAssignment>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -341,6 +343,53 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.HasOne<UnitOfMeasure>()
                 .WithMany()
                 .HasForeignKey(x => x.PurchaseUoMCode)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<ProductAttribute>(e =>
+        {
+            e.ToTable("ProductAttributes", "master");
+            e.HasKey(x => x.AttributeId);
+            e.Property(x => x.AttributeCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.AttributeName).HasMaxLength(100).IsRequired();
+            e.HasIndex(x => x.AttributeCode).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasMany(x => x.Values)
+                .WithOne()
+                .HasForeignKey(x => x.AttributeId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Values)
+                .HasField("_values")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<ProductAttributeValue>(e =>
+        {
+            e.ToTable("ProductAttributeValues", "master");
+            e.HasKey(x => x.ValueId);
+            e.Property(x => x.Value).HasMaxLength(100).IsRequired();
+            e.Property(x => x.GroupName).HasMaxLength(100);
+            e.HasIndex(x => new { x.AttributeId, x.Value }).IsUnique();
+        });
+
+        b.Entity<ProductAttributeAssignment>(e =>
+        {
+            e.ToTable("ProductAttributeAssignments", "master");
+            e.HasKey(x => x.AssignmentId);
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => new { x.ProductCode, x.AttributeId }).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne<Product>().WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Attribute).WithMany()
+                .HasForeignKey(x => x.AttributeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.SelectedValue).WithMany()
+                .HasForeignKey(x => x.SelectedValueId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
         });

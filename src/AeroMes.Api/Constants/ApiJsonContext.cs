@@ -23,6 +23,9 @@ using AeroMes.Application.Master.Customers.Queries.LookupCustomerPart;
 using AeroMes.Application.Master.Employees.Queries.GetEmployeeById;
 using AeroMes.Application.Master.Employees.Queries.GetEmployees;
 using AeroMes.Application.Master.Employees.Queries.GetEmployeeSchedule;
+using AeroMes.Application.Master.ProductAttributes.Queries.GetProductAttributeById;
+using AeroMes.Application.Master.ProductAttributes.Queries.GetProductAttributes;
+using AeroMes.Application.Master.ProductAttributes.Queries.GetProductAttributeAssignments;
 using AeroMes.Application.Master.Suppliers.Queries.GetSupplierById;
 using AeroMes.Application.Master.Suppliers.Queries.GetSuppliers;
 using AeroMes.Application.Master.WorkCalendars.Queries.GetWorkCalendarById;
@@ -144,6 +147,18 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(SetEmployeeSkillRequest))]
 [JsonSerializable(typeof(AddShiftAssignmentRequest))]
 [JsonSerializable(typeof(EndShiftAssignmentRequest))]
+// product attributes
+[JsonSerializable(typeof(IReadOnlyList<ProductAttributeDto>))]
+[JsonSerializable(typeof(ProductAttributeDetailDto))]
+[JsonSerializable(typeof(IReadOnlyList<ProductAttributeAssignmentDto>))]
+[JsonSerializable(typeof(IReadOnlyList<string>))]
+[JsonSerializable(typeof(ProductAttributeCreatedResult))]
+[JsonSerializable(typeof(AttributeValueCreatedResult))]
+[JsonSerializable(typeof(AttributeAssignedResult))]
+[JsonSerializable(typeof(CreateProductAttributeRequest))]
+[JsonSerializable(typeof(UpdateProductAttributeRequest))]
+[JsonSerializable(typeof(AttributeValueRequest))]
+[JsonSerializable(typeof(AssignAttributeRequest))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 
