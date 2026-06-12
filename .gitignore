@@ -31,3 +31,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.editorconfig
+
+# CodeGraph runtime
+.codegraph/daemon.pid
