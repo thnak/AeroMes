@@ -1,6 +1,5 @@
 using AeroMes.Domain.Exceptions;
 using FluentValidation;
-using Microsoft.AspNetCore.Mvc;
 using AeroMes.Api.Constants;
 
 namespace AeroMes.Api.Middleware;
@@ -16,52 +15,51 @@ public class ExceptionMiddleware
         }
         catch (ValidationException ex)
         {
-            await WriteProblemAsync(ctx, StatusCodes.Status422UnprocessableEntity,
-                "Validation Failed",
-                "https://tools.ietf.org/html/rfc7807",
-                new Dictionary<string, string[]>(
-                    ex.Errors.GroupBy(e => e.PropertyName)
-                        .Select(g => new KeyValuePair<string, string[]>(
-                            g.Key, g.Select(e => e.ErrorMessage).ToArray()))));
+            var errors = new Dictionary<string, string[]>(
+                ex.Errors.GroupBy(e => e.PropertyName)
+                    .Select(g => new KeyValuePair<string, string[]>(
+                        g.Key, g.Select(e => e.ErrorMessage).ToArray())));
+
+            ctx.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
+            ctx.Response.ContentType = "application/problem+json";
+            await ctx.Response.WriteAsJsonAsync(
+                new ValidationProblemResponse(
+                    "https://tools.ietf.org/html/rfc7807",
+                    "Validation Failed",
+                    StatusCodes.Status422UnprocessableEntity,
+                    errors),
+                ApiJsonContext.Default.ValidationProblemResponse);
         }
         catch (EntityNotFoundException ex)
         {
-            await WriteProblemAsync(ctx, StatusCodes.Status404NotFound,
-                ex.Message, "https://tools.ietf.org/html/rfc7807");
+            await WriteSimpleProblemAsync(ctx, StatusCodes.Status404NotFound, ex.Message);
         }
         catch (DomainException ex)
         {
-            await WriteProblemAsync(ctx, StatusCodes.Status422UnprocessableEntity,
-                ex.Message, "https://tools.ietf.org/html/rfc7807");
+            await WriteSimpleProblemAsync(ctx, StatusCodes.Status422UnprocessableEntity, ex.Message);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unhandled exception");
-            await WriteProblemAsync(ctx, StatusCodes.Status500InternalServerError,
-                "An unexpected error occurred.", "https://tools.ietf.org/html/rfc7807");
+            await WriteSimpleProblemAsync(ctx, StatusCodes.Status500InternalServerError,
+                "An unexpected error occurred.");
         }
     }
 
-    private static Task WriteProblemAsync(
-        HttpContext ctx,
-        int status,
-        string title,
-        string type,
-        Dictionary<string, string[]>? errors = null)
+    private static Task WriteSimpleProblemAsync(HttpContext ctx, int status, string title)
     {
         ctx.Response.StatusCode = status;
         ctx.Response.ContentType = "application/problem+json";
-
-        var problem = new ProblemDetails
-        {
-            Type = type,
-            Title = title,
-            Status = status,
-        };
-
-        if (errors is not null)
-            problem.Extensions["errors"] = errors;
-
-        return ctx.Response.WriteAsJsonAsync(problem, ApiJsonContext.Default.ProblemDetails);
+        return ctx.Response.WriteAsJsonAsync(
+            new SimpleProblemResponse("https://tools.ietf.org/html/rfc7807", title, status),
+            ApiJsonContext.Default.SimpleProblemResponse);
     }
 }
+
+public record SimpleProblemResponse(string Type, string Title, int Status);
+
+public record ValidationProblemResponse(
+    string Type,
+    string Title,
+    int Status,
+    Dictionary<string, string[]> Errors);

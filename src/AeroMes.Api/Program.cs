@@ -26,7 +26,7 @@ builder.Services.Configure<JsonOptions>(options =>
         JsonIgnoreCondition.WhenWritingNull;
     options.SerializerOptions.PropertyNamingPolicy =
         JsonNamingPolicy.CamelCase;
-    options.SerializerOptions.TypeInfoResolverChain.Add(new ApiJsonContext());
+    options.SerializerOptions.TypeInfoResolverChain.Insert(0, new ApiJsonContext());
 });
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
@@ -34,12 +34,12 @@ builder.Services.AddControllers().AddJsonOptions(options =>
         JsonIgnoreCondition.WhenWritingNull;
     options.JsonSerializerOptions.PropertyNamingPolicy =
         JsonNamingPolicy.CamelCase;
-    options.JsonSerializerOptions.TypeInfoResolverChain.Add(new ApiJsonContext());
+    options.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, new ApiJsonContext());
 });
 builder.Services.ConfigureHttpJsonOptions(opts =>
 {
     opts.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-    opts.SerializerOptions.TypeInfoResolverChain.Add(new ApiJsonContext());
+    opts.SerializerOptions.TypeInfoResolverChain.Insert(0, new ApiJsonContext());
 });
 builder.Services.AddOpenApi(opts =>
 {

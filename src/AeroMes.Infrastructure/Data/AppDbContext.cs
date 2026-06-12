@@ -51,6 +51,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<WorkOrderAutoRules> WorkOrderAutoRules => Set<WorkOrderAutoRules>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<ApprovedVendorItem> ApprovedVendorItems => Set<ApprovedVendorItem>();
+    public DbSet<CapabilityGroup> CapabilityGroups => Set<CapabilityGroup>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -363,6 +364,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.OperationCode).HasMaxLength(30).ValueGeneratedNever();
             e.Property(x => x.OperationName).HasMaxLength(100).IsRequired();
             e.Property(x => x.Description).HasMaxLength(255);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<CapabilityGroup>(e =>
+        {
+            e.ToTable("CapabilityGroups", "master");
+            e.HasKey(x => x.GroupCode);
+            e.Property(x => x.GroupCode).HasMaxLength(30).ValueGeneratedNever();
+            e.Property(x => x.GroupName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(500);
             e.HasQueryFilter(x => !x.IsDeleted);
         });
 
