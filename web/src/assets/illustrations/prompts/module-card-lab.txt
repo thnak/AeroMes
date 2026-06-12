@@ -1,0 +1,6 @@
+FILE: module-card-lab.webp
+DIMENSIONS: 800 x 500
+PLACEMENT: Background image for the Lab module card tile
+
+PROMPT:
+Studio photograph of a clean laboratory bench with precision scientific instruments arranged on a white ceramic surface. A polished metal hardness tester, a set of glass specimen tubes in a stainless rack, and a surface roughness probe lie in an orderly arrangement. Cool, clinical overhead lighting with subtle blue tones reflects off the glass and polished metal surfaces. Background is soft white gradually darkening to near-black at the edges. No visible markings, no readouts, no people. Medical-grade cleanliness aesthetic.

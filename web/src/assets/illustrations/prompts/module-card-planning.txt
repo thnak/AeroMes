@@ -1,0 +1,6 @@
+FILE: module-card-planning.webp
+DIMENSIONS: 800 x 500
+PLACEMENT: Background image for the Planning module card tile
+
+PROMPT:
+Studio photograph of large engineering blueprints partially unrolled on a heavy wooden drafting table. The blueprints show intricate technical line drawings — mechanical cross-sections, plan views, dimension lines — printed in dark blue ink on white paper. A stainless steel ruler, a mechanical pencil, and a brass compass rest on the corner of the drawing. Warm studio spotlight illuminates the scene with a focused pool of light. Dark surroundings, moody. No people. No text other than abstract drawn geometry.

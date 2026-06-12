@@ -1,0 +1,6 @@
+FILE: module-card-master.webp
+DIMENSIONS: 800 x 500
+PLACEMENT: Background image for the Master Data module card tile
+
+PROMPT:
+Overhead flat-lay studio photograph of a curated set of precision mechanical components — hex bolts, dowel pins, O-rings, bearing races, and small gears — arranged in an orderly grid on a dark slate surface. Each part is individually spaced and lit with soft, even overhead studio lighting that reveals every material texture: polished steel, black oxide, brass, rubber. High depth of field, everything sharp. No labels, no text, no hands. Industrial product catalog aesthetic.

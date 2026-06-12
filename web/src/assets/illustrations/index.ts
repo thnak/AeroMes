@@ -21,6 +21,35 @@ import error500 from './error-500.webp';
 // Tablet
 import tabletIdleWelcome from './tablet-idle-welcome.webp';
 
+// Module card backgrounds
+import moduleCardProduction   from './module-card-production.webp';
+import moduleCardQuality      from './module-card-quality.webp';
+import moduleCardMaster       from './module-card-master.webp';
+import moduleCardIntegration  from './module-card-integration.webp';
+import moduleCardMaintenance  from './module-card-maintenance.webp';
+import moduleCardReports      from './module-card-reports.webp';
+import moduleCardAdmin        from './module-card-admin.webp';
+import moduleCardPlanning     from './module-card-planning.webp';
+import moduleCardWarehouse    from './module-card-warehouse.webp';
+import moduleCardIot          from './module-card-iot.webp';
+import moduleCardLab          from './module-card-lab.webp';
+import moduleCardTraceability from './module-card-traceability.webp';
+
+export const moduleCardImages: Record<string, string> = {
+  production:   moduleCardProduction,
+  quality:      moduleCardQuality,
+  master:       moduleCardMaster,
+  integration:  moduleCardIntegration,
+  maintenance:  moduleCardMaintenance,
+  reports:      moduleCardReports,
+  admin:        moduleCardAdmin,
+  planning:     moduleCardPlanning,
+  warehouse:    moduleCardWarehouse,
+  iot:          moduleCardIot,
+  lab:          moduleCardLab,
+  traceability: moduleCardTraceability,
+};
+
 export const illustrations = {
   authHero,
   dashboardAmbientBg,

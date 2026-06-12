@@ -4,6 +4,7 @@
 # dependencies = [
 #   "openai>=1.50.0",
 #   "httpx>=0.27.0",
+#   "Pillow>=10.0.0",
 # ]
 # ///
 """
@@ -19,6 +20,7 @@ prompt files in src/assets/illustrations/.
 """
 
 import argparse
+import io
 import os
 import re
 import sys
@@ -26,6 +28,7 @@ from pathlib import Path
 
 import httpx
 from openai import OpenAI
+from PIL import Image
 
 SCRIPT_DIR = Path(__file__).parent
 ILLUSTRATIONS_DIR = SCRIPT_DIR.parent / "src" / "assets" / "illustrations"
@@ -86,7 +89,12 @@ def generate_and_save(client: OpenAI, spec: dict, output_dir: Path, force: bool)
 
     url = response.data[0].url
     image_bytes = httpx.get(url, timeout=60).content
-    out_path.write_bytes(image_bytes)
+
+    if out_path.suffix.lower() == ".webp":
+        img = Image.open(io.BytesIO(image_bytes))
+        img.save(out_path, "WEBP", quality=90, method=6)
+    else:
+        out_path.write_bytes(image_bytes)
     print(f"  saved {out_path.relative_to(ILLUSTRATIONS_DIR.parent.parent.parent)}")
     return True
 

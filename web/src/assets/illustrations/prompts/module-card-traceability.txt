@@ -1,0 +1,6 @@
+FILE: module-card-traceability.webp
+DIMENSIONS: 800 x 500
+PLACEMENT: Background image for the Traceability module card tile
+
+PROMPT:
+Studio macro photograph of identical machined metal discs lying in a precisely organized tray, each one laser-engraved with a unique serial number barely visible in the metal surface. The parts are arranged in a perfect grid, each one casting a small shadow on the tray beneath it. Dramatic raking side-light skims across the surface, making the laser engravings readable as faint relief. Dark industrial tray, cool steel color palette. No paper labels, no stickers, no people. Shallow depth of field blurs the rear rows.

@@ -35,6 +35,19 @@ STUBS = [
     ("error-404.png",         400, 300),
     ("error-500.png",         400, 300),
     ("tablet-idle-welcome.png", 800, 400),
+    # Module card backgrounds (used in LaunchpadPage)
+    ("module-card-production.webp",   800, 500),
+    ("module-card-quality.webp",      800, 500),
+    ("module-card-master.webp",       800, 500),
+    ("module-card-integration.webp",  800, 500),
+    ("module-card-maintenance.webp",  800, 500),
+    ("module-card-reports.webp",      800, 500),
+    ("module-card-admin.webp",        800, 500),
+    ("module-card-planning.webp",     800, 500),
+    ("module-card-warehouse.webp",    800, 500),
+    ("module-card-iot.webp",          800, 500),
+    ("module-card-lab.webp",          800, 500),
+    ("module-card-traceability.webp", 800, 500),
 ]
 
 
@@ -57,7 +70,9 @@ def make_stub(filename: str, width: int, height: int) -> None:
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
     draw.text(((width - tw) // 2, (height - th) // 2), label, fill=TEXT_COLOR, font=font)
 
-    img.save(out, "PNG", optimize=True)
+    fmt = "WEBP" if out.suffix.lower() == ".webp" else "PNG"
+    save_kwargs = {"quality": 80} if fmt == "WEBP" else {"optimize": True}
+    img.save(out, fmt, **save_kwargs)
     print(f"  stub  {filename}  [{width}×{height}]")
 
 

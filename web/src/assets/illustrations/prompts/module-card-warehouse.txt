@@ -1,0 +1,6 @@
+FILE: module-card-warehouse.webp
+DIMENSIONS: 800 x 500
+PLACEMENT: Background image for the Warehouse module card tile
+
+PROMPT:
+Low-angle studio photograph looking along a row of industrial metal shelving units filled with labeled storage bins and shrink-wrapped pallets. The perspective is dramatic — shelves tower at both sides of a narrow aisle leading to a bright background. Harsh overhead sodium lamps create pools of amber light alternating with shadow. The floor is pale epoxy with faint painted lane markings. No people, no readable text, no vehicles. Gritty industrial realism.

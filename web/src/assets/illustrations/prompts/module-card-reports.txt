@@ -1,0 +1,6 @@
+FILE: module-card-reports.webp
+DIMENSIONS: 800 x 500
+PLACEMENT: Background image for the Reports module card tile
+
+PROMPT:
+Dramatic aerial photograph looking straight down onto an active factory production line. Identical mechanical assemblies move along a conveyor belt in a perfectly ordered row, each one at the same stage of completion. Warm overhead industrial lights cast short, symmetrical shadows beneath each piece. The repetition and order fill the entire frame. No people visible, no signage, no screens. Shot from directly above, long lens compression, dark floor between the products.

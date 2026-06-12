@@ -20,6 +20,7 @@ import SolarIcon from '../components/SolarIcon';
 import UserMenu from '../components/UserMenu';
 import { useAuth } from '../contexts/AuthContext';
 import { MODULES, type ModuleConfig } from '../modules';
+import { moduleCardImages } from '../assets/illustrations';
 import { APPBAR_HEIGHT } from '../theme/tokens';
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
@@ -420,9 +421,16 @@ function ModuleCard({
         overflow: 'hidden',
         position: 'relative',
         height: 200,
-        background: (t) => t.palette.mode === 'dark'
-          ? `radial-gradient(ellipse at 80% 10%, ${alpha(mod.color, 0.45)} 0%, transparent 55%), #0d1117`
-          : `radial-gradient(ellipse at 80% 10%, ${alpha(mod.color, 0.35)} 0%, transparent 55%), #111827`,
+        // Photo background with color-tinted dark overlay
+        backgroundImage: moduleCardImages[mod.id]
+          ? `linear-gradient(160deg, ${alpha('#0d1117', 0.55)} 0%, ${alpha(mod.color, 0.55)} 100%), url(${moduleCardImages[mod.id]})`
+          : undefined,
+        background: moduleCardImages[mod.id] ? undefined : (t) =>
+          t.palette.mode === 'dark'
+            ? `radial-gradient(ellipse at 80% 10%, ${alpha(mod.color, 0.45)} 0%, transparent 55%), #0d1117`
+            : `radial-gradient(ellipse at 80% 10%, ${alpha(mod.color, 0.35)} 0%, transparent 55%), #111827`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
         border: '1px solid',
         borderColor: hovered ? alpha(mod.color, 0.45) : alpha(mod.color, 0.18),
         transition: 'all 0.2s cubic-bezier(0.4,0,0.2,1)',

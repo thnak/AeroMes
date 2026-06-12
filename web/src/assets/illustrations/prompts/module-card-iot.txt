@@ -1,0 +1,6 @@
+FILE: module-card-iot.webp
+DIMENSIONS: 800 x 500
+PLACEMENT: Background image for the IoT & Machines module card tile
+
+PROMPT:
+Close-up studio photograph of the side panel of a heavy industrial machine — a lathe or milling machine. The focus is on physical dials, analog pressure gauges, machined knurled knobs, and a large red safety button, all mounted in a thick painted steel housing. The paint shows faint scratches and worn patches from years of use. Side-lit with a single hard studio light to emphasize the three-dimensional texture of every knob and dial. Dark, dramatic, no digital screens, no text panels.

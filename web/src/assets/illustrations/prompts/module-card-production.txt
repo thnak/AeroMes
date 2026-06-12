@@ -1,0 +1,6 @@
+FILE: module-card-production.webp
+DIMENSIONS: 800 x 500
+PLACEMENT: Background image for the Production module card tile
+
+PROMPT:
+Close-up studio photograph of freshly machined aluminum parts arranged on a dark matte surface — turned cylindrical shafts, milled brackets, and precision-bored flanges, still showing faint tooling marks. Dramatic single-source side lighting casts long shadows that emphasize the geometry. The metal surfaces catch the light with a warm silver sheen against a near-black background. A very shallow depth of field blurs the background parts softly. No people, no text, no screens. Commercial product photography aesthetic, shot on medium format, 85 mm lens, dark studio.

@@ -1,0 +1,6 @@
+FILE: module-card-quality.webp
+DIMENSIONS: 800 x 500
+PLACEMENT: Background image for the Quality module card tile
+
+PROMPT:
+Studio macro photograph of a stainless steel micrometer with a precision-machined cylindrical part clamped in its anvil, resting on a dark granite inspection surface. The measuring instrument gleams under a focused studio spotlight. A second vernier caliper lies slightly out of focus in the background. Colors are cool — polished steel, carbon-black granite, silver highlights. No digital displays, no text, no people. Shallow depth of field. Commercial photography, clean and precise, dark background.

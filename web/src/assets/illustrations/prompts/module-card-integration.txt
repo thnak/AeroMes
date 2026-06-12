@@ -1,0 +1,6 @@
+FILE: module-card-integration.webp
+DIMENSIONS: 800 x 500
+PLACEMENT: Background image for the Integration module card tile
+
+PROMPT:
+Wide-angle studio photograph looking down a long, straight warehouse aisle. Heavy-duty metal racking on both sides rises to the ceiling, stacked with identical brown cardboard boxes organized in neat rows. Overhead strip lighting creates a dramatic vanishing point and bathes everything in a warm industrial glow. The floor is polished concrete that reflects the lights faintly. No text, no labels, no people, no vehicles. Clean, orderly, infinite depth. Dark vignette at the edges.

@@ -1,0 +1,6 @@
+FILE: module-card-admin.webp
+DIMENSIONS: 800 x 500
+PLACEMENT: Background image for the Admin module card tile
+
+PROMPT:
+Studio still-life photograph of a polished white safety hard hat, a metal clipboard with blank paper forms, and a ballpoint pen arranged on a dark walnut desk surface. A safety lanyard with a blank badge holder rests across the corner of the clipboard. Soft directional studio lighting illuminates the objects against a near-black background. Clean, authoritative, professional. No visible text or writing on the forms. Shallow depth of field softens the background.
