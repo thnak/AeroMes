@@ -43,6 +43,7 @@ import moduleCardIntegrationLight  from './module-card-integration-light.webp';
 import moduleCardPlanningLight     from './module-card-planning-light.webp';
 import moduleCardWarehouseLight    from './module-card-warehouse-light.webp';
 import moduleCardReportsLight      from './module-card-reports-light.webp';
+import moduleCardLabLight          from './module-card-lab-light.webp';
 import moduleCardTraceabilityLight from './module-card-traceability-light.webp';
 
 export const moduleCardImages: Record<string, string> = {
@@ -69,6 +70,7 @@ export const moduleCardImagesLight: Record<string, string> = {
   planning:     moduleCardPlanningLight,
   warehouse:    moduleCardWarehouseLight,
   reports:      moduleCardReportsLight,
+  lab:          moduleCardLabLight,
   traceability: moduleCardTraceabilityLight,
 };
 
