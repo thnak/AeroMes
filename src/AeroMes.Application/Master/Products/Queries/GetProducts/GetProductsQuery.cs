@@ -54,4 +54,14 @@ public record ProductDetailDto(
     string? ImageUrl,
     string? ThumbnailUrl,
     bool IsActive,
-    string? BarcodePattern);
+    string? BarcodePattern,
+    decimal? FixedPurchasePrice,
+    string? TechnicalStandard,
+    string? QuantityFormula,
+    IReadOnlyList<ProductUoMConversionDto> UoMConversions);
+
+public record ProductUoMConversionDto(
+    int ConversionId,
+    string UoMCode,
+    decimal ToBaseFactor,
+    string? Notes);

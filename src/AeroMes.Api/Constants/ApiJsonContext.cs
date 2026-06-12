@@ -92,6 +92,10 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(CreateProductRequest))]
 [JsonSerializable(typeof(UpdateProductRequest))]
 [JsonSerializable(typeof(ChangeLifecycleRequest))]
+[JsonSerializable(typeof(IReadOnlyList<ProductUoMConversionDto>))]
+[JsonSerializable(typeof(AddUoMConversionRequest))]
+[JsonSerializable(typeof(UpdateUoMConversionRequest))]
+[JsonSerializable(typeof(UoMConversionCreatedResult))]
 // downtime reason codes
 [JsonSerializable(typeof(IReadOnlyList<DowntimeReasonCodeDto>))]
 [JsonSerializable(typeof(DowntimeReasonCodeCreatedResult))]

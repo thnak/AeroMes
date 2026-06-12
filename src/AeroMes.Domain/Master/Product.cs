@@ -1,4 +1,5 @@
 using AeroMes.Domain.Common;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Domain.Master;
 
@@ -35,6 +36,11 @@ public class Product : AuditableEntity
     public int? LeadTimeDays { get; private set; }
     public ProcurementType? ProcurementType { get; private set; }
 
+    // Procurement / technical (Materials & Goods item master)
+    public decimal? FixedPurchasePrice { get; private set; }
+    public string? TechnicalStandard { get; private set; }
+    public string? QuantityFormula { get; private set; } // bracketed dimension variables, e.g. [Height]*[Width]*[Qty]
+
     // Lifecycle
     public LifecycleStatus LifecycleStatus { get; private set; } = LifecycleStatus.Active;
     public DateOnly? EffectiveFrom { get; private set; }
@@ -53,6 +59,9 @@ public class Product : AuditableEntity
 
     // Navigation
     public ProductCategory? Category { get; private set; }
+
+    private readonly List<ProductUoMConversion> _uomConversions = [];
+    public IReadOnlyList<ProductUoMConversion> UoMConversions => _uomConversions.AsReadOnly();
 
     private Product() { }
 
@@ -122,6 +131,9 @@ public class Product : AuditableEntity
         decimal? height,
         string? imageUrl,
         string? thumbnailUrl,
+        decimal? fixedPurchasePrice,
+        string? technicalStandard,
+        string? quantityFormula,
         string updatedBy)
     {
         ProductName = name.Trim();
@@ -150,6 +162,39 @@ public class Product : AuditableEntity
         Height = height;
         ImageUrl = imageUrl;
         ThumbnailUrl = thumbnailUrl;
+        FixedPurchasePrice = fixedPurchasePrice;
+        TechnicalStandard = technicalStandard?.Trim();
+        QuantityFormula = quantityFormula?.Trim();
+        Touch(updatedBy);
+    }
+
+    public ProductUoMConversion AddUoMConversion(string uomCode, decimal toBaseFactor, string? notes, string? updatedBy = null)
+    {
+        var normalized = uomCode.Trim().ToUpperInvariant();
+        if (normalized == BaseUoMCode)
+            throw new DomainException($"Không thể khai báo quy đổi cho chính đơn vị gốc '{BaseUoMCode}'.");
+        if (_uomConversions.Any(c => c.UoMCode == normalized))
+            throw new DomainException($"Quy đổi sang đơn vị '{normalized}' đã tồn tại cho sản phẩm '{ProductCode}'.");
+
+        var conversion = ProductUoMConversion.Create(ProductCode, normalized, toBaseFactor, notes);
+        _uomConversions.Add(conversion);
+        Touch(updatedBy);
+        return conversion;
+    }
+
+    public void UpdateUoMConversion(int conversionId, decimal toBaseFactor, string? notes, string? updatedBy = null)
+    {
+        var conversion = _uomConversions.FirstOrDefault(c => c.ConversionId == conversionId)
+            ?? throw new DomainException($"Không tìm thấy quy đổi #{conversionId} của sản phẩm '{ProductCode}'.");
+        conversion.Update(toBaseFactor, notes);
+        Touch(updatedBy);
+    }
+
+    public void RemoveUoMConversion(int conversionId, string? updatedBy = null)
+    {
+        var conversion = _uomConversions.FirstOrDefault(c => c.ConversionId == conversionId)
+            ?? throw new DomainException($"Không tìm thấy quy đổi #{conversionId} của sản phẩm '{ProductCode}'.");
+        _uomConversions.Remove(conversion);
         Touch(updatedBy);
     }
 

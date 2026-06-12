@@ -332,7 +332,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.Revision).HasMaxLength(10);
             e.Property(x => x.ImageUrl).HasMaxLength(500);
             e.Property(x => x.ThumbnailUrl).HasMaxLength(500);
+            e.Property(x => x.FixedPurchasePrice).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.TechnicalStandard).HasMaxLength(200);
+            e.Property(x => x.QuantityFormula).HasMaxLength(500);
             e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasMany(x => x.UoMConversions)
+                .WithOne()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.UoMConversions)
+                .HasField("_uomConversions")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
 
             e.HasOne(x => x.Category)
                 .WithMany()
@@ -347,6 +358,21 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .WithMany()
                 .HasForeignKey(x => x.PurchaseUoMCode)
                 .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<ProductUoMConversion>(e =>
+        {
+            e.ToTable("ProductUoMConversions", "master");
+            e.HasKey(x => x.ConversionId);
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.UoMCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.ToBaseFactor).HasColumnType("NUMERIC(18,6)");
+            e.Property(x => x.Notes).HasMaxLength(255);
+            e.HasIndex(x => new { x.ProductCode, x.UoMCode }).IsUnique();
+
+            e.HasOne<UnitOfMeasure>().WithMany()
+                .HasForeignKey(x => x.UoMCode)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

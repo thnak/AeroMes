@@ -13,6 +13,11 @@ public class DeleteProductHandler(
     {
         var entity = await repo.GetByCodeAsync(cmd.Code, ct)
             ?? throw new EntityNotFoundException("Product", cmd.Code);
+
+        if (await repo.IsReferencedAsync(cmd.Code, ct))
+            throw new DomainException(
+                $"Sản phẩm '{entity.ProductCode}' đang được tham chiếu bởi BOM, routing hoặc lệnh sản xuất — chỉ có thể vô hiệu hóa, không thể xóa.");
+
         entity.SoftDelete(cmd.DeletedBy);
         await uow.SaveChangesAsync(ct);
     }

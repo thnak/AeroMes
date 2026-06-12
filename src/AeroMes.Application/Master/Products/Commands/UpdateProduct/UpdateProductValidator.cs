@@ -41,6 +41,17 @@ public class UpdateProductValidator : AbstractValidator<UpdateProductCommand>
             .WithMessage("Category does not exist or is inactive.")
             .When(x => x.CategoryId.HasValue);
 
+        RuleFor(x => x.FixedPurchasePrice)
+            .GreaterThanOrEqualTo(0).When(x => x.FixedPurchasePrice.HasValue);
+
+        RuleFor(x => x.TechnicalStandard)
+            .MaximumLength(200);
+
+        RuleFor(x => x.QuantityFormula)
+            .MaximumLength(500)
+            .Must(f => f is null || QuantityFormulaValidator.IsValid(f))
+            .WithMessage($"Quantity formula may only use the variables {string.Join(", ", QuantityFormulaValidator.AllowedVariables.Select(v => $"[{v}]"))} with numbers and arithmetic operators.");
+
         RuleFor(x => x.UpdatedBy)
             .NotEmpty();
     }

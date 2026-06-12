@@ -21,7 +21,9 @@ public class UpdateProductHandler(
             cmd.EffectiveFrom, cmd.EffectiveTo,
             cmd.CustomerPartNo, cmd.DrawingNo, cmd.Revision,
             cmd.NetWeight, cmd.GrossWeight, cmd.Length, cmd.Width, cmd.Height,
-            cmd.ImageUrl, cmd.ThumbnailUrl, cmd.UpdatedBy);
+            cmd.ImageUrl, cmd.ThumbnailUrl,
+            cmd.FixedPurchasePrice, cmd.TechnicalStandard, cmd.QuantityFormula,
+            cmd.UpdatedBy);
         await uow.SaveChangesAsync(ct);
     }
 }

@@ -9,13 +9,13 @@ public class CreateBomItemValidator : AbstractValidator<CreateBomItemCommand>
     {
         RuleFor(x => x.ParentProductCode)
             .NotEmpty().WithMessage("Parent product code is required.")
-            .MustAsync(async (code, ct) => await productRepo.ExistsAsync(code, ct))
-            .WithMessage(x => $"Parent product '{x.ParentProductCode}' does not exist.");
+            .MustAsync(async (code, ct) => await productRepo.IsActiveAsync(code, ct))
+            .WithMessage(x => $"Parent product '{x.ParentProductCode}' does not exist or is inactive.");
 
         RuleFor(x => x.ChildProductCode)
             .NotEmpty().WithMessage("Child product code is required.")
-            .MustAsync(async (code, ct) => await productRepo.ExistsAsync(code, ct))
-            .WithMessage(x => $"Child product '{x.ChildProductCode}' does not exist.")
+            .MustAsync(async (code, ct) => await productRepo.IsActiveAsync(code, ct))
+            .WithMessage(x => $"Child product '{x.ChildProductCode}' does not exist or is inactive.")
             .NotEqual(x => x.ParentProductCode, StringComparer.OrdinalIgnoreCase)
             .WithMessage("Parent and child product cannot be the same.");
 

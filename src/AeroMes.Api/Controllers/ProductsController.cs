@@ -1,4 +1,7 @@
+using AeroMes.Application.Master.Products.Commands.AddProductUoMConversion;
 using AeroMes.Application.Master.Products.Commands.ChangeLifecycleStatus;
+using AeroMes.Application.Master.Products.Commands.RemoveProductUoMConversion;
+using AeroMes.Application.Master.Products.Commands.UpdateProductUoMConversion;
 using AeroMes.Application.Master.Products.Commands.CreateProduct;
 using AeroMes.Application.Master.Products.Commands.DeleteProduct;
 using AeroMes.Application.Master.Products.Commands.UpdateProduct;
@@ -69,7 +72,9 @@ public class ProductsController(ICommandMediator commandMediator,
                 req.ReorderPoint, req.SafetyStock, req.LeadTimeDays, req.ProcurementType,
                 req.EffectiveFrom, req.EffectiveTo, req.CustomerPartNo, req.DrawingNo, req.Revision,
                 req.NetWeight, req.GrossWeight, req.Length, req.Width, req.Height,
-                req.ImageUrl, req.ThumbnailUrl, User.Identity?.Name ?? "system"), null, ct);
+                req.ImageUrl, req.ThumbnailUrl,
+                req.FixedPurchasePrice, req.TechnicalStandard, req.QuantityFormula,
+                User.Identity?.Name ?? "system"), null, ct);
         return NoContent();
     }
 
@@ -89,9 +94,48 @@ public class ProductsController(ICommandMediator commandMediator,
     [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Delete(string code, CancellationToken ct)
     {
         await commandMediator.SendAsync(new DeleteProductCommand(code, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        return NoContent();
+    }
+
+    // ── UoM conversions sub-resource ────────────────────────────────────────
+
+    [HttpPost("{code}/uom-conversions")]
+    [RequirePermission(Permissions.MasterDataWrite)]
+    [ProducesResponseType<UoMConversionCreatedResult>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> AddUoMConversion(string code, [FromBody] AddUoMConversionRequest req, CancellationToken ct)
+    {
+        var id = await commandMediator.SendAsync(
+            new AddProductUoMConversionCommand(code, req.UoMCode, req.ToBaseFactor, req.Notes, User.Identity?.Name), null, ct);
+        return CreatedAtAction(nameof(GetByCode), new { code }, new UoMConversionCreatedResult(id));
+    }
+
+    [HttpPut("{code}/uom-conversions/{conversionId:int}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateUoMConversion(string code, int conversionId, [FromBody] UpdateUoMConversionRequest req, CancellationToken ct)
+    {
+        await commandMediator.SendAsync(
+            new UpdateProductUoMConversionCommand(code, conversionId, req.ToBaseFactor, req.Notes, User.Identity?.Name), null, ct);
+        return NoContent();
+    }
+
+    [HttpDelete("{code}/uom-conversions/{conversionId:int}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> RemoveUoMConversion(string code, int conversionId, CancellationToken ct)
+    {
+        await commandMediator.SendAsync(
+            new RemoveProductUoMConversionCommand(code, conversionId, User.Identity?.Name), null, ct);
         return NoContent();
     }
 }
@@ -137,7 +181,14 @@ public record UpdateProductRequest(
     decimal? Width,
     decimal? Height,
     string? ImageUrl,
-    string? ThumbnailUrl);
+    string? ThumbnailUrl,
+    decimal? FixedPurchasePrice = null,
+    string? TechnicalStandard = null,
+    string? QuantityFormula = null);
+
+public record AddUoMConversionRequest(string UoMCode, decimal ToBaseFactor, string? Notes = null);
+public record UpdateUoMConversionRequest(decimal ToBaseFactor, string? Notes = null);
+public record UoMConversionCreatedResult(int ConversionId);
 
 public record ChangeLifecycleRequest(LifecycleStatus Status);
 public record ProductCreatedResult(string ProductCode);

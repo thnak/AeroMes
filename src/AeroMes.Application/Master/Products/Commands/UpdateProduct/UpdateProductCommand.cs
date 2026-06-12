@@ -31,4 +31,7 @@ public record UpdateProductCommand(
     decimal? Height,
     string? ImageUrl,
     string? ThumbnailUrl,
+    decimal? FixedPurchasePrice,
+    string? TechnicalStandard,
+    string? QuantityFormula,
     string UpdatedBy) : ICommand;
