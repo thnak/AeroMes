@@ -3,7 +3,8 @@ import {
   AppBar,
   Badge,
   Box,
-  Collapse,
+  ButtonBase,
+  Divider,
   IconButton,
   InputBase,
   Stack,
@@ -39,7 +40,6 @@ export default function ModuleLayout() {
     (m) => pathname === m.path || pathname.startsWith(m.path + '/'),
   );
 
-  // Filter tabs by user role
   const visibleTabs = mod
     ? mod.tabs.filter((t) => !t.roles || hasRole(t.roles))
     : [];
@@ -68,42 +68,82 @@ export default function ModuleLayout() {
         elevation={0}
         sx={{ bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}
       >
-        <Toolbar variant="dense" sx={{ minHeight: APPBAR_HEIGHT, gap: 1 }}>
-          {/* Home button */}
-          <Tooltip title="Home">
-            <IconButton size="small" onClick={() => navigate('/')} sx={{ color: 'text.secondary' }}>
-              <SolarIcon name="dashboard" size={18} />
-            </IconButton>
-          </Tooltip>
+        {/* ── Shell bar ─────────────────────────────────────────────────────── */}
+        <Toolbar
+          variant="dense"
+          sx={{ minHeight: APPBAR_HEIGHT, px: { xs: 1.5, sm: 2 }, gap: 1 }}
+        >
+          {/* Brand — always visible, clickable → home */}
+          <ButtonBase
+            onClick={() => navigate('/')}
+            sx={{
+              borderRadius: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              px: 0.75,
+              py: 0.5,
+              flexShrink: 0,
+              color: 'primary.main',
+              transition: 'opacity 0.15s',
+              '&:hover': { opacity: 0.8 },
+            }}
+          >
+            <Box
+              sx={{
+                width: 26,
+                height: 26,
+                borderRadius: 1.25,
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <SolarIcon name="production" size={15} />
+            </Box>
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 700, color: 'primary.main', display: { xs: 'none', sm: 'block' } }}
+            >
+              AeroMes
+            </Typography>
+          </ButtonBase>
 
-          {/* Module identity */}
+          {/* Module breadcrumb — hidden when search is open */}
           {mod && !searchOpen && (
             <>
+              <Divider orientation="vertical" flexItem sx={{ mx: 0.25, my: 1 }} />
               <Box
                 sx={(theme) => ({
-                  width: 28,
-                  height: 28,
-                  borderRadius: 1.5,
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  bgcolor: alpha(mod.color, theme.palette.mode === 'dark' ? 0.25 : 0.12),
-                  color: mod.color,
+                  gap: 0.75,
+                  px: 1,
+                  py: 0.375,
+                  borderRadius: 1.5,
+                  bgcolor: alpha(mod.color, theme.palette.mode === 'dark' ? 0.18 : 0.09),
                   flexShrink: 0,
                 })}
               >
-                <SolarIcon name={mod.icon} size={16} />
+                <SolarIcon name={mod.icon} size={14} sx={{ color: mod.color, flexShrink: 0 }} />
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 600, color: mod.color, fontSize: '0.8125rem', whiteSpace: 'nowrap' }}
+                >
+                  {mod.label}
+                </Typography>
               </Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mr: 1 }}>
-                {mod.label}
-              </Typography>
             </>
           )}
 
-          {/* Inline search field */}
-          <Collapse in={searchOpen} orientation="horizontal" sx={{ flex: searchOpen ? 1 : 0, overflow: 'hidden' }}>
+          {/* Search input — expands to fill centre when open */}
+          {searchOpen && (
             <Box
               sx={(theme) => ({
+                flex: 1,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.5,
@@ -111,36 +151,34 @@ export default function ModuleLayout() {
                 height: 32,
                 borderRadius: 2,
                 bgcolor: alpha(theme.palette.text.primary, 0.06),
-                width: '100%',
-                maxWidth: 480,
+                minWidth: 0,
               })}
             >
               <SolarIcon name="search" size={16} sx={{ color: 'text.disabled', flexShrink: 0 }} />
               <InputBase
                 inputRef={searchRef}
-                placeholder={mod ? `Search ${mod.label}…` : 'Search…'}
+                placeholder={mod ? `Search in ${mod.label}…` : 'Search…'}
                 fullWidth
                 onKeyDown={(e) => e.key === 'Escape' && closeSearch()}
                 sx={{ fontSize: '0.875rem' }}
               />
-              <IconButton size="small" onClick={closeSearch} sx={{ color: 'text.disabled', p: 0.25 }}>
+              <IconButton size="small" onClick={closeSearch} sx={{ color: 'text.disabled', p: 0.25, flexShrink: 0 }}>
                 <SolarIcon name="close" size={16} />
               </IconButton>
             </Box>
-          </Collapse>
+          )}
 
           <Box sx={{ flex: 1 }} />
 
-          {/* Actions */}
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+          {/* Right actions */}
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', flexShrink: 0 }}>
             {!searchOpen && (
-              <Tooltip title="Search">
+              <Tooltip title="Search (/)">
                 <IconButton size="small" onClick={openSearch} sx={{ color: 'text.secondary' }}>
                   <SolarIcon name="search" size={20} />
                 </IconButton>
               </Tooltip>
             )}
-
             <Tooltip title="Notifications">
               <IconButton size="small" sx={{ color: 'text.secondary' }}>
                 <Badge
@@ -152,12 +190,11 @@ export default function ModuleLayout() {
                 </Badge>
               </IconButton>
             </Tooltip>
-
             <UserMenu />
           </Stack>
         </Toolbar>
 
-        {/* Horizontal tabs — only when module has more than one visible tab */}
+        {/* ── Tab bar ──────────────────────────────────────────────────────── */}
         {visibleTabs.length > 1 && (
           <Tabs
             value={tabIndex}
@@ -166,13 +203,17 @@ export default function ModuleLayout() {
             scrollButtons="auto"
             sx={{
               minHeight: 36,
-              px: 1,
+              px: 2,
+              borderTop: '1px solid',
+              borderColor: 'divider',
               '& .MuiTab-root': {
                 minHeight: 36,
                 py: 0,
                 fontSize: '0.8125rem',
                 textTransform: 'none',
+                fontWeight: 500,
               },
+              '& .MuiTab-root.Mui-selected': { fontWeight: 600 },
               '& .MuiTabs-indicator': { height: 2 },
             }}
           >
@@ -183,14 +224,8 @@ export default function ModuleLayout() {
         )}
       </AppBar>
 
-      <Box
-        sx={{
-          flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          bgcolor: 'background.default',
-        }}
-      >
+      {/* ── Page content ─────────────────────────────────────────────────── */}
+      <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', bgcolor: 'background.default' }}>
         <AnimatePresence mode="wait">
           <motion.div
             key={pathname}
