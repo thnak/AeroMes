@@ -11,7 +11,10 @@ public class CreateProductCategoryHandler(
 {
     public async Task<int> HandleAsync(CreateProductCategoryCommand cmd, CancellationToken ct)
     {
-        var entity = ProductCategory.Create(cmd.ParentId, cmd.Code, cmd.Name, cmd.CreatedBy);
+        var entity = ProductCategory.Create(
+            cmd.ParentId, cmd.Code, cmd.Name,
+            cmd.Description, cmd.StandardProductionTime, cmd.Color,
+            cmd.CreatedBy);
         await repo.AddAsync(entity, ct);
         await uow.SaveChangesAsync(ct);
         return entity.CategoryId;

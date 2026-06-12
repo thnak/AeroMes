@@ -14,6 +14,8 @@ using AeroMes.Application.Jobs.Queries.GetJobs;
 using AeroMes.Application.WorkOrders.Queries.GetWorkOrderDetail;
 using AeroMes.Application.Master.CapabilityGroups.Queries.GetCapabilityGroups;
 using AeroMes.Application.Master.DowntimeReasonCodes.Queries.GetDowntimeReasonCodes;
+using AeroMes.Application.Master.ProductCategories.Queries.GetProductCategories;
+using AeroMes.Application.Master.ProductCategories.Queries.GetProductCategoryTree;
 using AeroMes.Application.Master.Products.Queries.GetProducts;
 using AeroMes.Application.Master.ShiftTemplates.Queries.GetShiftTemplates;
 using AeroMes.Application.Master.StorageLocations.Queries.GetStorageLocations;
@@ -77,6 +79,12 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(StorageLocationCreatedResult))]
 [JsonSerializable(typeof(CreateStorageLocationRequest))]
 [JsonSerializable(typeof(UpdateStorageLocationRequest))]
+// product categories
+[JsonSerializable(typeof(IReadOnlyList<ProductCategoryDto>))]
+[JsonSerializable(typeof(IReadOnlyList<ProductCategoryTreeDto>))]
+[JsonSerializable(typeof(ProductCategoryCreatedResult))]
+[JsonSerializable(typeof(CreateProductCategoryRequest))]
+[JsonSerializable(typeof(UpdateProductCategoryRequest))]
 // products
 [JsonSerializable(typeof(IReadOnlyList<ProductDto>))]
 [JsonSerializable(typeof(ProductDetailDto))]

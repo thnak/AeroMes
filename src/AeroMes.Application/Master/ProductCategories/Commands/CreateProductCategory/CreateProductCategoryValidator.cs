@@ -21,5 +21,14 @@ public class CreateProductCategoryValidator : AbstractValidator<CreateProductCat
             .MustAsync(async (id, ct) => id == null || await repo.GetByIdAsync(id.Value, ct) != null)
             .WithMessage("Parent category not found.")
             .When(x => x.ParentId.HasValue);
+
+        RuleFor(x => x.Description)
+            .MaximumLength(500);
+
+        RuleFor(x => x.StandardProductionTime)
+            .GreaterThan(0).When(x => x.StandardProductionTime.HasValue);
+
+        RuleFor(x => x.Color)
+            .MaximumLength(20);
     }
 }

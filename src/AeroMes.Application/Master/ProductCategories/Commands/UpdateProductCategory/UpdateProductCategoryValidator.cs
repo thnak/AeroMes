@@ -15,6 +15,15 @@ public class UpdateProductCategoryValidator : AbstractValidator<UpdateProductCat
             .NotEmpty()
             .MaximumLength(100);
 
+        RuleFor(x => x.Description)
+            .MaximumLength(500);
+
+        RuleFor(x => x.StandardProductionTime)
+            .GreaterThan(0).When(x => x.StandardProductionTime.HasValue);
+
+        RuleFor(x => x.Color)
+            .MaximumLength(20);
+
         RuleFor(x => x.UpdatedBy)
             .NotEmpty();
     }

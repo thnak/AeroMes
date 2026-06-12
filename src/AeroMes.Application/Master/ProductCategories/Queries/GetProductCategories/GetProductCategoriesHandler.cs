@@ -10,6 +10,7 @@ public class GetProductCategoriesHandler(IProductCategoryRepository repo)
     {
         var items = await repo.GetAllAsync(q.ActiveOnly, ct);
         return items.Select(x => new ProductCategoryDto(
-            x.CategoryId, x.ParentId, x.CategoryCode, x.CategoryName, x.IsActive)).ToList();
+            x.CategoryId, x.ParentId, x.CategoryCode, x.CategoryName,
+            x.Description, x.StandardProductionTime, x.Color, x.IsActive)).ToList();
     }
 }

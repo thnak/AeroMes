@@ -5,7 +5,10 @@ namespace AeroMes.Application.Master.Products.Commands.CreateProduct;
 
 public class CreateProductValidator : AbstractValidator<CreateProductCommand>
 {
-    public CreateProductValidator(IProductRepository repo, IUnitOfMeasureRepository uomRepo)
+    public CreateProductValidator(
+        IProductRepository repo,
+        IUnitOfMeasureRepository uomRepo,
+        IProductCategoryRepository categoryRepo)
     {
         RuleFor(x => x.Code)
             .NotEmpty()
@@ -29,5 +32,10 @@ public class CreateProductValidator : AbstractValidator<CreateProductCommand>
 
         RuleFor(x => x.BarcodePattern)
             .MaximumLength(200).When(x => x.BarcodePattern is not null);
+
+        RuleFor(x => x.CategoryId)
+            .MustAsync(async (id, ct) => id == null || await categoryRepo.IsActiveAsync(id.Value, ct))
+            .WithMessage("Category does not exist or is inactive.")
+            .When(x => x.CategoryId.HasValue);
     }
 }

@@ -5,7 +5,10 @@ namespace AeroMes.Application.Master.Products.Commands.UpdateProduct;
 
 public class UpdateProductValidator : AbstractValidator<UpdateProductCommand>
 {
-    public UpdateProductValidator(IProductRepository repo, IUnitOfMeasureRepository uomRepo)
+    public UpdateProductValidator(
+        IProductRepository repo,
+        IUnitOfMeasureRepository uomRepo,
+        IProductCategoryRepository categoryRepo)
     {
         RuleFor(x => x.Code)
             .NotEmpty()
@@ -32,6 +35,11 @@ public class UpdateProductValidator : AbstractValidator<UpdateProductCommand>
             .GreaterThan(x => x.EffectiveFrom)
             .When(x => x.EffectiveFrom.HasValue && x.EffectiveTo.HasValue)
             .WithMessage("EffectiveTo must be after EffectiveFrom.");
+
+        RuleFor(x => x.CategoryId)
+            .MustAsync(async (id, ct) => id == null || await categoryRepo.IsActiveAsync(id.Value, ct))
+            .WithMessage("Category does not exist or is inactive.")
+            .When(x => x.CategoryId.HasValue);
 
         RuleFor(x => x.UpdatedBy)
             .NotEmpty();

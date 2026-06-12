@@ -280,6 +280,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.HasKey(x => x.CategoryId);
             e.Property(x => x.CategoryCode).HasMaxLength(30).IsRequired();
             e.Property(x => x.CategoryName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(500);
+            e.Property(x => x.StandardProductionTime).HasColumnType("NUMERIC(10,2)");
+            e.Property(x => x.Color).HasMaxLength(20);
             e.HasIndex(x => x.CategoryCode).IsUnique().HasFilter("[IsDeleted] = 0");
             e.HasQueryFilter(x => !x.IsDeleted);
 

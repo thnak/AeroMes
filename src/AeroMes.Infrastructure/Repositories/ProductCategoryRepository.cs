@@ -23,6 +23,15 @@ public class ProductCategoryRepository(AppDbContext db) : IProductCategoryReposi
         return await q.OrderBy(x => x.CategoryCode).ToListAsync(ct);
     }
 
+    public Task<bool> IsActiveAsync(int categoryId, CancellationToken ct) =>
+        db.ProductCategories.AnyAsync(x => x.CategoryId == categoryId && x.IsActive, ct);
+
+    public Task<bool> HasProductsAsync(int categoryId, CancellationToken ct) =>
+        db.Products.AnyAsync(x => x.CategoryId == categoryId, ct);
+
+    public Task<bool> HasChildrenAsync(int categoryId, CancellationToken ct) =>
+        db.ProductCategories.AnyAsync(x => x.ParentId == categoryId, ct);
+
     public Task AddAsync(ProductCategory entity, CancellationToken ct)
     {
         db.ProductCategories.Add(entity);

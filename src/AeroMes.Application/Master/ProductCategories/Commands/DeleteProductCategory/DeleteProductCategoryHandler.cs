@@ -13,6 +13,15 @@ public class DeleteProductCategoryHandler(
     {
         var entity = await repo.GetByIdAsync(cmd.Id, ct)
             ?? throw new EntityNotFoundException("ProductCategory", cmd.Id);
+
+        if (await repo.HasProductsAsync(cmd.Id, ct))
+            throw new DomainException(
+                $"Nhóm '{entity.CategoryCode}' đang được sản phẩm sử dụng — chỉ có thể vô hiệu hóa, không thể xóa.");
+
+        if (await repo.HasChildrenAsync(cmd.Id, ct))
+            throw new DomainException(
+                $"Nhóm '{entity.CategoryCode}' còn nhóm con — xóa hoặc di chuyển nhóm con trước.");
+
         entity.SoftDelete(cmd.DeletedBy);
         await uow.SaveChangesAsync(ct);
     }

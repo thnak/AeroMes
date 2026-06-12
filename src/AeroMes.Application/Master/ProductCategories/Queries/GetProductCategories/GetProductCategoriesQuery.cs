@@ -9,4 +9,7 @@ public record ProductCategoryDto(
     int? ParentId,
     string CategoryCode,
     string CategoryName,
+    string? Description,
+    decimal? StandardProductionTime,
+    string? Color,
     bool IsActive);

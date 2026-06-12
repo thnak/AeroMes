@@ -6,5 +6,8 @@ public interface IProductCategoryRepository
     Task<ProductCategory?> GetByCodeAsync(string code, CancellationToken ct = default);
     Task<bool> CodeExistsAsync(string code, CancellationToken ct = default);
     Task<IReadOnlyList<ProductCategory>> GetAllAsync(bool activeOnly = true, CancellationToken ct = default);
+    Task<bool> IsActiveAsync(int categoryId, CancellationToken ct = default);
+    Task<bool> HasProductsAsync(int categoryId, CancellationToken ct = default);
+    Task<bool> HasChildrenAsync(int categoryId, CancellationToken ct = default);
     Task AddAsync(ProductCategory entity, CancellationToken ct = default);
 }

@@ -6,5 +6,8 @@ public record UpdateProductCategoryCommand(
     int Id,
     int? ParentId,
     string Name,
+    string? Description,
+    decimal? StandardProductionTime,
+    string? Color,
     bool IsActive,
     string UpdatedBy) : ICommand;

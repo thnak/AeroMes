@@ -2,6 +2,7 @@ using AeroMes.Application.Master.ProductCategories.Commands.CreateProductCategor
 using AeroMes.Application.Master.ProductCategories.Commands.DeleteProductCategory;
 using AeroMes.Application.Master.ProductCategories.Commands.UpdateProductCategory;
 using AeroMes.Application.Master.ProductCategories.Queries.GetProductCategories;
+using AeroMes.Application.Master.ProductCategories.Queries.GetProductCategoryTree;
 using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
@@ -23,6 +24,12 @@ public class ProductCategoriesController(ICommandMediator commandMediator,
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, CancellationToken ct = default)
         => Ok(await queryMediator.QueryAsync(new GetProductCategoriesQuery(activeOnly), null, ct));
 
+    [HttpGet("tree")]
+    [RequirePermission(Permissions.MasterDataRead)]
+    [ProducesResponseType<IReadOnlyList<ProductCategoryTreeDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetTree([FromQuery] bool activeOnly = true, CancellationToken ct = default)
+        => Ok(await queryMediator.QueryAsync(new GetProductCategoryTreeQuery(activeOnly), null, ct));
+
     [HttpPost]
     [RequirePermission(Permissions.MasterDataWrite)]
     [ProducesResponseType<ProductCategoryCreatedResult>(StatusCodes.Status201Created)]
@@ -30,7 +37,10 @@ public class ProductCategoriesController(ICommandMediator commandMediator,
     public async Task<IActionResult> Create([FromBody] CreateProductCategoryRequest req, CancellationToken ct)
     {
         var id = await commandMediator.SendAsync(
-            new CreateProductCategoryCommand(req.ParentId, req.Code, req.Name, User.Identity?.Name), null, ct);
+            new CreateProductCategoryCommand(
+                req.ParentId, req.Code, req.Name,
+                req.Description, req.StandardProductionTime, req.Color,
+                User.Identity?.Name), null, ct);
         return CreatedAtAction(nameof(GetAll), null, new ProductCategoryCreatedResult(id));
     }
 
@@ -42,7 +52,10 @@ public class ProductCategoriesController(ICommandMediator commandMediator,
     public async Task<IActionResult> Update(int id, [FromBody] UpdateProductCategoryRequest req, CancellationToken ct)
     {
         await commandMediator.SendAsync(
-            new UpdateProductCategoryCommand(id, req.ParentId, req.Name, req.IsActive, User.Identity?.Name ?? "system"), null, ct);
+            new UpdateProductCategoryCommand(
+                id, req.ParentId, req.Name,
+                req.Description, req.StandardProductionTime, req.Color,
+                req.IsActive, User.Identity?.Name ?? "system"), null, ct);
         return NoContent();
     }
 
@@ -58,6 +71,19 @@ public class ProductCategoriesController(ICommandMediator commandMediator,
     }
 }
 
-public record CreateProductCategoryRequest(int? ParentId, string Code, string Name);
-public record UpdateProductCategoryRequest(int? ParentId, string Name, bool IsActive);
+public record CreateProductCategoryRequest(
+    int? ParentId,
+    string Code,
+    string Name,
+    string? Description = null,
+    decimal? StandardProductionTime = null,
+    string? Color = null);
+
+public record UpdateProductCategoryRequest(
+    int? ParentId,
+    string Name,
+    string? Description,
+    decimal? StandardProductionTime,
+    string? Color,
+    bool IsActive);
 public record ProductCategoryCreatedResult(int CategoryId);
