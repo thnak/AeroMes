@@ -43,6 +43,8 @@ if (missing.length) {
 
 const bundle = {
   prefix: solar.prefix,
+  ...(solar.width  != null ? { width: solar.width }   : {}),
+  ...(solar.height != null ? { height: solar.height } : {}),
   icons: filteredIcons,
   ...(solar.aliases ? { aliases: {} } : {}),
 };
