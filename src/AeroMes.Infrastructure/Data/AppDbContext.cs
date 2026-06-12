@@ -61,6 +61,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<ProductAttribute> ProductAttributes => Set<ProductAttribute>();
     public DbSet<ProductAttributeAssignment> ProductAttributeAssignments => Set<ProductAttributeAssignment>();
     public DbSet<OrgUnit> OrgUnits => Set<OrgUnit>();
+    public DbSet<ProductionTeam> ProductionTeams => Set<ProductionTeam>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -885,6 +886,65 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Navigation(x => x.Children)
                 .HasField("_children")
                 .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<ProductionTeam>(e =>
+        {
+            e.ToTable("ProductionTeams", "master");
+            e.HasKey(x => x.TeamCode);
+            e.Property(x => x.TeamCode).HasMaxLength(50).ValueGeneratedNever();
+            e.Property(x => x.TeamName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.ProductionRate).HasColumnType("NUMERIC(10,2)");
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne(x => x.OrgUnit)
+                .WithMany()
+                .HasForeignKey(x => x.OrgUnitId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasMany(x => x.Members)
+                .WithOne()
+                .HasForeignKey(x => x.TeamCode)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Members)
+                .HasField("_members")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            e.HasMany(x => x.ProductGroups)
+                .WithOne()
+                .HasForeignKey(x => x.TeamCode)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.ProductGroups)
+                .HasField("_productGroups")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<ProductionTeamMember>(e =>
+        {
+            e.ToTable("ProductionTeamMembers", "master");
+            e.HasKey(x => x.MemberId);
+            e.Property(x => x.TeamCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.EmployeeCode).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => new { x.TeamCode, x.EmployeeCode }).IsUnique();
+
+            e.HasOne(x => x.Employee)
+                .WithMany()
+                .HasForeignKey(x => x.EmployeeCode)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<ProductionTeamProductGroup>(e =>
+        {
+            e.ToTable("ProductionTeamProductGroups", "master");
+            e.HasKey(x => x.LinkId);
+            e.Property(x => x.TeamCode).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => new { x.TeamCode, x.CategoryId }).IsUnique();
+
+            e.HasOne(x => x.Category)
+                .WithMany()
+                .HasForeignKey(x => x.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         b.Entity<ShiftAssignment>(e =>

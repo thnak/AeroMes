@@ -26,7 +26,7 @@ public class OrgUnitTests(AeroMesWebFactory factory)
         Assert.Equal(3, result.Created);
 
         var tree = await client.GetFromJsonAsync<List<OrgUnitTreeDto>>("/api/v1/org-units/tree");
-        var root = Assert.Single(tree!.Where(x => x.UnitCode == $"{prefix}-CO"));
+        var root = Assert.Single(tree!, x => x.UnitCode == $"{prefix}-CO");
         var dept = Assert.Single(root.Children);
         Assert.Equal($"{prefix}-D1", dept.UnitCode);
         Assert.Equal(1, dept.Level);

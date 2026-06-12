@@ -32,6 +32,8 @@ using AeroMes.Application.Master.OrgUnits.Queries.GetOrgUnitById;
 using AeroMes.Application.Master.OrgUnits.Queries.GetOrgUnits;
 using AeroMes.Application.Master.OrgUnits.Queries.GetOrgUnitTree;
 using AeroMes.Application.Master.ProductAttributes.Queries.GetProductAttributeById;
+using AeroMes.Application.Master.ProductionTeams.Queries.GetProductionTeamByCode;
+using AeroMes.Application.Master.ProductionTeams.Queries.GetProductionTeams;
 using AeroMes.Application.Master.ProductAttributes.Queries.GetProductAttributes;
 using AeroMes.Application.Master.ProductAttributes.Queries.GetProductAttributeAssignments;
 using AeroMes.Application.Master.Suppliers.Queries.GetSupplierById;
@@ -180,6 +182,15 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(OrgUnitDetailDto))]
 [JsonSerializable(typeof(SyncOrgUnitsRequest))]
 [JsonSerializable(typeof(SyncOrgUnitsResult))]
+// production teams
+[JsonSerializable(typeof(IReadOnlyList<ProductionTeamDto>))]
+[JsonSerializable(typeof(ProductionTeamDetailDto))]
+[JsonSerializable(typeof(ProductionTeamCreatedResult))]
+[JsonSerializable(typeof(TeamMemberAddedResult))]
+[JsonSerializable(typeof(CreateProductionTeamRequest))]
+[JsonSerializable(typeof(UpdateProductionTeamRequest))]
+[JsonSerializable(typeof(DuplicateTeamRequest))]
+[JsonSerializable(typeof(AddTeamMemberRequest))]
 // product attributes
 [JsonSerializable(typeof(IReadOnlyList<ProductAttributeDto>))]
 [JsonSerializable(typeof(ProductAttributeDetailDto))]
