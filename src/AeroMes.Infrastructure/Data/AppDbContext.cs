@@ -62,6 +62,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<ProductAttributeAssignment> ProductAttributeAssignments => Set<ProductAttributeAssignment>();
     public DbSet<OrgUnit> OrgUnits => Set<OrgUnit>();
     public DbSet<ProductionTeam> ProductionTeams => Set<ProductionTeam>();
+    public DbSet<Mold> Molds => Set<Mold>();
+    public DbSet<MoldProductMapping> MoldProductMappings => Set<MoldProductMapping>();
+    public DbSet<MoldMaintenanceLog> MoldMaintenanceLogs => Set<MoldMaintenanceLog>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -945,6 +948,74 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .WithMany()
                 .HasForeignKey(x => x.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<Mold>(e =>
+        {
+            e.ToTable("Molds", "master");
+            e.HasKey(x => x.MoldId);
+            e.Property(x => x.MoldCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.MoldName).HasMaxLength(150).IsRequired();
+            e.Property(x => x.MoldType).HasConversion<string>().HasMaxLength(30).IsRequired();
+            e.Property(x => x.Material).HasMaxLength(100);
+            e.Property(x => x.Manufacturer).HasMaxLength(150);
+            e.Property(x => x.PurchaseDate).HasColumnType("date");
+            e.Property(x => x.PurchaseCost).HasColumnType("DECIMAL(18,2)");
+            e.Property(x => x.WeightKg).HasColumnType("NUMERIC(10,2)");
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.CurrentMachineCode).HasMaxLength(50);
+            e.Property(x => x.StorageLocation).HasMaxLength(100);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasIndex(x => x.MoldCode).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasIndex(x => x.CurrentMachineCode);
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne(x => x.CurrentMachine)
+                .WithMany()
+                .HasForeignKey(x => x.CurrentMachineCode)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasMany(x => x.ProductMappings)
+                .WithOne()
+                .HasForeignKey(x => x.MoldId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.ProductMappings)
+                .HasField("_productMappings")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            e.HasMany(x => x.MaintenanceLogs)
+                .WithOne()
+                .HasForeignKey(x => x.MoldId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.MaintenanceLogs)
+                .HasField("_maintenanceLogs")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<MoldProductMapping>(e =>
+        {
+            e.ToTable("MoldProductMappings", "master");
+            e.HasKey(x => x.MappingId);
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => new { x.MoldId, x.ProductCode }).IsUnique();
+
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<MoldMaintenanceLog>(e =>
+        {
+            e.ToTable("MoldMaintenanceLogs", "master");
+            e.HasKey(x => x.LogId);
+            e.Property(x => x.MaintenanceType).HasConversion<string>().HasMaxLength(30).IsRequired();
+            e.Property(x => x.TechnicianId).HasMaxLength(100);
+            e.Property(x => x.Description).HasMaxLength(500);
+            e.Property(x => x.PartReplaced).HasMaxLength(300);
+            e.Property(x => x.Cost).HasColumnType("DECIMAL(18,2)");
+            e.HasIndex(x => x.MoldId);
         });
 
         b.Entity<ShiftAssignment>(e =>

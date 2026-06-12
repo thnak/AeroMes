@@ -27,6 +27,10 @@ using AeroMes.Application.Master.Customers.Queries.LookupCustomerPart;
 using AeroMes.Application.Master.Employees.Queries.GetEmployeeById;
 using AeroMes.Application.Master.Employees.Queries.GetEmployees;
 using AeroMes.Application.Master.Employees.Queries.GetEmployeeSchedule;
+using AeroMes.Application.Master.Molds.Commands.RecordMoldShots;
+using AeroMes.Application.Master.Molds.Queries.GetMoldByCode;
+using AeroMes.Application.Master.Molds.Queries.GetMolds;
+using AeroMes.Application.Master.Molds.Queries.GetMoldsDueForPm;
 using AeroMes.Application.Master.OrgUnits.Commands.SyncOrgUnits;
 using AeroMes.Application.Master.OrgUnits.Queries.GetOrgUnitById;
 using AeroMes.Application.Master.OrgUnits.Queries.GetOrgUnits;
@@ -203,6 +207,21 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(UpdateProductAttributeRequest))]
 [JsonSerializable(typeof(AttributeValueRequest))]
 [JsonSerializable(typeof(AssignAttributeRequest))]
+// molds
+[JsonSerializable(typeof(IReadOnlyList<MoldDto>))]
+[JsonSerializable(typeof(MoldDetailDto))]
+[JsonSerializable(typeof(IReadOnlyList<MoldPmDueDto>))]
+[JsonSerializable(typeof(MoldCreatedResult))]
+[JsonSerializable(typeof(MoldProductAddedResult))]
+[JsonSerializable(typeof(MoldMaintenanceLoggedResult))]
+[JsonSerializable(typeof(RecordMoldShotsResult))]
+[JsonSerializable(typeof(RegisterMoldRequest))]
+[JsonSerializable(typeof(UpdateMoldRequest))]
+[JsonSerializable(typeof(AddMoldProductRequest))]
+[JsonSerializable(typeof(AssignMoldRequest))]
+[JsonSerializable(typeof(SendMoldMaintenanceRequest))]
+[JsonSerializable(typeof(CompleteMoldMaintenanceRequest))]
+[JsonSerializable(typeof(RecordMoldShotsRequest))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 
