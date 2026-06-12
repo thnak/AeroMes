@@ -53,7 +53,8 @@ public class SystemOptions
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public string? UpdatedBy { get; set; }
 
-    private SystemOptions() { }
+    // Public for System.Text.Json model binding (PUT /settings/system-options).
+    public SystemOptions() { }
 
     public static SystemOptions CreateDefaults() => new()
     {

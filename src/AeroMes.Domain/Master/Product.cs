@@ -13,6 +13,10 @@ public class Product : AuditableEntity
     public ItemType ItemType { get; private set; } = ItemType.FG;
     public int? CategoryId { get; private set; }
 
+    // Variant model (MaterialManagementType = VariantCode): variants are full
+    // products linked to their master via ParentProductCode.
+    public string? ParentProductCode { get; private set; }
+
     // Units of measure
     public string BaseUoMCode { get; private set; } = string.Empty;
     public string? PurchaseUoMCode { get; private set; }
@@ -62,6 +66,11 @@ public class Product : AuditableEntity
 
     private readonly List<ProductUoMConversion> _uomConversions = [];
     public IReadOnlyList<ProductUoMConversion> UoMConversions => _uomConversions.AsReadOnly();
+
+    // Specification model (MaterialManagementType = SpecificationCode):
+    // technical variants share this master code via supplemental spec codes.
+    private readonly List<ProductSpecification> _specifications = [];
+    public IReadOnlyList<ProductSpecification> Specifications => _specifications.AsReadOnly();
 
     private Product() { }
 
@@ -195,6 +204,42 @@ public class Product : AuditableEntity
         var conversion = _uomConversions.FirstOrDefault(c => c.ConversionId == conversionId)
             ?? throw new DomainException($"Không tìm thấy quy đổi #{conversionId} của sản phẩm '{ProductCode}'.");
         _uomConversions.Remove(conversion);
+        Touch(updatedBy);
+    }
+
+    public void SetVariantParent(string parentProductCode)
+    {
+        var normalized = parentProductCode.Trim().ToUpperInvariant();
+        if (normalized == ProductCode)
+            throw new DomainException("Biến thể không thể là sản phẩm gốc của chính nó.");
+        ParentProductCode = normalized;
+    }
+
+    public ProductSpecification AddSpecification(string specCode, string? description, string? updatedBy = null)
+    {
+        var normalized = specCode.Trim().ToUpperInvariant();
+        if (_specifications.Any(s => s.SpecCode == normalized))
+            throw new DomainException($"Mã quy cách '{normalized}' đã tồn tại cho sản phẩm '{ProductCode}'.");
+
+        var spec = ProductSpecification.Create(ProductCode, normalized, description);
+        _specifications.Add(spec);
+        Touch(updatedBy);
+        return spec;
+    }
+
+    public void UpdateSpecification(int specificationId, string? description, bool isActive, string? updatedBy = null)
+    {
+        var spec = _specifications.FirstOrDefault(s => s.SpecificationId == specificationId)
+            ?? throw new DomainException($"Không tìm thấy mã quy cách #{specificationId} của sản phẩm '{ProductCode}'.");
+        spec.Update(description, isActive);
+        Touch(updatedBy);
+    }
+
+    public void RemoveSpecification(int specificationId, string? updatedBy = null)
+    {
+        var spec = _specifications.FirstOrDefault(s => s.SpecificationId == specificationId)
+            ?? throw new DomainException($"Không tìm thấy mã quy cách #{specificationId} của sản phẩm '{ProductCode}'.");
+        _specifications.Remove(spec);
         Touch(updatedBy);
     }
 

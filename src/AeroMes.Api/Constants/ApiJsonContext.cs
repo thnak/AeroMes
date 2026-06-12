@@ -17,6 +17,8 @@ using AeroMes.Application.Master.DowntimeReasonCodes.Queries.GetDowntimeReasonCo
 using AeroMes.Application.Master.ProductCategories.Queries.GetProductCategories;
 using AeroMes.Application.Master.ProductCategories.Queries.GetProductCategoryTree;
 using AeroMes.Application.Master.Products.Queries.GetProducts;
+using AeroMes.Application.Master.Products.Queries.GetProductSpecifications;
+using AeroMes.Application.Master.Products.Queries.GetProductVariants;
 using AeroMes.Application.Master.ShiftTemplates.Queries.GetShiftTemplates;
 using AeroMes.Application.Master.StorageLocations.Queries.GetStorageLocations;
 using AeroMes.Application.Master.Customers.Queries.GetCustomerById;
@@ -40,6 +42,7 @@ namespace AeroMes.Api.Constants;
 
 [JsonSourceGenerationOptions(JsonSerializerDefaults.Web, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(ProblemDetails))]
+[JsonSerializable(typeof(AeroMes.Domain.Settings.SystemOptions))]
 [JsonSerializable(typeof(SimpleProblemResponse))]
 [JsonSerializable(typeof(ValidationProblemResponse))]
 // auth
@@ -96,6 +99,14 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(AddUoMConversionRequest))]
 [JsonSerializable(typeof(UpdateUoMConversionRequest))]
 [JsonSerializable(typeof(UoMConversionCreatedResult))]
+// variants / specification codes
+[JsonSerializable(typeof(IReadOnlyList<ProductVariantDto>))]
+[JsonSerializable(typeof(IReadOnlyList<ProductSpecificationDto>))]
+[JsonSerializable(typeof(CreateVariantRequest))]
+[JsonSerializable(typeof(AddSpecificationRequest))]
+[JsonSerializable(typeof(UpdateSpecificationRequest))]
+[JsonSerializable(typeof(VariantCreatedResult))]
+[JsonSerializable(typeof(SpecificationCreatedResult))]
 // downtime reason codes
 [JsonSerializable(typeof(IReadOnlyList<DowntimeReasonCodeDto>))]
 [JsonSerializable(typeof(DowntimeReasonCodeCreatedResult))]

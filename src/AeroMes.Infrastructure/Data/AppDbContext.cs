@@ -345,6 +345,21 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasField("_uomConversions")
                 .UsePropertyAccessMode(PropertyAccessMode.Field);
 
+            e.Property(x => x.ParentProductCode).HasMaxLength(50);
+            e.HasIndex(x => x.ParentProductCode);
+            e.HasOne<Product>().WithMany()
+                .HasForeignKey(x => x.ParentProductCode)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasMany(x => x.Specifications)
+                .WithOne()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Specifications)
+                .HasField("_specifications")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
             e.HasOne(x => x.Category)
                 .WithMany()
                 .HasForeignKey(x => x.CategoryId)
@@ -359,6 +374,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.PurchaseUoMCode)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<ProductSpecification>(e =>
+        {
+            e.ToTable("ProductSpecifications", "master");
+            e.HasKey(x => x.SpecificationId);
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.SpecCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(255);
+            e.HasIndex(x => new { x.ProductCode, x.SpecCode }).IsUnique();
         });
 
         b.Entity<ProductUoMConversion>(e =>

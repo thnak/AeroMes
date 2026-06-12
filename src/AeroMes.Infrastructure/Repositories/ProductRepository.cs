@@ -25,6 +25,24 @@ public class ProductRepository(AppDbContext db) : IProductRepository
             .Include(x => x.UoMConversions)
             .FirstOrDefaultAsync(x => x.ProductCode == code.ToUpperInvariant(), ct);
 
+    public Task<Product?> GetByCodeWithSpecificationsAsync(string code, CancellationToken ct) =>
+        db.Products
+            .Include(x => x.Specifications)
+            .FirstOrDefaultAsync(x => x.ProductCode == code.ToUpperInvariant(), ct);
+
+    public async Task<IReadOnlyList<Product>> GetVariantsAsync(string parentCode, CancellationToken ct) =>
+        await db.Products
+            .AsNoTracking()
+            .Where(x => x.ParentProductCode == parentCode.ToUpperInvariant())
+            .OrderBy(x => x.ProductCode)
+            .ToListAsync(ct);
+
+    public Task<bool> AnyVariantLinksAsync(CancellationToken ct) =>
+        db.Products.AnyAsync(x => x.ParentProductCode != null, ct);
+
+    public Task<bool> AnySpecificationsAsync(CancellationToken ct) =>
+        db.Set<ProductSpecification>().AnyAsync(ct);
+
     public Task<bool> IsActiveAsync(string code, CancellationToken ct) =>
         db.Products.AnyAsync(x => x.ProductCode == code.ToUpperInvariant() && x.IsActive, ct);
 
