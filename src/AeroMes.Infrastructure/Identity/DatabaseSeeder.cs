@@ -145,6 +145,8 @@ public class DatabaseSeeder(
         // Downtime
         yield return Permission.Create("Downtime", "Declare");
         yield return Permission.Create("Downtime", "Read");
+        // Integration
+        yield return Permission.Create("Integration", "Read");
         // Inventory
         yield return Permission.Create("Inventory", "Read");
         yield return Permission.Create("Inventory", "Adjust");
@@ -204,6 +206,7 @@ public class DatabaseSeeder(
         "Job:Read", "Job:Start", "Job:Complete",
         "Production:Read", "Production:SubmitOutput",
         "Downtime:Declare", "Downtime:Read",
+        "Integration:Read",
         "Inventory:Read", "Inventory:Adjust",
         "MasterData:Read", "MasterData:Write",
         "User:Read", "User:Create", "User:Update", "User:Delete", "User:ManageRoles", "User:ResetPassword",

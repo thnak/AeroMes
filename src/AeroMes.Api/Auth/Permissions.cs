@@ -24,6 +24,9 @@ public static class Permissions
     public const string DowntimeDeclare = "Downtime:Declare";
     public const string DowntimeRead = "Downtime:Read";
 
+    // Integration (ERP)
+    public const string IntegrationRead = "Integration:Read";
+
     // Inventory
     public const string InventoryRead = "Inventory:Read";
     public const string InventoryAdjust = "Inventory:Adjust";
@@ -91,6 +94,7 @@ public static class Permissions
 
     public static readonly string[] All =
     [
+        IntegrationRead,
         WorkOrderRead, WorkOrderCreate, WorkOrderUpdate, WorkOrderDelete, WorkOrderStart, WorkOrderComplete, WorkOrderApprove,
         JobRead, JobStart, JobComplete,
         ProductionRead, ProductionSubmitOutput,

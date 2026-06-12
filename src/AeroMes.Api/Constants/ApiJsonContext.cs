@@ -2,6 +2,10 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using AeroMes.Api.Controllers;
 using AeroMes.Api.Middleware;
+using AeroMes.Application.Integration.Queries.GetProductionOrderDetail;
+using AeroMes.Application.Integration.Queries.GetProductionOrders;
+using AeroMes.Application.Integration.Queries.GetSalesOrderDetail;
+using AeroMes.Application.Integration.Queries.GetSalesOrders;
 using AeroMes.Application.Master.AlertThresholds.Queries.GetAlertThresholds;
 using AeroMes.Application.Quality.DefectCodes.Queries.GetDefectCodes;
 using AeroMes.Application.Downtime.Queries.GetDowntimeLogs;
@@ -81,6 +85,13 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(AlertThresholdCreatedResult))]
 [JsonSerializable(typeof(CreateAlertThresholdRequest))]
 [JsonSerializable(typeof(UpdateAlertThresholdRequest))]
+// integration
+[JsonSerializable(typeof(IReadOnlyList<SalesOrderDto>))]
+[JsonSerializable(typeof(SalesOrderDetailDto))]
+[JsonSerializable(typeof(IReadOnlyList<ProductionOrderSummaryDto>))]
+[JsonSerializable(typeof(IReadOnlyList<ProductionOrderDto>))]
+[JsonSerializable(typeof(ProductionOrderDetailDto))]
+[JsonSerializable(typeof(IReadOnlyList<WorkOrderSummaryDto>))]
 // work order detail
 [JsonSerializable(typeof(WorkOrderDetailDto))]
 [JsonSerializable(typeof(IReadOnlyList<JobSummaryDto>))]

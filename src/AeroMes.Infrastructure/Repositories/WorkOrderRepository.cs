@@ -19,6 +19,13 @@ public class WorkOrderRepository(AppDbContext db) : IWorkOrderRepository
             .Include(x => x.WorkCenter)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<WorkOrder>> GetByPoIdAsync(int poId, CancellationToken ct) =>
+        await db.WorkOrders.AsNoTracking()
+            .Where(x => x.POID == poId)
+            .Include(x => x.WorkCenter)
+            .OrderBy(x => x.WOCode)
+            .ToListAsync(ct);
+
     public Task AddAsync(WorkOrder entity, CancellationToken ct)
     {
         db.WorkOrders.Add(entity);

@@ -5,5 +5,9 @@ public interface IProductionOrderRepository
     Task<ProductionOrder?> GetByIdAsync(int id, CancellationToken ct = default);
     Task<ProductionOrder?> GetByCodeAsync(string poCode, CancellationToken ct = default);
     Task<bool> ExistsAsync(int id, CancellationToken ct = default);
+    Task<IReadOnlyList<ProductionOrder>> GetBySoIdAsync(int soId, CancellationToken ct = default);
+    Task<IReadOnlyList<ProductionOrder>> GetFilteredAsync(
+        int? soId, string? poCode, string? productCode,
+        ProductionOrderStatus? status, CancellationToken ct = default);
     Task AddAsync(ProductionOrder entity, CancellationToken ct = default);
 }
