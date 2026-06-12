@@ -156,7 +156,7 @@ export default function LaunchpadPage() {
       </AppBar>
 
       {/* Module grid */}
-      <Box sx={{ flex: 1, p: { xs: 2, sm: 4 }, maxWidth: 1200, width: '100%', mx: 'auto' }}>
+      <Box sx={{ flex: 1, p: { xs: 2, sm: 4 } }}>
 
         {/* Pinned section */}
         {pinnedMods.length > 0 && !q && (

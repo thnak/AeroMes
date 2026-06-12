@@ -45,8 +45,13 @@ export const MODULES: ModuleConfig[] = [
     icon: 'quality',
     color: '#15803D',
     path: '/quality',
-    available: false,
-    tabs: [],
+    available: true,
+    tabs: [
+      { label: 'Inspection Orders', path: '/quality/inspection-orders' },
+      { label: 'Inspection Plans',  path: '/quality/inspection-plans' },
+      { label: 'NCR',              path: '/quality/ncr' },
+      { label: 'Defect Analysis',  path: '/quality/defect-analysis' },
+    ],
   },
   {
     id: 'master',

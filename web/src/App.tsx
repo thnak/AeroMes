@@ -50,6 +50,12 @@ const InventoryPage = lazy(() => import('./pages/production/InventoryPage'));
 const InventoryTracePage = lazy(() => import('./pages/production/InventoryTracePage'));
 const SchedulePage = lazy(() => import('./pages/schedule/SchedulePage'));
 
+// Quality
+const InspectionOrdersPage = lazy(() => import('./pages/quality/InspectionOrdersPage'));
+const InspectionPlanPage = lazy(() => import('./pages/quality/InspectionPlanPage'));
+const NCRPage = lazy(() => import('./pages/quality/NCRPage'));
+const DefectAnalysisPage = lazy(() => import('./pages/quality/DefectAnalysisPage'));
+
 // Maintenance
 const MaintenancePage = lazy(() => import('./pages/maintenance/MaintenancePage'));
 
@@ -154,6 +160,14 @@ export default function App() {
             <Route path="master/routings/:id/steps" element={<RoutingStepsPage />} />
             <Route path="master/storage-locations" element={<StorageLocationsPage />} />
             <Route path="master/defect-codes" element={<DefectCodesPage />} />
+          </Route>
+
+          {/* ── Quality module ────────────────────────────────── */}
+          <Route element={<ModuleLayout />}>
+            <Route path="quality/inspection-orders" element={<InspectionOrdersPage />} />
+            <Route path="quality/inspection-plans" element={<InspectionPlanPage />} />
+            <Route path="quality/ncr" element={<NCRPage />} />
+            <Route path="quality/defect-analysis" element={<DefectAnalysisPage />} />
           </Route>
 
           {/* ── Integration module ────────────────────────────── */}
