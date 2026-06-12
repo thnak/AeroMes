@@ -10,4 +10,5 @@ public record WorkOrderAutoRulesDto(
     bool AutoStartEnabled,
     bool AutoCompleteOnTargetReached,
     bool RequireDeleteConfirmToken,
-    int MaxConcurrentJobs);
+    int MaxConcurrentJobs,
+    bool RequireCertification);

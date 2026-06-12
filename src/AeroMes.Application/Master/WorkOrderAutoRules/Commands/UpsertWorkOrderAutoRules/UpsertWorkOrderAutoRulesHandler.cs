@@ -21,14 +21,14 @@ public class UpsertWorkOrderAutoRulesHandler(
         if (existing is not null)
         {
             existing.UpdateDetails(cmd.AutoStartEnabled, cmd.AutoCompleteOnTargetReached,
-                cmd.RequireDeleteConfirmToken, cmd.MaxConcurrentJobs, cmd.UpdatedBy);
+                cmd.RequireDeleteConfirmToken, cmd.MaxConcurrentJobs, cmd.RequireCertification, cmd.UpdatedBy);
             entity = existing;
         }
         else
         {
             entity = DomainRules.Create(
                 cmd.WorkCenterId, cmd.AutoStartEnabled, cmd.AutoCompleteOnTargetReached,
-                cmd.RequireDeleteConfirmToken, cmd.MaxConcurrentJobs, cmd.UpdatedBy);
+                cmd.RequireDeleteConfirmToken, cmd.MaxConcurrentJobs, cmd.RequireCertification, cmd.UpdatedBy);
             await repo.AddAsync(entity, ct);
         }
         await uow.SaveChangesAsync(ct);

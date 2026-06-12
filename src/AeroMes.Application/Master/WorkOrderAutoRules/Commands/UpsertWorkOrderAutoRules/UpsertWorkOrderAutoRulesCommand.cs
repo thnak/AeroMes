@@ -8,4 +8,5 @@ public record UpsertWorkOrderAutoRulesCommand(
     bool AutoCompleteOnTargetReached,
     bool RequireDeleteConfirmToken,
     int MaxConcurrentJobs,
+    bool RequireCertification,
     string? UpdatedBy) : ICommand<int>;

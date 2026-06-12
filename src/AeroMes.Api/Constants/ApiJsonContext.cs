@@ -20,6 +20,9 @@ using AeroMes.Application.Master.StorageLocations.Queries.GetStorageLocations;
 using AeroMes.Application.Master.Customers.Queries.GetCustomerById;
 using AeroMes.Application.Master.Customers.Queries.GetCustomers;
 using AeroMes.Application.Master.Customers.Queries.LookupCustomerPart;
+using AeroMes.Application.Master.Employees.Queries.GetEmployeeById;
+using AeroMes.Application.Master.Employees.Queries.GetEmployees;
+using AeroMes.Application.Master.Employees.Queries.GetEmployeeSchedule;
 using AeroMes.Application.Master.Suppliers.Queries.GetSupplierById;
 using AeroMes.Application.Master.Suppliers.Queries.GetSuppliers;
 using AeroMes.Application.Master.WorkCalendars.Queries.GetWorkCalendarById;
@@ -129,6 +132,18 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(AddCustomerPartNumberRequest))]
 [JsonSerializable(typeof(UpdateCustomerPartNumberRequest))]
 [JsonSerializable(typeof(SetCustomerQualitySpecRequest))]
+// employees
+[JsonSerializable(typeof(IReadOnlyList<EmployeeDto>))]
+[JsonSerializable(typeof(EmployeeDetailDto))]
+[JsonSerializable(typeof(EmployeeScheduleDto))]
+[JsonSerializable(typeof(EmployeeCreatedResult))]
+[JsonSerializable(typeof(EmployeeSkillSavedResult))]
+[JsonSerializable(typeof(ShiftAssignmentCreatedResult))]
+[JsonSerializable(typeof(CreateEmployeeRequest))]
+[JsonSerializable(typeof(UpdateEmployeeRequest))]
+[JsonSerializable(typeof(SetEmployeeSkillRequest))]
+[JsonSerializable(typeof(AddShiftAssignmentRequest))]
+[JsonSerializable(typeof(EndShiftAssignmentRequest))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

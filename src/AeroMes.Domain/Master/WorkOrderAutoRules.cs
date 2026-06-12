@@ -9,6 +9,7 @@ public class WorkOrderAutoRules : AuditableEntity
     public bool AutoStartEnabled { get; private set; }
     public bool AutoCompleteOnTargetReached { get; private set; }
     public bool RequireDeleteConfirmToken { get; private set; }
+    public bool RequireCertification { get; private set; }
     public int MaxConcurrentJobs { get; private set; } = 1;
 
     public WorkCenter? WorkCenter { get; private set; }
@@ -21,6 +22,7 @@ public class WorkOrderAutoRules : AuditableEntity
         bool autoCompleteOnTargetReached,
         bool requireDeleteConfirmToken,
         int maxConcurrentJobs = 1,
+        bool requireCertification = false,
         string? createdBy = null)
     {
         return new WorkOrderAutoRules
@@ -29,6 +31,7 @@ public class WorkOrderAutoRules : AuditableEntity
             AutoStartEnabled = autoStartEnabled,
             AutoCompleteOnTargetReached = autoCompleteOnTargetReached,
             RequireDeleteConfirmToken = requireDeleteConfirmToken,
+            RequireCertification = requireCertification,
             MaxConcurrentJobs = maxConcurrentJobs,
             CreatedBy = createdBy,
             CreatedAt = DateTime.UtcNow
@@ -38,11 +41,12 @@ public class WorkOrderAutoRules : AuditableEntity
     public void UpdateDetails(
         bool autoStartEnabled, bool autoCompleteOnTargetReached,
         bool requireDeleteConfirmToken, int maxConcurrentJobs,
-        string? updatedBy)
+        bool requireCertification, string? updatedBy)
     {
         AutoStartEnabled = autoStartEnabled;
         AutoCompleteOnTargetReached = autoCompleteOnTargetReached;
         RequireDeleteConfirmToken = requireDeleteConfirmToken;
+        RequireCertification = requireCertification;
         MaxConcurrentJobs = maxConcurrentJobs;
         Touch(updatedBy);
     }

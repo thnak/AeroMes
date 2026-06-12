@@ -10,6 +10,11 @@ public class WorkOrderRepository(AppDbContext db) : IWorkOrderRepository
     public Task<WorkOrder?> GetByIdAsync(int id, CancellationToken ct) =>
         db.WorkOrders.FirstOrDefaultAsync(x => x.WOID == id, ct);
 
+    public Task<WorkOrder?> GetByIdWithRoutingStepAsync(int id, CancellationToken ct) =>
+        db.WorkOrders
+            .Include(x => x.RoutingStep)
+            .FirstOrDefaultAsync(x => x.WOID == id, ct);
+
     public Task<WorkOrder?> GetByCodeAsync(string woCode, CancellationToken ct) =>
         db.WorkOrders.FirstOrDefaultAsync(x => x.WOCode == woCode, ct);
 

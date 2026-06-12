@@ -6,7 +6,7 @@ namespace AeroMes.Application.Jobs.Commands.StartJob;
 
 public class StartJobValidator : AbstractValidator<StartJobCommand>
 {
-    public StartJobValidator(IWorkOrderRepository woRepo, IMachineRepository machineRepo)
+    public StartJobValidator(IWorkOrderRepository woRepo, IMachineRepository machineRepo, IEmployeeRepository employeeRepo)
     {
         RuleFor(x => x.WorkOrderId)
             .GreaterThan(0).WithMessage("WorkOrder id is required.")
@@ -23,6 +23,8 @@ public class StartJobValidator : AbstractValidator<StartJobCommand>
             .MaximumLength(20).WithMessage("Shift code must be at most 20 characters.");
 
         RuleFor(x => x.OperatorId)
-            .NotEmpty().WithMessage("OperatorId is required.");
+            .NotEmpty().WithMessage("OperatorId is required.")
+            .MustAsync(async (code, ct) => await employeeRepo.IsActiveAsync(code, ct))
+            .WithMessage(x => $"Operator '{x.OperatorId}' is not a registered active employee.");
     }
 }

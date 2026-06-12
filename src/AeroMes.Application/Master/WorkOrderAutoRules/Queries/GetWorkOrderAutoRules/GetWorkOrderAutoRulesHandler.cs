@@ -12,6 +12,6 @@ public class GetWorkOrderAutoRulesHandler(IWorkOrderAutoRulesRepository repo)
         return items.Select(x => new WorkOrderAutoRulesDto(
             x.RuleId, x.WorkCenterId, x.AutoStartEnabled,
             x.AutoCompleteOnTargetReached, x.RequireDeleteConfirmToken,
-            x.MaxConcurrentJobs)).ToList();
+            x.MaxConcurrentJobs, x.RequireCertification)).ToList();
     }
 }

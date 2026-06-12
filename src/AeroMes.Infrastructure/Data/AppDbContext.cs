@@ -55,6 +55,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<CustomerPartNumber> CustomerPartNumbers => Set<CustomerPartNumber>();
     public DbSet<CustomerQualitySpec> CustomerQualitySpecs => Set<CustomerQualitySpec>();
+    public DbSet<Employee> Employees => Set<Employee>();
+    public DbSet<EmployeeSkill> EmployeeSkills => Set<EmployeeSkill>();
+    public DbSet<ShiftAssignment> ShiftAssignments => Set<ShiftAssignment>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -707,6 +710,77 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.ProductCode)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        b.Entity<Employee>(e =>
+        {
+            e.ToTable("Employees", "master");
+            e.HasKey(x => x.EmployeeCode);
+            // Length 50 matches prod.Jobs.OperatorID so the FK types line up.
+            e.Property(x => x.EmployeeCode).HasMaxLength(50).ValueGeneratedNever();
+            e.Property(x => x.FullName).HasMaxLength(150).IsRequired();
+            e.Property(x => x.Department).HasMaxLength(100);
+            e.Property(x => x.RoleType).HasConversion<string>().HasMaxLength(20);
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne(x => x.DefaultWorkCenter)
+                .WithMany()
+                .HasForeignKey(x => x.DefaultWorkCenterId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasMany(x => x.Skills)
+                .WithOne()
+                .HasForeignKey(x => x.EmployeeCode)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Skills)
+                .HasField("_skills")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            e.HasMany(x => x.ShiftAssignments)
+                .WithOne()
+                .HasForeignKey(x => x.EmployeeCode)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.ShiftAssignments)
+                .HasField("_shiftAssignments")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<EmployeeSkill>(e =>
+        {
+            e.ToTable("EmployeeSkills", "master");
+            e.HasKey(x => x.EmployeeSkillId);
+            e.Property(x => x.EmployeeCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.OperationCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.CertifiedAt).HasColumnType("date");
+            e.Property(x => x.ExpiresAt).HasColumnType("date");
+            e.HasIndex(x => new { x.EmployeeCode, x.OperationCode }).IsUnique();
+
+            e.HasOne(x => x.Operation)
+                .WithMany()
+                .HasForeignKey(x => x.OperationCode)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<ShiftAssignment>(e =>
+        {
+            e.ToTable("ShiftAssignments", "master");
+            e.HasKey(x => x.ShiftAssignmentId);
+            e.Property(x => x.EmployeeCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ShiftCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.ValidFrom).HasColumnType("date");
+            e.Property(x => x.ValidTo).HasColumnType("date");
+            e.HasIndex(x => new { x.EmployeeCode, x.ValidFrom });
+
+            e.HasOne(x => x.WorkCenter)
+                .WithMany()
+                .HasForeignKey(x => x.WorkCenterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.ShiftTemplate)
+                .WithMany()
+                .HasForeignKey(x => x.ShiftCode)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     // ── integration ───────────────────────────────────────────────────────
@@ -810,6 +884,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .WithMany()
                 .HasForeignKey(x => x.ShiftCode)
                 .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.Operator)
+                .WithMany()
+                .HasForeignKey(x => x.OperatorID)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

@@ -21,6 +21,7 @@ public class Job : Entity
     // EF navigations
     public WorkOrder? WorkOrder { get; private set; }
     public Machine? Machine { get; private set; }
+    public Employee? Operator { get; private set; }
 
     private Job() { }
 

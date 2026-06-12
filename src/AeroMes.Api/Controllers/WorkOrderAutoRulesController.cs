@@ -30,7 +30,8 @@ public class WorkOrderAutoRulesController(ICommandMediator commandMediator, IQue
         var id = await commandMediator.SendAsync(
             new UpsertWorkOrderAutoRulesCommand(req.WorkCenterId, req.AutoStartEnabled,
                 req.AutoCompleteOnTargetReached, req.RequireDeleteConfirmToken,
-                req.MaxConcurrentJobs, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+                req.MaxConcurrentJobs, req.RequireCertification,
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
         return Ok(new WorkOrderAutoRulesUpsertResult(id));
     }
 
@@ -50,6 +51,7 @@ public record UpsertWorkOrderAutoRulesRequest(
     bool AutoStartEnabled,
     bool AutoCompleteOnTargetReached,
     bool RequireDeleteConfirmToken,
-    int MaxConcurrentJobs);
+    int MaxConcurrentJobs,
+    bool RequireCertification = false);
 
 public record WorkOrderAutoRulesUpsertResult(int RuleId);
