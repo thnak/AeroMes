@@ -21,7 +21,7 @@ import error500 from './error-500.webp';
 // Tablet
 import tabletIdleWelcome from './tablet-idle-welcome.webp';
 
-// Module card backgrounds
+// Module card backgrounds — dark variant
 import moduleCardProduction   from './module-card-production.webp';
 import moduleCardQuality      from './module-card-quality.webp';
 import moduleCardMaster       from './module-card-master.webp';
@@ -34,6 +34,14 @@ import moduleCardWarehouse    from './module-card-warehouse.webp';
 import moduleCardIot          from './module-card-iot.webp';
 import moduleCardLab          from './module-card-lab.webp';
 import moduleCardTraceability from './module-card-traceability.webp';
+
+// Module card backgrounds — light variant (falls back to dark when unavailable)
+import moduleCardQualityLight      from './module-card-quality-light.webp';
+import moduleCardMasterLight       from './module-card-master-light.webp';
+import moduleCardPlanningLight     from './module-card-planning-light.webp';
+import moduleCardWarehouseLight    from './module-card-warehouse-light.webp';
+import moduleCardReportsLight      from './module-card-reports-light.webp';
+import moduleCardTraceabilityLight from './module-card-traceability-light.webp';
 
 export const moduleCardImages: Record<string, string> = {
   production:   moduleCardProduction,
@@ -48,6 +56,16 @@ export const moduleCardImages: Record<string, string> = {
   iot:          moduleCardIot,
   lab:          moduleCardLab,
   traceability: moduleCardTraceability,
+};
+
+export const moduleCardImagesLight: Record<string, string> = {
+  ...moduleCardImages,
+  quality:      moduleCardQualityLight,
+  master:       moduleCardMasterLight,
+  planning:     moduleCardPlanningLight,
+  warehouse:    moduleCardWarehouseLight,
+  reports:      moduleCardReportsLight,
+  traceability: moduleCardTraceabilityLight,
 };
 
 export const illustrations = {

@@ -16,11 +16,12 @@ import {
 } from '@mui/material';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useColorScheme } from '@mui/material/styles';
 import SolarIcon from '../components/SolarIcon';
 import UserMenu from '../components/UserMenu';
 import { useAuth } from '../contexts/AuthContext';
 import { MODULES, type ModuleConfig } from '../modules';
-import { moduleCardImages } from '../assets/illustrations';
+import { moduleCardImages, moduleCardImagesLight } from '../assets/illustrations';
 import { APPBAR_HEIGHT } from '../theme/tokens';
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
@@ -406,6 +407,10 @@ function ModuleCard({
   disabled?: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
+  const { mode } = useColorScheme();
+  const isLight = mode === 'light';
+  const cardImages = isLight ? moduleCardImagesLight : moduleCardImages;
+  const cardBg = cardImages[mod.id];
 
   return (
     <ButtonBase
@@ -421,14 +426,13 @@ function ModuleCard({
         overflow: 'hidden',
         position: 'relative',
         height: 200,
-        // Photo background with color-tinted dark overlay
-        backgroundImage: moduleCardImages[mod.id]
-          ? `linear-gradient(160deg, ${alpha('#0d1117', 0.55)} 0%, ${alpha(mod.color, 0.55)} 100%), url(${moduleCardImages[mod.id]})`
+        backgroundImage: cardBg
+          ? `linear-gradient(160deg, ${alpha(isLight ? '#f8fafc' : '#0d1117', isLight ? 0.40 : 0.55)} 0%, ${alpha(mod.color, isLight ? 0.35 : 0.55)} 100%), url(${cardBg})`
           : undefined,
-        background: moduleCardImages[mod.id] ? undefined : (t) =>
+        background: cardBg ? undefined : (t) =>
           t.palette.mode === 'dark'
             ? `radial-gradient(ellipse at 80% 10%, ${alpha(mod.color, 0.45)} 0%, transparent 55%), #0d1117`
-            : `radial-gradient(ellipse at 80% 10%, ${alpha(mod.color, 0.35)} 0%, transparent 55%), #111827`,
+            : `radial-gradient(ellipse at 80% 10%, ${alpha(mod.color, 0.35)} 0%, transparent 55%), #f1f5f9`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         border: '1px solid',
@@ -449,7 +453,7 @@ function ModuleCard({
         sx={{
           position: 'absolute', right: 14, bottom: 2,
           fontSize: '5.5rem', fontWeight: 900,
-          color: 'white', opacity: 0.055, lineHeight: 1,
+          color: isLight ? '#000' : 'white', opacity: 0.055, lineHeight: 1,
           fontFamily: 'ui-monospace, monospace',
           userSelect: 'none', pointerEvents: 'none',
         }}
@@ -461,7 +465,9 @@ function ModuleCard({
       <Box
         sx={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
-          backgroundImage: `linear-gradient(${alpha('#fff', 0.03)} 1px, transparent 1px), linear-gradient(90deg, ${alpha('#fff', 0.03)} 1px, transparent 1px)`,
+          backgroundImage: isLight
+            ? `linear-gradient(${alpha('#000', 0.025)} 1px, transparent 1px), linear-gradient(90deg, ${alpha('#000', 0.025)} 1px, transparent 1px)`
+            : `linear-gradient(${alpha('#fff', 0.03)} 1px, transparent 1px), linear-gradient(90deg, ${alpha('#fff', 0.03)} 1px, transparent 1px)`,
           backgroundSize: '32px 32px',
         }}
       />
@@ -472,26 +478,26 @@ function ModuleCard({
         <Box
           sx={{
             width: 44, height: 44, borderRadius: 2,
-            bgcolor: alpha(mod.color, 0.25),
-            border: '1px solid', borderColor: alpha(mod.color, 0.45),
+            bgcolor: alpha(mod.color, isLight ? 0.18 : 0.25),
+            border: '1px solid', borderColor: alpha(mod.color, isLight ? 0.35 : 0.45),
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <SolarIcon name={mod.icon} size={22} sx={{ color: 'white' }} />
+          <SolarIcon name={mod.icon} size={22} sx={{ color: isLight ? mod.color : 'white' }} />
         </Box>
 
         <Box sx={{ mt: 'auto' }}>
           <Stack direction="row" sx={{ alignItems: 'center', gap: 1, mb: 0.5 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'white', lineHeight: 1.2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: isLight ? '#1e293b' : 'white', lineHeight: 1.2 }}>
               {mod.label}
             </Typography>
             {disabled && (
-              <Chip label="Soon" size="small" sx={{ height: 16, fontSize: '0.6rem', bgcolor: alpha('#fff', 0.12), color: alpha('#fff', 0.5), border: 'none' }} />
+              <Chip label="Soon" size="small" sx={{ height: 16, fontSize: '0.6rem', bgcolor: alpha(isLight ? '#000' : '#fff', 0.10), color: alpha(isLight ? '#000' : '#fff', 0.45), border: 'none' }} />
             )}
           </Stack>
           <Typography
             variant="caption"
-            sx={{ color: alpha('#fff', 0.55), display: 'block', mb: 1.25, lineHeight: 1.45, fontSize: '0.75rem' }}
+            sx={{ color: isLight ? alpha('#1e293b', 0.60) : alpha('#fff', 0.55), display: 'block', mb: 1.25, lineHeight: 1.45, fontSize: '0.75rem' }}
           >
             {mod.description}
           </Typography>
@@ -514,9 +520,9 @@ function ModuleCard({
             onClick={(e) => { e.stopPropagation(); onPin(); }}
             sx={{
               position: 'absolute', top: 8, right: 8, p: 0.5,
-              bgcolor: alpha('#000', 0.35),
-              color: pinned ? mod.color : alpha('#fff', 0.55),
-              '&:hover': { bgcolor: alpha('#000', 0.55) },
+              bgcolor: alpha(isLight ? '#fff' : '#000', 0.35),
+              color: pinned ? mod.color : alpha(isLight ? '#000' : '#fff', 0.55),
+              '&:hover': { bgcolor: alpha(isLight ? '#fff' : '#000', 0.55) },
             }}
           >
             <SolarIcon name={pinned ? 'complete' : 'add'} size={14} />
