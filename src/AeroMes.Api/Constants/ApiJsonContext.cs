@@ -27,6 +27,13 @@ using AeroMes.Application.Master.Customers.Queries.LookupCustomerPart;
 using AeroMes.Application.Master.Employees.Queries.GetEmployeeById;
 using AeroMes.Application.Master.Employees.Queries.GetEmployees;
 using AeroMes.Application.Master.Employees.Queries.GetEmployeeSchedule;
+using AeroMes.Application.Master.Boms.Queries.CompareBomVersions;
+using AeroMes.Application.Master.Boms.Queries.ExplodeBom;
+using AeroMes.Application.Master.Boms.Queries.GetActiveBom;
+using AeroMes.Application.Master.Boms.Queries.GetBomVersions;
+using AeroMes.Application.Master.EngChanges.Commands.ImplementEco;
+using AeroMes.Application.Master.EngChanges.Queries.GetEngChangeByNumber;
+using AeroMes.Application.Master.EngChanges.Queries.GetEngChanges;
 using AeroMes.Application.Master.Molds.Commands.RecordMoldShots;
 using AeroMes.Application.Master.Molds.Queries.GetMoldByCode;
 using AeroMes.Application.Master.Molds.Queries.GetMolds;
@@ -245,6 +252,22 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(SendToolServiceRequest))]
 [JsonSerializable(typeof(RecordToolMaintenanceRequest))]
 [JsonSerializable(typeof(RecordToolUsageRequest))]
+// versioned BOM + engineering changes
+[JsonSerializable(typeof(BomVersionDetailDto))]
+[JsonSerializable(typeof(IReadOnlyList<BomVersionDto>))]
+[JsonSerializable(typeof(IReadOnlyList<ExplodedBomLineDto>))]
+[JsonSerializable(typeof(BomCompareDto))]
+[JsonSerializable(typeof(BomDraftCreatedResult))]
+[JsonSerializable(typeof(CreateBomDraftRequest))]
+[JsonSerializable(typeof(UpdateBomLinesRequest))]
+[JsonSerializable(typeof(ActivateBomRequest))]
+[JsonSerializable(typeof(IReadOnlyList<EngChangeDto>))]
+[JsonSerializable(typeof(EngChangeDetailDto))]
+[JsonSerializable(typeof(EngChangeCreatedResult))]
+[JsonSerializable(typeof(ImplementEcoResult))]
+[JsonSerializable(typeof(CreateEngChangeRequest))]
+[JsonSerializable(typeof(CreateEcoRequest))]
+[JsonSerializable(typeof(ImplementEcoRequest))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

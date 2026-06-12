@@ -53,6 +53,8 @@ public static class DependencyInjection
         services.AddScoped<IProductionTeamRepository, ProductionTeamRepository>();
         services.AddScoped<IMoldRepository, MoldRepository>();
         services.AddScoped<IToolRepository, ToolRepository>();
+        services.AddScoped<IBomHeaderRepository, BomHeaderRepository>();
+        services.AddScoped<IEngChangeRepository, EngChangeRepository>();
 
         // integration repositories
         services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();

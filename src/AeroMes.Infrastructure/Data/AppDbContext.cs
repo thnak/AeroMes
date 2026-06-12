@@ -66,6 +66,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<MoldProductMapping> MoldProductMappings => Set<MoldProductMapping>();
     public DbSet<MoldMaintenanceLog> MoldMaintenanceLogs => Set<MoldMaintenanceLog>();
     public DbSet<Tool> Tools => Set<Tool>();
+    public DbSet<BomHeader> BomHeaders => Set<BomHeader>();
+    public DbSet<BomLine> BomLines => Set<BomLine>();
+    public DbSet<EngChange> EngChanges => Set<EngChange>();
     public DbSet<ToolOperationMapping> ToolOperationMappings => Set<ToolOperationMapping>();
     public DbSet<ToolCheckout> ToolCheckouts => Set<ToolCheckout>();
     public DbSet<ToolMaintenanceLog> ToolMaintenanceLogs => Set<ToolMaintenanceLog>();
@@ -1119,6 +1122,84 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.NextDueDate).HasColumnType("date");
             e.Property(x => x.Notes).HasMaxLength(300);
             e.HasIndex(x => x.ToolId);
+        });
+
+        b.Entity<BomHeader>(e =>
+        {
+            e.ToTable("BomHeaders", "master");
+            e.HasKey(x => x.BomHeaderId);
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Version).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.EffectiveFrom).HasColumnType("date");
+            e.Property(x => x.EffectiveTo).HasColumnType("date");
+            e.Property(x => x.BaseQuantity).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.EcoReference).HasMaxLength(50);
+            e.Property(x => x.ApprovedBy).HasMaxLength(100);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasIndex(x => new { x.ProductCode, x.Version }).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasIndex(x => new { x.ProductCode, x.Status });
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(x => x.BomHeaderId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines)
+                .HasField("_lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<BomLine>(e =>
+        {
+            e.ToTable("BomLines", "master");
+            e.HasKey(x => x.BomLineId);
+            e.Property(x => x.ComponentCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.RequiredQty).HasColumnType("NUMERIC(18,6)");
+            e.Property(x => x.UoMCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.ScrapFactor).HasColumnType("NUMERIC(5,2)");
+            e.Property(x => x.Notes).HasMaxLength(200);
+            e.HasIndex(x => new { x.BomHeaderId, x.LineNo }).IsUnique();
+
+            e.HasOne(x => x.Component)
+                .WithMany()
+                .HasForeignKey(x => x.ComponentCode)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<UnitOfMeasure>()
+                .WithMany()
+                .HasForeignKey(x => x.UoMCode)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<EngChange>(e =>
+        {
+            e.ToTable("EngChanges", "master");
+            e.HasKey(x => x.EcId);
+            e.Property(x => x.EcNumber).HasMaxLength(30).IsRequired();
+            e.Property(x => x.EcType).HasConversion<string>().HasMaxLength(10).IsRequired();
+            e.Property(x => x.Title).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(1000);
+            e.Property(x => x.Reason).HasConversion<string>().HasMaxLength(30).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.Priority).HasConversion<string>().HasMaxLength(10).IsRequired();
+            e.Property(x => x.RequestedBy).HasMaxLength(100);
+            e.Property(x => x.TargetDate).HasColumnType("date");
+            e.Property(x => x.ApprovedBy).HasMaxLength(100);
+            e.Property(x => x.AffectedProducts).HasMaxLength(500);
+            e.Property(x => x.SourceEcrNumber).HasMaxLength(30);
+            e.HasIndex(x => x.EcNumber).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne<BomHeader>()
+                .WithMany()
+                .HasForeignKey(x => x.NewBomHeaderId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         b.Entity<ShiftAssignment>(e =>
