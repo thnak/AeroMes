@@ -31,6 +31,11 @@ public class DefectCode : AuditableEntity
         };
     }
 
-    public void Activate() => IsActive = true;
-    public void Deactivate() => IsActive = false;
+    public void UpdateDetails(string name, string? category, bool isActive, string? updatedBy)
+    {
+        DefectName = name.Trim();
+        DefectCategory = category;
+        IsActive = isActive;
+        Touch(updatedBy);
+    }
 }

@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using AeroMes.Api.Controllers;
 using AeroMes.Api.Middleware;
 using AeroMes.Application.Master.AlertThresholds.Queries.GetAlertThresholds;
+using AeroMes.Application.Quality.DefectCodes.Queries.GetDefectCodes;
 using AeroMes.Application.Master.CapabilityGroups.Queries.GetCapabilityGroups;
 using AeroMes.Application.Master.DowntimeReasonCodes.Queries.GetDowntimeReasonCodes;
 using AeroMes.Application.Master.Products.Queries.GetProducts;
@@ -76,6 +77,11 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(AlertThresholdCreatedResult))]
 [JsonSerializable(typeof(CreateAlertThresholdRequest))]
 [JsonSerializable(typeof(UpdateAlertThresholdRequest))]
+// defect codes
+[JsonSerializable(typeof(IReadOnlyList<DefectCodeDto>))]
+[JsonSerializable(typeof(DefectCodeCreatedResult))]
+[JsonSerializable(typeof(CreateDefectCodeRequest))]
+[JsonSerializable(typeof(UpdateDefectCodeRequest))]
 // suppliers / AVL
 [JsonSerializable(typeof(IReadOnlyList<SupplierDto>))]
 [JsonSerializable(typeof(SupplierDetailDto))]

@@ -810,7 +810,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.Code).HasMaxLength(20).IsRequired();
             e.Property(x => x.DefectName).HasMaxLength(150).IsRequired();
             e.Property(x => x.DefectCategory).HasMaxLength(100);
-            e.HasIndex(x => x.Code).IsUnique();
+            e.HasIndex(x => x.Code).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasQueryFilter(x => !x.IsDeleted);
         });
 
         b.Entity<DefectDetail>(e =>
