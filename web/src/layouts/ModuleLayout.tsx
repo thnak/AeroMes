@@ -66,7 +66,7 @@ export default function ModuleLayout() {
         position="static"
         color="default"
         elevation={0}
-        sx={{ bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}
+        sx={{ bgcolor: 'background.paper', height: '85px', borderBottom: '1px solid', borderColor: 'divider' }}
       >
         {/* ── Shell bar ─────────────────────────────────────────────────────── */}
         <Toolbar
