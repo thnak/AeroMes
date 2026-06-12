@@ -41,6 +41,11 @@ using AeroMes.Application.Master.ProductionTeams.Queries.GetProductionTeams;
 using AeroMes.Application.Master.ProductAttributes.Queries.GetProductAttributes;
 using AeroMes.Application.Master.ProductAttributes.Queries.GetProductAttributeAssignments;
 using AeroMes.Application.Master.Suppliers.Queries.GetSupplierById;
+using AeroMes.Application.Master.Tools.Commands.RecordToolUsage;
+using AeroMes.Application.Master.Tools.Queries.GetToolByCode;
+using AeroMes.Application.Master.Tools.Queries.GetTools;
+using AeroMes.Application.Master.Tools.Queries.GetToolsDueForCalibration;
+using AeroMes.Application.Master.Tools.Queries.GetToolsDueForReconditioning;
 using AeroMes.Application.Master.Suppliers.Queries.GetSuppliers;
 using AeroMes.Application.Master.WorkCalendars.Queries.GetWorkCalendarById;
 using AeroMes.Application.Master.WorkCalendars.Queries.GetWorkCalendars;
@@ -222,6 +227,24 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(SendMoldMaintenanceRequest))]
 [JsonSerializable(typeof(CompleteMoldMaintenanceRequest))]
 [JsonSerializable(typeof(RecordMoldShotsRequest))]
+// tools
+[JsonSerializable(typeof(IReadOnlyList<ToolDto>))]
+[JsonSerializable(typeof(ToolDetailDto))]
+[JsonSerializable(typeof(IReadOnlyList<ToolCalibrationDueDto>))]
+[JsonSerializable(typeof(IReadOnlyList<ToolReconditioningDueDto>))]
+[JsonSerializable(typeof(ToolCreatedResult))]
+[JsonSerializable(typeof(ToolOperationAddedResult))]
+[JsonSerializable(typeof(ToolCheckedOutResult))]
+[JsonSerializable(typeof(ToolMaintenanceLoggedResult))]
+[JsonSerializable(typeof(RecordToolUsageResult))]
+[JsonSerializable(typeof(RegisterToolRequest))]
+[JsonSerializable(typeof(UpdateToolRequest))]
+[JsonSerializable(typeof(AddToolOperationRequest))]
+[JsonSerializable(typeof(CheckoutToolRequest))]
+[JsonSerializable(typeof(ReturnToolRequest))]
+[JsonSerializable(typeof(SendToolServiceRequest))]
+[JsonSerializable(typeof(RecordToolMaintenanceRequest))]
+[JsonSerializable(typeof(RecordToolUsageRequest))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

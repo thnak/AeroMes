@@ -65,6 +65,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<Mold> Molds => Set<Mold>();
     public DbSet<MoldProductMapping> MoldProductMappings => Set<MoldProductMapping>();
     public DbSet<MoldMaintenanceLog> MoldMaintenanceLogs => Set<MoldMaintenanceLog>();
+    public DbSet<Tool> Tools => Set<Tool>();
+    public DbSet<ToolOperationMapping> ToolOperationMappings => Set<ToolOperationMapping>();
+    public DbSet<ToolCheckout> ToolCheckouts => Set<ToolCheckout>();
+    public DbSet<ToolMaintenanceLog> ToolMaintenanceLogs => Set<ToolMaintenanceLog>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -1016,6 +1020,105 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.PartReplaced).HasMaxLength(300);
             e.Property(x => x.Cost).HasColumnType("DECIMAL(18,2)");
             e.HasIndex(x => x.MoldId);
+        });
+
+        b.Entity<Tool>(e =>
+        {
+            e.ToTable("Tools", "master");
+            e.HasKey(x => x.ToolId);
+            e.Property(x => x.ToolCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ToolName).HasMaxLength(150).IsRequired();
+            e.Property(x => x.ToolType).HasConversion<string>().HasMaxLength(30).IsRequired();
+            e.Property(x => x.Brand).HasMaxLength(100);
+            e.Property(x => x.Model).HasMaxLength(100);
+            e.Property(x => x.Specification).HasMaxLength(300);
+            e.Property(x => x.NextCalibrationDue).HasColumnType("date");
+            e.Property(x => x.StorageLocation).HasMaxLength(100);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.PurchaseDate).HasColumnType("date");
+            e.Property(x => x.PurchaseCost).HasColumnType("DECIMAL(18,2)");
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasIndex(x => x.ToolCode).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasIndex(x => x.CurrentWorkCenterId);
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne(x => x.CurrentWorkCenter)
+                .WithMany()
+                .HasForeignKey(x => x.CurrentWorkCenterId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasMany(x => x.OperationMappings)
+                .WithOne()
+                .HasForeignKey(x => x.ToolId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.OperationMappings)
+                .HasField("_operationMappings")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            e.HasMany(x => x.Checkouts)
+                .WithOne()
+                .HasForeignKey(x => x.ToolId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Checkouts)
+                .HasField("_checkouts")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            e.HasMany(x => x.MaintenanceLogs)
+                .WithOne()
+                .HasForeignKey(x => x.ToolId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.MaintenanceLogs)
+                .HasField("_maintenanceLogs")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<ToolOperationMapping>(e =>
+        {
+            e.ToTable("ToolOperationMappings", "master");
+            e.HasKey(x => x.MappingId);
+            e.Property(x => x.OperationCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50);
+            e.Property(x => x.UsageCountPerOp).HasColumnType("NUMERIC(10,4)");
+            e.HasIndex(x => new { x.ToolId, x.OperationCode, x.ProductCode }).IsUnique();
+
+            e.HasOne(x => x.Operation)
+                .WithMany()
+                .HasForeignKey(x => x.OperationCode)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<ToolCheckout>(e =>
+        {
+            e.ToTable("ToolCheckouts", "master");
+            e.HasKey(x => x.CheckoutId);
+            e.Property(x => x.CheckedOutBy).HasMaxLength(100).IsRequired();
+            e.Property(x => x.ReturnedBy).HasMaxLength(100);
+            e.Property(x => x.ConditionOnReturn).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Notes).HasMaxLength(255);
+            e.HasIndex(x => new { x.ToolId, x.ReturnedAt });
+
+            e.HasOne(x => x.WorkCenter)
+                .WithMany()
+                .HasForeignKey(x => x.WorkCenterId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<ToolMaintenanceLog>(e =>
+        {
+            e.ToTable("ToolMaintenanceLogs", "master");
+            e.HasKey(x => x.LogId);
+            e.Property(x => x.MaintenanceType).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.PerformedBy).HasMaxLength(100);
+            e.Property(x => x.Cost).HasColumnType("DECIMAL(18,2)");
+            e.Property(x => x.NextDueDate).HasColumnType("date");
+            e.Property(x => x.Notes).HasMaxLength(300);
+            e.HasIndex(x => x.ToolId);
         });
 
         b.Entity<ShiftAssignment>(e =>
