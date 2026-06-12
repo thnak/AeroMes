@@ -3,4 +3,4 @@ DIMENSIONS: 800 x 500
 PLACEMENT: Background image for the Traceability module card tile
 
 PROMPT:
-Studio macro photograph of identical machined metal discs lying in a precisely organized tray, each one laser-engraved with a unique serial number barely visible in the metal surface. The parts are arranged in a perfect grid, each one casting a small shadow on the tray beneath it. Dramatic raking side-light skims across the surface, making the laser engravings readable as faint relief. Dark industrial tray, cool steel color palette. No paper labels, no stickers, no people. Shallow depth of field blurs the rear rows.
+Commercial flat-lay product photography of eight identical sealed matte-aluminum cans arranged in a precise 4×2 grid on a dark surface. All cans are smooth with no labels, aligned perfectly. A vivid lime-green studio gel sidelight rakes across the entire arrangement from the left, catching the smooth can edges and casting vivid yellow-green highlights across each surface. Crisp clean shadows fall to the right. Overhead key light is neutral. Organized, systematic, premium product catalog composition. No text, no markings. Dark studio background.

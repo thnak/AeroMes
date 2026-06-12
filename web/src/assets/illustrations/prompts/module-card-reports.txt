@@ -3,4 +3,4 @@ DIMENSIONS: 800 x 500
 PLACEMENT: Background image for the Reports module card tile
 
 PROMPT:
-Dramatic aerial photograph looking straight down onto an active factory production line. Identical mechanical assemblies move along a conveyor belt in a perfectly ordered row, each one at the same stage of completion. Warm overhead industrial lights cast short, symmetrical shadows beneath each piece. The repetition and order fill the entire frame. No people visible, no signage, no screens. Shot from directly above, long lens compression, dark floor between the products.
+Commercial product photography of a row of six identical sealed matte-aluminum cans — smooth, no labels, premium finish — arranged in a straight line receding into the frame on a dark reflective surface. A vivid deep-teal studio gel light comes from directly behind, silhouetting the cans in a rich emerald-teal glow and reflecting in the surface below. Soft overhead key light reveals the brushed aluminum texture on the nearest can. Minimal, modern, premium product line composition. No text. Dark background. Showroom photography style.

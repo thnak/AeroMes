@@ -3,4 +3,4 @@ DIMENSIONS: 800 x 500
 PLACEMENT: Background image for the Planning module card tile
 
 PROMPT:
-Studio photograph of large engineering blueprints partially unrolled on a heavy wooden drafting table. The blueprints show intricate technical line drawings — mechanical cross-sections, plan views, dimension lines — printed in dark blue ink on white paper. A stainless steel ruler, a mechanical pencil, and a brass compass rest on the corner of the drawing. Warm studio spotlight illuminates the scene with a focused pool of light. Dark surroundings, moody. No people. No text other than abstract drawn geometry.
+Commercial product photography of five sealed product boxes arranged in a deliberate diagonal staircase composition on a dark surface — each box slightly offset from the last, ascending from left to right. All boxes are the same matte-black style with clean edges. A deep electric-indigo studio gel light wraps around from behind, creating a vivid indigo-purple backlight that halos each box in sequence. Studio key light is soft and directional. Luxury showroom aesthetic. No text, no labels. Dark background. Professional product photography.

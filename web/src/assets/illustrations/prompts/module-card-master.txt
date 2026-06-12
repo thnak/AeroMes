@@ -3,4 +3,4 @@ DIMENSIONS: 800 x 500
 PLACEMENT: Background image for the Master Data module card tile
 
 PROMPT:
-Overhead flat-lay studio photograph of a curated set of precision mechanical components — hex bolts, dowel pins, O-rings, bearing races, and small gears — arranged in an orderly grid on a dark slate surface. Each part is individually spaced and lit with soft, even overhead studio lighting that reveals every material texture: polished steel, black oxide, brass, rubber. High depth of field, everything sharp. No labels, no text, no hands. Industrial product catalog aesthetic.
+Commercial product photography of six identical sealed product boxes arranged in two staggered rows on a dark matte surface — all the same size, matte black with clean sharp edges. A deep vivid violet-purple studio gel light rakes in from the left side, casting long colored shadows to the right and highlighting every box edge in rich purple. Soft neutral overhead key light keeps the tops clean. Luxury packaging catalog aesthetic. No text, no labels, no branding. Dark studio background. Product showroom composition.

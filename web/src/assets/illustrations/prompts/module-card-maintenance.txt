@@ -3,4 +3,4 @@ DIMENSIONS: 800 x 500
 PLACEMENT: Background image for the Maintenance module card tile
 
 PROMPT:
-Flat-lay studio photograph of a professional maintenance tool set arranged with deliberate precision on a dark rubber work-mat. Chrome combination wrenches, ratchets, socket heads, a torque wrench, and a set of hex keys laid out symmetrically like a surgical instrument tray. Single-source hard light from upper left makes the chrome surfaces glitter and throws crisp shadows to the right. Dark, moody background. No people, no text. Commercial product photography.
+Commercial product launch photograph of a compact service machine with smooth, full-coverage white and dark-gray body panels — entirely enclosed, all surfaces clean and seamless. The machine looks like a high-end enclosed service unit. An "AeroMes" wordmark is subtly embossed on the front face. A vivid crimson-red LED accent glows around the status panel area and along the base trim, reflecting on the dark showroom floor. Studio key light from upper right. Very dark background, almost black. Electronics product photography. No tools, no mechanical parts, nothing exposed.

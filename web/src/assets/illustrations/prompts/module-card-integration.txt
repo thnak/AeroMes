@@ -3,4 +3,4 @@ DIMENSIONS: 800 x 500
 PLACEMENT: Background image for the Integration module card tile
 
 PROMPT:
-Wide-angle studio photograph looking down a long, straight warehouse aisle. Heavy-duty metal racking on both sides rises to the ceiling, stacked with identical brown cardboard boxes organized in neat rows. Overhead strip lighting creates a dramatic vanishing point and bathes everything in a warm industrial glow. The floor is polished concrete that reflects the lights faintly. No text, no labels, no people, no vehicles. Clean, orderly, infinite depth. Dark vignette at the edges.
+Commercial product photography of four clean sealed shipping boxes — natural kraft-brown, no labels, uniform size — stacked in a neat two-by-two arrangement on a dark surface. A warm golden-amber studio gel light pours in from behind and above, wrapping the boxes in a rich warm glow and casting a soft amber halo behind the stack. The surface reflects a faint warm highlight. Simple, ordered, premium logistics aesthetic. No text, no stickers, no tape marks. Dark moody background. Product showroom photography.

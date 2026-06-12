@@ -3,4 +3,4 @@ DIMENSIONS: 800 x 500
 PLACEMENT: Background image for the Admin module card tile
 
 PROMPT:
-Studio still-life photograph of a polished white safety hard hat, a metal clipboard with blank paper forms, and a ballpoint pen arranged on a dark walnut desk surface. A safety lanyard with a blank badge holder rests across the corner of the clipboard. Soft directional studio lighting illuminates the objects against a near-black background. Clean, authoritative, professional. No visible text or writing on the forms. Shallow depth of field softens the background.
+Commercial product photography of a premium matte-black sealed box — square, perfectly clean edges, slightly larger than a shoebox — centered on a dark satin-finish surface. A cool steel-blue sidelight creates a precise highlight along the top edge and one side, creating a sense of authority and precision. A faint secondary light on the opposite side prevents total shadow. Overall palette is nearly monochromatic: very dark grays and black with cold blue edge highlights. Corporate, executive, authoritative. No text, no labels, no embossing. Luxury product showroom photography.
