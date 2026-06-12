@@ -17,6 +17,9 @@ using AeroMes.Application.Master.DowntimeReasonCodes.Queries.GetDowntimeReasonCo
 using AeroMes.Application.Master.Products.Queries.GetProducts;
 using AeroMes.Application.Master.ShiftTemplates.Queries.GetShiftTemplates;
 using AeroMes.Application.Master.StorageLocations.Queries.GetStorageLocations;
+using AeroMes.Application.Master.Customers.Queries.GetCustomerById;
+using AeroMes.Application.Master.Customers.Queries.GetCustomers;
+using AeroMes.Application.Master.Customers.Queries.LookupCustomerPart;
 using AeroMes.Application.Master.Suppliers.Queries.GetSupplierById;
 using AeroMes.Application.Master.Suppliers.Queries.GetSuppliers;
 using AeroMes.Application.Master.WorkCalendars.Queries.GetWorkCalendarById;
@@ -114,6 +117,18 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(AvlItemCreatedResult))]
 [JsonSerializable(typeof(AddAvlItemRequest))]
 [JsonSerializable(typeof(UpdateAvlItemRequest))]
+// customers
+[JsonSerializable(typeof(IReadOnlyList<CustomerDto>))]
+[JsonSerializable(typeof(CustomerDetailDto))]
+[JsonSerializable(typeof(CustomerPartLookupDto))]
+[JsonSerializable(typeof(CustomerCreatedResult))]
+[JsonSerializable(typeof(CustomerPartNumberCreatedResult))]
+[JsonSerializable(typeof(CustomerQualitySpecSavedResult))]
+[JsonSerializable(typeof(CreateCustomerRequest))]
+[JsonSerializable(typeof(UpdateCustomerRequest))]
+[JsonSerializable(typeof(AddCustomerPartNumberRequest))]
+[JsonSerializable(typeof(UpdateCustomerPartNumberRequest))]
+[JsonSerializable(typeof(SetCustomerQualitySpecRequest))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

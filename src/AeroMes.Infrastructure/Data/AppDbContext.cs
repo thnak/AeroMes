@@ -52,6 +52,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<ApprovedVendorItem> ApprovedVendorItems => Set<ApprovedVendorItem>();
     public DbSet<CapabilityGroup> CapabilityGroups => Set<CapabilityGroup>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<CustomerPartNumber> CustomerPartNumbers => Set<CustomerPartNumber>();
+    public DbSet<CustomerQualitySpec> CustomerQualitySpecs => Set<CustomerQualitySpec>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -631,6 +634,79 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.ProductCode)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        b.Entity<Customer>(e =>
+        {
+            e.ToTable("Customers", "master");
+            e.HasKey(x => x.CustomerCode);
+            e.Property(x => x.CustomerCode).HasMaxLength(30).ValueGeneratedNever();
+            e.Property(x => x.CustomerName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.CustomerType).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.TaxId).HasMaxLength(50);
+            e.Property(x => x.Country).HasMaxLength(80);
+            e.Property(x => x.Address).HasMaxLength(300);
+            e.Property(x => x.ShippingAddress).HasMaxLength(300);
+            e.Property(x => x.ContactName).HasMaxLength(150);
+            e.Property(x => x.ContactPhone).HasMaxLength(30);
+            e.Property(x => x.ContactEmail).HasMaxLength(150);
+            e.Property(x => x.Currency).HasMaxLength(3);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasMany(x => x.PartNumbers)
+                .WithOne()
+                .HasForeignKey(x => x.CustomerCode)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.PartNumbers)
+                .HasField("_partNumbers")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            e.HasMany(x => x.QualitySpecs)
+                .WithOne()
+                .HasForeignKey(x => x.CustomerCode)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.QualitySpecs)
+                .HasField("_qualitySpecs")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<CustomerPartNumber>(e =>
+        {
+            e.ToTable("CustomerPartNumbers", "master");
+            e.HasKey(x => x.CustomerPartNumberId);
+            e.Property(x => x.CustomerCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.CustomerPartNo).HasMaxLength(100).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(300);
+            e.Property(x => x.DrawingReference).HasMaxLength(100);
+            e.Property(x => x.Revision).HasMaxLength(20);
+            e.HasIndex(x => new { x.CustomerCode, x.CustomerPartNo }).IsUnique();
+
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<CustomerQualitySpec>(e =>
+        {
+            e.ToTable("CustomerQualitySpecs", "master");
+            e.HasKey(x => x.CustomerQualitySpecId);
+            e.Property(x => x.CustomerCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.AqlLevel).HasMaxLength(10);
+            e.Property(x => x.InspectionLevel).HasConversion<string>().HasMaxLength(10);
+            e.Property(x => x.AcceptanceCriteria).HasMaxLength(500);
+            e.Property(x => x.SpecialRequirements).HasMaxLength(500);
+            e.Property(x => x.EffectiveFrom).HasColumnType("date");
+            e.Property(x => x.EffectiveTo).HasColumnType("date");
+            e.HasIndex(x => new { x.CustomerCode, x.ProductCode }).IsUnique();
+
+            e.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     // ── integration ───────────────────────────────────────────────────────
@@ -642,8 +718,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.HasKey(x => x.SOID);
             e.Property(x => x.SOCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.CustomerName).HasMaxLength(150);
+            e.Property(x => x.CustomerCode).HasMaxLength(30);
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
             e.HasIndex(x => x.SOCode).IsUnique();
+
+            e.HasOne(x => x.Customer)
+                .WithMany()
+                .HasForeignKey(x => x.CustomerCode)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         b.Entity<ProductionOrder>(e =>
