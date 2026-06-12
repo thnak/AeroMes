@@ -23,6 +23,12 @@ public class ProductionLogRepository(AppDbContext db) : IProductionLogRepository
         return result is null ? (0, 0) : (result.ok, result.ng);
     }
 
+    public async Task<IReadOnlyList<ProductionLog>> GetByJobIdAsync(long jobId, CancellationToken ct) =>
+        await db.ProductionLogs.AsNoTracking()
+            .Where(x => x.JobID == jobId)
+            .OrderBy(x => x.Timestamp)
+            .ToListAsync(ct);
+
     public Task AddAsync(ProductionLog entity, CancellationToken ct)
     {
         db.ProductionLogs.Add(entity);

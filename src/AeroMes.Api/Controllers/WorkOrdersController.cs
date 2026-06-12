@@ -1,6 +1,7 @@
 using AeroMes.Api.Auth;
 using AeroMes.Application.Common;
 using AeroMes.Application.WorkOrders.Commands.StartWorkOrder;
+using AeroMes.Application.WorkOrders.Queries.GetWorkOrderDetail;
 using AeroMes.Application.WorkOrders.Queries.GetWorkOrders;
 using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
@@ -25,6 +26,18 @@ public class WorkOrdersController(ICommandMediator commandMediator, IQueryMediat
     {
         var result = await queryMediator.QueryAsync(new GetWorkOrdersQuery(status), null, ct);
         return Ok(new ApiResponse<IReadOnlyList<WorkOrderDto>>(true, "OK", result));
+    }
+
+    [HttpGet("{id:int}")]
+    [RequirePermission(Permissions.WorkOrderRead)]
+    [ProducesResponseType<ApiResponse<WorkOrderDetailDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<WorkOrderDetailDto>>> GetById(int id, CancellationToken ct)
+    {
+        var result = await queryMediator.QueryAsync(new GetWorkOrderDetailQuery(id), null, ct);
+        return Ok(new ApiResponse<WorkOrderDetailDto>(true, "OK", result));
     }
 
     [HttpPost("{id:int}/start")]

@@ -2,7 +2,10 @@ using AeroMes.Api.Auth;
 using AeroMes.Application.Common;
 using AeroMes.Application.Downtime.Commands.EndDowntime;
 using AeroMes.Application.Downtime.Commands.StartDowntime;
+using AeroMes.Application.Downtime.Queries.GetDowntimeDetail;
+using AeroMes.Application.Downtime.Queries.GetDowntimeLogs;
 using LiteBus.Commands.Abstractions;
+using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,8 +14,37 @@ namespace AeroMes.Api.Controllers;
 [ApiController]
 [Route("api/v1/downtime")]
 [Authorize]
-public class DowntimeController(ICommandMediator commandMediator) : ControllerBase
+public class DowntimeController(ICommandMediator commandMediator, IQueryMediator queryMediator) : ControllerBase
 {
+    [HttpGet]
+    [RequirePermission(Permissions.WorkOrderRead)]
+    [ProducesResponseType<ApiResponse<IReadOnlyList<DowntimeLogDto>>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<DowntimeLogDto>>>> GetAll(
+        [FromQuery] string? machineCode,
+        [FromQuery] bool? isOpen,
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        CancellationToken ct)
+    {
+        var result = await queryMediator.QueryAsync(
+            new GetDowntimeLogsQuery(machineCode, isOpen, from, to), null, ct);
+        return Ok(new ApiResponse<IReadOnlyList<DowntimeLogDto>>(true, "OK", result));
+    }
+
+    [HttpGet("{id:long}")]
+    [RequirePermission(Permissions.WorkOrderRead)]
+    [ProducesResponseType<ApiResponse<DowntimeLogDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<DowntimeLogDto>>> GetById(long id, CancellationToken ct)
+    {
+        var result = await queryMediator.QueryAsync(new GetDowntimeDetailQuery(id), null, ct);
+        return Ok(new ApiResponse<DowntimeLogDto>(true, "OK", result));
+    }
+
     [HttpPost("start")]
     [RequirePermission(Permissions.DowntimeDeclare)]
     [ProducesResponseType<ApiResponse<DowntimeStartedResult>>(StatusCodes.Status201Created)]

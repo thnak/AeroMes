@@ -31,6 +31,7 @@
     <ProjectReference Include="..\..\src\AeroMes.Api\AeroMes.Api.csproj" />
     <ProjectReference Include="..\..\src\AeroMes.Infrastructure\AeroMes.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\AeroMes.Application\AeroMes.Application.csproj" />
+    <ProjectReference Include="..\..\src\AeroMes.Domain\AeroMes.Domain.csproj" />
   </ItemGroup>
 
 </Project>

@@ -27,6 +27,18 @@ public class DowntimeLogRepository(AppDbContext db) : IDowntimeLogRepository
         return logs.Sum(l => (l.End - l.Start).TotalMinutes);
     }
 
+    public async Task<IReadOnlyList<DowntimeLog>> GetFilteredAsync(
+        string? machineCode, bool? isOpen, DateTime? from, DateTime? to, CancellationToken ct)
+    {
+        var q = db.DowntimeLogs.AsNoTracking().AsQueryable();
+        if (machineCode is not null) q = q.Where(x => x.MachineCode == machineCode.ToUpperInvariant());
+        if (isOpen == true) q = q.Where(x => x.EndTime == null);
+        else if (isOpen == false) q = q.Where(x => x.EndTime != null);
+        if (from.HasValue) q = q.Where(x => x.StartTime >= from.Value);
+        if (to.HasValue) q = q.Where(x => x.StartTime <= to.Value);
+        return await q.OrderByDescending(x => x.StartTime).ToListAsync(ct);
+    }
+
     public Task AddAsync(DowntimeLog entity, CancellationToken ct)
     {
         db.DowntimeLogs.Add(entity);

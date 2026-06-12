@@ -4,6 +4,10 @@ using AeroMes.Api.Controllers;
 using AeroMes.Api.Middleware;
 using AeroMes.Application.Master.AlertThresholds.Queries.GetAlertThresholds;
 using AeroMes.Application.Quality.DefectCodes.Queries.GetDefectCodes;
+using AeroMes.Application.Downtime.Queries.GetDowntimeLogs;
+using AeroMes.Application.Jobs.Queries.GetJobDetail;
+using AeroMes.Application.Jobs.Queries.GetJobs;
+using AeroMes.Application.WorkOrders.Queries.GetWorkOrderDetail;
 using AeroMes.Application.Master.CapabilityGroups.Queries.GetCapabilityGroups;
 using AeroMes.Application.Master.DowntimeReasonCodes.Queries.GetDowntimeReasonCodes;
 using AeroMes.Application.Master.Products.Queries.GetProducts;
@@ -77,6 +81,16 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(AlertThresholdCreatedResult))]
 [JsonSerializable(typeof(CreateAlertThresholdRequest))]
 [JsonSerializable(typeof(UpdateAlertThresholdRequest))]
+// work order detail
+[JsonSerializable(typeof(WorkOrderDetailDto))]
+[JsonSerializable(typeof(IReadOnlyList<JobSummaryDto>))]
+// jobs
+[JsonSerializable(typeof(IReadOnlyList<JobDto>))]
+[JsonSerializable(typeof(JobDetailDto))]
+[JsonSerializable(typeof(IReadOnlyList<ProductionLogDto>))]
+// downtime
+[JsonSerializable(typeof(IReadOnlyList<DowntimeLogDto>))]
+[JsonSerializable(typeof(DowntimeLogDto))]
 // defect codes
 [JsonSerializable(typeof(IReadOnlyList<DefectCodeDto>))]
 [JsonSerializable(typeof(DefectCodeCreatedResult))]
