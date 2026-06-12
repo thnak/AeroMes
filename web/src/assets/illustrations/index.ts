@@ -36,8 +36,10 @@ import moduleCardLab          from './module-card-lab.webp';
 import moduleCardTraceability from './module-card-traceability.webp';
 
 // Module card backgrounds — light variant (falls back to dark when unavailable)
+import moduleCardProductionLight   from './module-card-production-light.webp';
 import moduleCardQualityLight      from './module-card-quality-light.webp';
 import moduleCardMasterLight       from './module-card-master-light.webp';
+import moduleCardIntegrationLight  from './module-card-integration-light.webp';
 import moduleCardPlanningLight     from './module-card-planning-light.webp';
 import moduleCardWarehouseLight    from './module-card-warehouse-light.webp';
 import moduleCardReportsLight      from './module-card-reports-light.webp';
@@ -60,8 +62,10 @@ export const moduleCardImages: Record<string, string> = {
 
 export const moduleCardImagesLight: Record<string, string> = {
   ...moduleCardImages,
+  production:   moduleCardProductionLight,
   quality:      moduleCardQualityLight,
   master:       moduleCardMasterLight,
+  integration:  moduleCardIntegrationLight,
   planning:     moduleCardPlanningLight,
   warehouse:    moduleCardWarehouseLight,
   reports:      moduleCardReportsLight,
