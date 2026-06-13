@@ -345,6 +345,15 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<LotEventDto>))]
 [JsonSerializable(typeof(RecordLineageRequest))]
 [JsonSerializable(typeof(AppendLotEventRequest))]
+// process records (as-built & mid-session WIP)
+[JsonSerializable(typeof(ProcessRecordDto))]
+[JsonSerializable(typeof(IReadOnlyList<ProcessRecordDto>))]
+[JsonSerializable(typeof(ProcessRecordDetailDto))]
+[JsonSerializable(typeof(ProcessParameterDto))]
+[JsonSerializable(typeof(IReadOnlyList<ProcessParameterDto>))]
+[JsonSerializable(typeof(OpenProcessRecordRequest))]
+[JsonSerializable(typeof(RecordParameterRequest))]
+[JsonSerializable(typeof(CloseProcessRecordRequest))]
 // production statistics sheets
 [JsonSerializable(typeof(StatisticsSheetCreatedResult))]
 [JsonSerializable(typeof(ProductionStatisticsSheetSummaryDto))]

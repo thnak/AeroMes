@@ -114,6 +114,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<ByProductLine> ByProductLines => Set<ByProductLine>();
     public DbSet<LotLineage> LotLineages => Set<LotLineage>();
     public DbSet<LotEvent> LotEvents => Set<LotEvent>();
+    public DbSet<ProcessRecord> ProcessRecords => Set<ProcessRecord>();
+    public DbSet<ProcessParameter> ProcessParameters => Set<ProcessParameter>();
 
     // wms schema
     public DbSet<WarehouseZone> WarehouseZones => Set<WarehouseZone>();
@@ -253,6 +255,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureRemindersSchema(b);
         ConfigureStorageSchema(b);
         ConfigureTraceabilitySchema(b);
+        ConfigureProcessRecordSchema(b);
     }
 
     // ── auth ──────────────────────────────────────────────────────────────
@@ -3313,6 +3316,58 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.UploadedBy).HasMaxLength(256).IsRequired();
             e.HasIndex(x => new { x.OwnerType, x.OwnerId });
             e.HasQueryFilter(x => !x.IsDeleted);
+        });
+    }
+
+    // ── process records ───────────────────────────────────────────────────
+    private static void ConfigureProcessRecordSchema(ModelBuilder b)
+    {
+        b.Entity<ProcessRecord>(e =>
+        {
+            e.ToTable("ProcessRecords", "trace");
+            e.HasKey(x => x.ProcessRecordID);
+            e.Property(x => x.ProcessRecordID).HasColumnType("uniqueidentifier").ValueGeneratedNever();
+            e.Property(x => x.LotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.StepName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.OperatorCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.CertificationRef).HasMaxLength(100);
+            e.Property(x => x.MachineCode).HasMaxLength(50);
+            e.Property(x => x.CalibrationRef).HasMaxLength(100);
+            e.Property(x => x.BOMRevision).HasMaxLength(20);
+            e.Property(x => x.RoutingRevision).HasMaxLength(20);
+            e.Property(x => x.ControlPlanRev).HasMaxLength(20);
+            e.Property(x => x.StepStartedAt).HasColumnType("datetime2(3)").IsRequired();
+            e.Property(x => x.StepCompletedAt).HasColumnType("datetime2(3)");
+            e.Property(x => x.DurationSeconds);
+            e.Property(x => x.StepOutcome).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.DeviationRef).HasMaxLength(100);
+            e.Property(x => x.CreatedAt).HasColumnType("datetime2(3)").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.Property(x => x.UpdatedAt).HasColumnType("datetime2(3)");
+            e.HasMany(x => x.Parameters).WithOne(p => p.ProcessRecord)
+                .HasForeignKey(p => p.ProcessRecordID).OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Parameters).HasField("_parameters")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+            e.HasIndex(x => new { x.LotNumber, x.RoutingStepID });
+            e.HasIndex(x => new { x.WorkOrderID, x.StepSequence });
+        });
+
+        b.Entity<ProcessParameter>(e =>
+        {
+            e.ToTable("ProcessParameters", "trace");
+            e.HasKey(x => x.ParameterID);
+            e.Property(x => x.ParameterID).ValueGeneratedOnAdd();
+            e.Property(x => x.ProcessRecordID).HasColumnType("uniqueidentifier").IsRequired();
+            e.Property(x => x.ParameterName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.NominalValue).HasMaxLength(100);
+            e.Property(x => x.ActualValue).HasMaxLength(100);
+            e.Property(x => x.UoM).HasMaxLength(20);
+            e.Property(x => x.LSL).HasMaxLength(100);
+            e.Property(x => x.USL).HasMaxLength(100);
+            e.Property(x => x.DataSource).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.CapturedAt).HasColumnType("datetime2(3)").IsRequired();
+            e.HasIndex(x => x.ProcessRecordID);
         });
     }
 

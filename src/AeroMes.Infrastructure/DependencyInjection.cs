@@ -123,6 +123,7 @@ public static class DependencyInjection
         services.AddScoped<IProductionOrderProgressRepository, ProductionOrderProgressRepository>();
         services.AddScoped<IProductionStatisticsSheetRepository, ProductionStatisticsSheetRepository>();
         services.AddScoped<ILotTraceabilityRepository, LotTraceabilityRepository>();
+        services.AddScoped<IProcessRecordRepository, ProcessRecordRepository>();
 
         // ERP client + background sync
         services.AddHttpClient("erp").ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
