@@ -12,4 +12,5 @@ public record AlertThresholdDto(
     string? ScopeId,
     decimal WarningLevel,
     decimal CriticalLevel,
-    bool IsActive);
+    bool IsActive,
+    bool IsOrphaned);

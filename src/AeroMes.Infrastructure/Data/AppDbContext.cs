@@ -52,6 +52,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<ApprovedVendorItem> ApprovedVendorItems => Set<ApprovedVendorItem>();
     public DbSet<CapabilityGroup> CapabilityGroups => Set<CapabilityGroup>();
+    public DbSet<CapabilityGroupMember> CapabilityGroupMembers => Set<CapabilityGroupMember>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<CustomerPartNumber> CustomerPartNumbers => Set<CustomerPartNumber>();
     public DbSet<CustomerQualitySpec> CustomerQualitySpecs => Set<CustomerQualitySpec>();
@@ -72,6 +73,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<ToolOperationMapping> ToolOperationMappings => Set<ToolOperationMapping>();
     public DbSet<ToolCheckout> ToolCheckouts => Set<ToolCheckout>();
     public DbSet<ToolMaintenanceLog> ToolMaintenanceLogs => Set<ToolMaintenanceLog>();
+    public DbSet<MachineProductParam> MachineProductParams => Set<MachineProductParam>();
+    public DbSet<OperatorCertification> OperatorCertifications => Set<OperatorCertification>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -279,11 +282,59 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.Brand).HasMaxLength(100);
             e.Property(x => x.Model).HasMaxLength(50);
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.MachineCategory).HasMaxLength(30);
+            e.Property(x => x.TargetOeePct).HasColumnType("NUMERIC(5,2)");
+            e.Property(x => x.TheoreticalCapacityPerHour).HasColumnType("NUMERIC(10,2)");
+            e.Property(x => x.HourlyCostRate).HasColumnType("DECIMAL(18,2)");
+            e.Property(x => x.OpcUaNodeId).HasMaxLength(200);
+            e.Property(x => x.CertificationCode).HasMaxLength(30);
 
             e.HasOne(x => x.WorkCenter)
                 .WithMany()
                 .HasForeignKey(x => x.WorkCenterID);
             e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<MachineProductParam>(e =>
+        {
+            e.ToTable("MachineProductParams", "master");
+            e.HasKey(x => x.ParamId);
+            e.Property(x => x.ParamId).UseIdentityColumn();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ParamName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Unit).HasMaxLength(20);
+            e.Property(x => x.NominalValue).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.MinValue).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.MaxValue).HasColumnType("NUMERIC(18,4)");
+            e.HasIndex(x => new { x.MachineCode, x.ProductCode, x.ParamName }).IsUnique();
+
+            e.HasOne<Machine>()
+                .WithMany()
+                .HasForeignKey(x => x.MachineCode)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<OperatorCertification>(e =>
+        {
+            e.ToTable("OperatorCertifications", "master");
+            e.HasKey(x => x.CertId);
+            e.Property(x => x.CertId).UseIdentityColumn();
+            e.Property(x => x.EmployeeCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.CertificationCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.IssuedDate).HasColumnType("date");
+            e.Property(x => x.ExpiryDate).HasColumnType("date");
+            e.Property(x => x.IssuedBy).HasMaxLength(100);
+            e.HasIndex(x => new { x.EmployeeCode, x.CertificationCode, x.IsActive });
+
+            e.HasOne<Employee>()
+                .WithMany()
+                .HasForeignKey(x => x.EmployeeCode)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         b.Entity<ProductCategory>(e =>
@@ -496,6 +547,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.GroupName).HasMaxLength(100).IsRequired();
             e.Property(x => x.Description).HasMaxLength(500);
             e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<CapabilityGroupMember>(e =>
+        {
+            e.ToTable("CapabilityGroupMembers", "master");
+            e.HasKey(x => x.MemberId);
+            e.Property(x => x.MemberId).ValueGeneratedOnAdd();
+            e.Property(x => x.GroupCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.ResourceType).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.ResourceId).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => new { x.GroupCode, x.ResourceType, x.ResourceId }).IsUnique();
+            e.HasOne<CapabilityGroup>().WithMany().HasForeignKey(x => x.GroupCode).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<Routing>(e =>

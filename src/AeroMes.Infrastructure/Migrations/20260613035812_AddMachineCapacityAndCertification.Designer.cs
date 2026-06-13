@@ -4,6 +4,7 @@ using AeroMes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AeroMes.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260613035812_AddMachineCapacityAndCertification")]
+    partial class AddMachineCapacityAndCertification
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -841,58 +844,6 @@ namespace AeroMes.Infrastructure.Migrations
                     b.HasKey("GroupCode");
 
                     b.ToTable("CapabilityGroups", "master");
-                });
-
-            modelBuilder.Entity("AeroMes.Domain.Master.CapabilityGroupMember", b =>
-                {
-                    b.Property<int>("MemberId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MemberId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("GroupCode")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ResourceId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ResourceType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("MemberId");
-
-                    b.HasIndex("GroupCode", "ResourceType", "ResourceId")
-                        .IsUnique();
-
-                    b.ToTable("CapabilityGroupMembers", "master");
                 });
 
             modelBuilder.Entity("AeroMes.Domain.Master.Customer", b =>
@@ -4101,15 +4052,6 @@ namespace AeroMes.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("WorkShift");
-                });
-
-            modelBuilder.Entity("AeroMes.Domain.Master.CapabilityGroupMember", b =>
-                {
-                    b.HasOne("AeroMes.Domain.Master.CapabilityGroup", null)
-                        .WithMany()
-                        .HasForeignKey("GroupCode")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("AeroMes.Domain.Master.CustomerPartNumber", b =>

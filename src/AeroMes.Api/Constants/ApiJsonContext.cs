@@ -20,6 +20,7 @@ using AeroMes.Application.Downtime.Queries.GetDowntimeLogs;
 using AeroMes.Application.Jobs.Queries.GetJobDetail;
 using AeroMes.Application.Jobs.Queries.GetJobs;
 using AeroMes.Application.WorkOrders.Queries.GetWorkOrderDetail;
+using AeroMes.Application.Master.CapabilityGroupMembers.Queries.GetMembers;
 using AeroMes.Application.Master.CapabilityGroups.Queries.GetCapabilityGroups;
 using AeroMes.Application.Master.DowntimeReasonCodes.Queries.GetDowntimeReasonCodes;
 using AeroMes.Application.Master.ProductCategories.Queries.GetProductCategories;
@@ -66,6 +67,11 @@ using AeroMes.Application.Master.WorkCalendars.Queries.GetWorkCalendarById;
 using AeroMes.Application.Master.WorkCalendars.Queries.GetWorkCalendars;
 using AeroMes.Application.Master.WorkShifts.Queries.GetWorkShiftById;
 using AeroMes.Application.Master.WorkShifts.Queries.GetWorkShifts;
+using AeroMes.Application.Master.Machines.Queries.GetMachines;
+using AeroMes.Application.Master.MachineProductConfigs.Queries.GetMachineProductConfigs;
+using AeroMes.Application.Master.MachineProductParams.Queries.GetMachineSetupSheet;
+using AeroMes.Application.Master.OperatorCertifications.Queries.CheckOperatorEligibility;
+using AeroMes.Application.Master.OperatorCertifications.Queries.GetOperatorCertifications;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AeroMes.Api.Constants;
@@ -87,9 +93,29 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(ChangePasswordRequest))]
 [JsonSerializable(typeof(MfaEnforcementMiddleware.MfaVerifyRequiredResponse))]
 [JsonSerializable(typeof(ForcePasswordChangeMiddleware.ForcePasswordChangeResponse))]
+// machines
+[JsonSerializable(typeof(IReadOnlyList<MachineDto>))]
+[JsonSerializable(typeof(MachineCreatedResult))]
+[JsonSerializable(typeof(CreateMachineRequest))]
+[JsonSerializable(typeof(UpdateMachineRequest))]
+[JsonSerializable(typeof(UpdateMachineCapacityRequest))]
+// machine product configs
+[JsonSerializable(typeof(IReadOnlyList<MachineProductConfigDto>))]
+[JsonSerializable(typeof(UpsertMachineProductConfigRequest))]
+// machine product params
+[JsonSerializable(typeof(IReadOnlyList<MachineProductParamDto>))]
+[JsonSerializable(typeof(UpsertMachineProductParamRequest))]
+// operator certifications
+[JsonSerializable(typeof(IReadOnlyList<OperatorCertificationDto>))]
+[JsonSerializable(typeof(OperatorEligibilityResult))]
+[JsonSerializable(typeof(RecordOperatorCertificationRequest))]
+[JsonSerializable(typeof(CertificationIssuedResult))]
 // capability groups
 [JsonSerializable(typeof(IReadOnlyList<CapabilityGroupDto>))]
 [JsonSerializable(typeof(CapabilityGroupCreatedResult))]
+[JsonSerializable(typeof(IReadOnlyList<CapabilityGroupMemberDto>))]
+[JsonSerializable(typeof(AssignMemberRequest))]
+[JsonSerializable(typeof(MemberAssignedResult))]
 // work shifts
 [JsonSerializable(typeof(IReadOnlyList<WorkShiftDto>))]
 [JsonSerializable(typeof(WorkShiftDetailDto))]

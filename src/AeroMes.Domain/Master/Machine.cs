@@ -12,6 +12,23 @@ public class Machine : AuditableEntity
     public MachineStatus Status { get; private set; } = MachineStatus.Offline;
     public bool IsActive { get; private set; } = true;
 
+    // Capacity & OEE baseline
+    public string? MachineCategory { get; private set; }
+    public decimal? TargetOeePct { get; private set; }
+    public decimal? TheoreticalCapacityPerHour { get; private set; }
+    public int PlannedDowntimeMinPerShift { get; private set; }
+
+    // Cost
+    public decimal? HourlyCostRate { get; private set; }
+
+    // IoT integration hook
+    public string? OpcUaNodeId { get; private set; }
+
+    // Operator certification requirements
+    public bool RequiresCertification { get; private set; }
+    public string? CertificationCode { get; private set; }
+    public byte MaxOperators { get; private set; } = 1;
+
     // EF navigation
     public WorkCenter? WorkCenter { get; private set; }
 
@@ -45,6 +62,30 @@ public class Machine : AuditableEntity
         WorkCenterID = workCenterId;
         Brand = brand;
         Model = model;
+        Touch(updatedBy);
+    }
+
+    public void UpdateCapacity(
+        string? machineCategory,
+        decimal? targetOeePct,
+        decimal? theoreticalCapacityPerHour,
+        int plannedDowntimeMinPerShift,
+        decimal? hourlyCostRate,
+        string? opcUaNodeId,
+        bool requiresCertification,
+        string? certificationCode,
+        byte maxOperators,
+        string updatedBy)
+    {
+        MachineCategory = machineCategory;
+        TargetOeePct = targetOeePct;
+        TheoreticalCapacityPerHour = theoreticalCapacityPerHour;
+        PlannedDowntimeMinPerShift = plannedDowntimeMinPerShift;
+        HourlyCostRate = hourlyCostRate;
+        OpcUaNodeId = opcUaNodeId;
+        RequiresCertification = requiresCertification;
+        CertificationCode = certificationCode;
+        MaxOperators = maxOperators;
         Touch(updatedBy);
     }
 

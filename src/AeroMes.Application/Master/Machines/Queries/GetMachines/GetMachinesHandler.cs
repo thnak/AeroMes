@@ -17,6 +17,15 @@ public class GetMachinesHandler(IMachineRepository repo)
             x.Brand,
             x.Model,
             x.Status.ToString(),
-            x.IsActive)).ToList();
+            x.IsActive,
+            x.MachineCategory,
+            x.TargetOeePct,
+            x.TheoreticalCapacityPerHour,
+            x.PlannedDowntimeMinPerShift,
+            x.HourlyCostRate,
+            x.OpcUaNodeId,
+            x.RequiresCertification,
+            x.CertificationCode,
+            x.MaxOperators)).ToList();
     }
 }

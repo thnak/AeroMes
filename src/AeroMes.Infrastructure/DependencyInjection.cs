@@ -46,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<IRoutingRepository, RoutingRepository>();
         services.AddScoped<ISupplierRepository, SupplierRepository>();
         services.AddScoped<ICapabilityGroupRepository, CapabilityGroupRepository>();
+        services.AddScoped<ICapabilityGroupMemberRepository, CapabilityGroupMemberRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<IProductAttributeRepository, ProductAttributeRepository>();
@@ -117,6 +118,8 @@ public static class DependencyInjection
         services.AddScoped<IShiftTemplateRepository, ShiftTemplateRepository>();
         services.AddScoped<IDowntimeReasonCodeRepository, DowntimeReasonCodeRepository>();
         services.AddScoped<IMachineProductConfigRepository, MachineProductConfigRepository>();
+        services.AddScoped<IMachineProductParamRepository, MachineProductParamRepository>();
+        services.AddScoped<IOperatorCertificationRepository, OperatorCertificationRepository>();
         services.AddScoped<IAlertThresholdRepository, AlertThresholdRepository>();
         services.AddScoped<IWorkOrderAutoRulesRepository, WorkOrderAutoRulesRepository>();
 

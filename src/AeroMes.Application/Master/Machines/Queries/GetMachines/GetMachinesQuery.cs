@@ -12,4 +12,13 @@ public record MachineDto(
     string? Brand,
     string? Model,
     string Status,
-    bool IsActive);
+    bool IsActive,
+    string? MachineCategory,
+    decimal? TargetOeePct,
+    decimal? TheoreticalCapacityPerHour,
+    int PlannedDowntimeMinPerShift,
+    decimal? HourlyCostRate,
+    string? OpcUaNodeId,
+    bool RequiresCertification,
+    string? CertificationCode,
+    byte MaxOperators);

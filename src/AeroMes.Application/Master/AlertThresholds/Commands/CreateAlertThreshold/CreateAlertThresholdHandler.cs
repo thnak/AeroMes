@@ -10,6 +10,8 @@ namespace AeroMes.Application.Master.AlertThresholds.Commands.CreateAlertThresho
 
 public class CreateAlertThresholdHandler(
     IAlertThresholdRepository repo,
+    IMachineRepository machineRepo,
+    IWorkCenterRepository workCenterRepo,
     IUnitOfWork uow,
     IValidator<CreateAlertThresholdCommand> validator) : ICommandHandler<CreateAlertThresholdCommand, ValidationResult<int>>
 {
@@ -19,6 +21,17 @@ public class CreateAlertThresholdHandler(
         if (!validation.IsValid)
             return ValidationResult<int>.Invalid(validation.ToErrorDictionary());
 
+        if (cmd.Scope == AlertScope.Machine && cmd.ScopeId != null)
+        {
+            if (!await machineRepo.ExistsAsync(cmd.ScopeId, ct))
+                return ValidationResult<int>.NotFound($"Máy '{cmd.ScopeId}' không tồn tại hoặc đã bị xóa.");
+        }
+        else if (cmd.Scope == AlertScope.WorkCenter && cmd.ScopeId != null)
+        {
+            if (!await workCenterRepo.CodeExistsAsync(cmd.ScopeId, ct))
+                return ValidationResult<int>.NotFound($"Work center '{cmd.ScopeId}' không tồn tại hoặc đã bị xóa.");
+        }
+
         try
         {
             var entity = AlertThreshold.Create(
@@ -27,10 +40,6 @@ public class CreateAlertThresholdHandler(
             await repo.AddAsync(entity, ct);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<int>.Ok(entity.ThresholdId);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<int>.NotFound(ex.Message);
         }
         catch (DomainException ex)
         {

@@ -1,6 +1,7 @@
 using AeroMes.Application.Master.Machines.Commands.CreateMachine;
 using AeroMes.Application.Master.Machines.Commands.DeleteMachine;
 using AeroMes.Application.Master.Machines.Commands.UpdateMachine;
+using AeroMes.Application.Master.Machines.Commands.UpdateMachineCapacity;
 using AeroMes.Application.Master.Machines.Queries.GetMachines;
 using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
@@ -62,8 +63,55 @@ public class MachinesController(ICommandMediator commandMediator,
         await commandMediator.SendAsync(new DeleteMachineCommand(code, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
         return NoContent();
     }
+
+    [HttpGet("{code}/oee-target")]
+    [RequirePermission(Permissions.MasterDataRead)]
+    [ProducesResponseType<MachineDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetOeeTarget(string code, CancellationToken ct)
+    {
+        var all = await queryMediator.QueryAsync(new GetMachinesQuery(false), null, ct);
+        var machine = all.FirstOrDefault(x => x.MachineCode == code.ToUpperInvariant());
+        if (machine is null) return NotFound();
+        return Ok(machine);
+    }
+
+    [HttpPut("{code}/oee-target")]
+    [RequirePermission(Permissions.MasterDataWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateOeeTarget(string code, [FromBody] UpdateMachineCapacityRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new UpdateMachineCapacityCommand(
+                code,
+                req.MachineCategory,
+                req.TargetOeePct,
+                req.TheoreticalCapacityPerHour,
+                req.PlannedDowntimeMinPerShift,
+                req.HourlyCostRate,
+                req.OpcUaNodeId,
+                req.RequiresCertification,
+                req.CertificationCode,
+                req.MaxOperators,
+                User.Identity?.Name ?? "system"),
+            null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
 }
 
 public record CreateMachineRequest(string Code, string Name, int WorkCenterId, string? Brand, string? Model);
 public record UpdateMachineRequest(string Name, int WorkCenterId, string? Brand, string? Model);
 public record MachineCreatedResult(string MachineCode);
+public record UpdateMachineCapacityRequest(
+    string? MachineCategory,
+    decimal? TargetOeePct,
+    decimal? TheoreticalCapacityPerHour,
+    int PlannedDowntimeMinPerShift,
+    decimal? HourlyCostRate,
+    string? OpcUaNodeId,
+    bool RequiresCertification,
+    string? CertificationCode,
+    byte MaxOperators);

@@ -1,3 +1,4 @@
+using AeroMes.Domain.Master;
 using FluentValidation;
 
 namespace AeroMes.Application.Master.AlertThresholds.Commands.CreateAlertThreshold;
@@ -12,5 +13,15 @@ public class CreateAlertThresholdValidator : AbstractValidator<CreateAlertThresh
             .GreaterThanOrEqualTo(0)
             .LessThanOrEqualTo(x => x.WarningLevel)
             .WithMessage("Critical level must be less than or equal to warning level.");
+
+        RuleFor(x => x.ScopeId)
+            .NotEmpty().MaximumLength(50)
+            .WithMessage("ScopeId là bắt buộc khi Scope là WorkCenter hoặc Machine.")
+            .When(x => x.Scope is AlertScope.WorkCenter or AlertScope.Machine);
+
+        RuleFor(x => x.ScopeId)
+            .Empty()
+            .WithMessage("ScopeId phải để trống khi Scope là Factory.")
+            .When(x => x.Scope == AlertScope.Factory);
     }
 }
