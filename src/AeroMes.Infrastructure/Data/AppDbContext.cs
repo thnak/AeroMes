@@ -120,7 +120,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<ProductionOrderMaterialLine> ProductionOrderMaterialLines => Set<ProductionOrderMaterialLine>();
     public DbSet<ProductionOrderStage> ProductionOrderStages => Set<ProductionOrderStage>();
 
-    // prod schema
+    // prod schema — master production schedule (#55) + detailed plan (#61)
+    public DbSet<MasterProductionPlan> MasterProductionPlans => Set<MasterProductionPlan>();
+    public DbSet<MasterPlanLine> MasterPlanLines => Set<MasterPlanLine>();
+    public DbSet<DetailedProductionPlan> DetailedProductionPlans => Set<DetailedProductionPlan>();
+    public DbSet<DppProductLine> DppProductLines => Set<DppProductLine>();
+    public DbSet<DppSlot> DppSlots => Set<DppSlot>();
+
     public DbSet<ProductionSchedule> ProductionSchedules => Set<ProductionSchedule>();
     public DbSet<ProductionScheduleLine> ProductionScheduleLines => Set<ProductionScheduleLine>();
     public DbSet<WorkOrder> WorkOrders => Set<WorkOrder>();
@@ -2474,6 +2480,98 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.Height).HasColumnType("DECIMAL(14,4)");
             e.Property(x => x.Radius).HasColumnType("DECIMAL(14,4)");
             e.Property(x => x.Weight).HasColumnType("DECIMAL(14,4)");
+        });
+
+        // ── Master Production Schedule (#55) ──────────────────────────────
+        b.Entity<MasterProductionPlan>(e =>
+        {
+            e.ToTable("MasterProductionPlans", "prod");
+            e.HasKey(x => x.MasterPlanId);
+            e.Property(x => x.MasterPlanId).UseIdentityColumn();
+            e.Property(x => x.PlanNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.PlanName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.OrganizationalUnit).HasMaxLength(100);
+            e.Property(x => x.Granularity).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.DataSource).HasConversion<string>().HasMaxLength(30);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.WorkingHoursPerDay).HasColumnType("DECIMAL(4,2)");
+            e.Property(x => x.CreatedBy).HasMaxLength(256);
+            e.Property(x => x.UpdatedBy).HasMaxLength(256);
+            e.HasIndex(x => x.PlanNumber).IsUnique();
+
+            e.HasMany(x => x.Lines).WithOne()
+                .HasForeignKey(x => x.MasterPlanId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines).HasField("_lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<MasterPlanLine>(e =>
+        {
+            e.ToTable("MasterPlanLines", "prod");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(100).IsRequired();
+            e.Property(x => x.ProductName).HasMaxLength(200);
+            e.Property(x => x.UnitOfMeasure).HasMaxLength(20);
+            e.Property(x => x.QuantityRequired).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.PlannedQuantity).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.DailyCapacity).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.OpeningInventory).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.ClosingInventoryForecast).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.DistributionStrategy).HasConversion<string>().HasMaxLength(20);
+        });
+
+        // ── Detailed Production Plan (#61) ────────────────────────────────
+        b.Entity<DetailedProductionPlan>(e =>
+        {
+            e.ToTable("DetailedProductionPlans", "prod");
+            e.HasKey(x => x.DetailPlanId);
+            e.Property(x => x.DetailPlanId).UseIdentityColumn();
+            e.Property(x => x.PlanNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.PlanName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.OrganizationalUnit).HasMaxLength(100);
+            e.Property(x => x.Granularity).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.CreatedBy).HasMaxLength(256);
+            e.Property(x => x.UpdatedBy).HasMaxLength(256);
+            e.HasIndex(x => x.PlanNumber).IsUnique();
+            e.HasIndex(x => x.MasterPlanId);
+
+            e.HasMany(x => x.ProductLines).WithOne()
+                .HasForeignKey(x => x.DetailPlanId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.ProductLines).HasField("_productLines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<DppProductLine>(e =>
+        {
+            e.ToTable("DppProductLines", "prod");
+            e.HasKey(x => x.DppLineId);
+            e.Property(x => x.DppLineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(100).IsRequired();
+            e.Property(x => x.ProductName).HasMaxLength(200);
+            e.Property(x => x.UnitOfMeasure).HasMaxLength(20);
+            e.Property(x => x.TotalRequiredQty).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.DailyCapacity).HasColumnType("DECIMAL(18,4)");
+            e.HasIndex(x => x.DetailPlanId);
+
+            e.HasMany(x => x.Slots).WithOne()
+                .HasForeignKey(x => x.DppLineId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Slots).HasField("_slots")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<DppSlot>(e =>
+        {
+            e.ToTable("DppSlots", "prod");
+            e.HasKey(x => x.SlotId);
+            e.Property(x => x.SlotId).UseIdentityColumn();
+            e.Property(x => x.ShiftLabel).HasMaxLength(50);
+            e.Property(x => x.AllocatedQty).HasColumnType("DECIMAL(18,4)");
+            e.HasIndex(x => new { x.DppLineId, x.SlotDate });
         });
     }
 

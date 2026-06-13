@@ -24,6 +24,10 @@ public static class Permissions
     public const string ProductionPlanningRead = "ProductionPlanning:Read";
     public const string ProductionPlanningWrite = "ProductionPlanning:Write";
 
+    // Master Production Schedule (#55) + Detailed Plan (#61)
+    public const string MpsRead = "MPS:Read";
+    public const string MpsWrite = "MPS:Write";
+
     // Downtime
     public const string DowntimeDeclare = "Downtime:Declare";
     public const string DowntimeRead = "Downtime:Read";
@@ -194,6 +198,7 @@ public static class Permissions
         JobRead, JobStart, JobComplete,
         ProductionRead, ProductionSubmitOutput,
         ProductionPlanningRead, ProductionPlanningWrite,
+        MpsRead, MpsWrite,
         DowntimeDeclare, DowntimeRead,
         InventoryRead, InventoryAdjust, BeginningInventoryWrite,
         FactoryWarehouseReceiptRead, FactoryWarehouseReceiptCreate, FactoryWarehouseReceiptUpdate, FactoryWarehouseReceiptDelete,

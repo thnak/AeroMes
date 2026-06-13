@@ -202,6 +202,12 @@ using AeroMes.Application.Documents.Queries.GetDocumentPrintTemplates;
 using AeroMes.Domain.Templates;
 using AeroMes.Application.Import;
 using AeroMes.Application.Import.Commands.ValidateImport;
+using AeroMes.Application.Production.MasterPlan.Commands.CreateMasterPlan;
+using AeroMes.Application.Production.MasterPlan.Queries.GetMasterPlanDetail;
+using AeroMes.Application.Production.MasterPlan.Queries.GetMasterPlans;
+using AeroMes.Application.Production.DetailedPlan.Commands.CreateDetailedPlan;
+using AeroMes.Application.Production.DetailedPlan.Queries.GetDetailedPlanDetail;
+using AeroMes.Application.Production.DetailedPlan.Queries.GetDetailedPlans;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AeroMes.Api.Constants;
@@ -1407,6 +1413,44 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<ImportJobSummaryDto>))]
 [JsonSerializable(typeof(List<ImportJobSummaryDto>))]
 [JsonSerializable(typeof(PagedResult<ImportJobSummaryDto>))]
+// master production schedule (#55)
+[JsonSerializable(typeof(MasterPlanSummaryDto))]
+[JsonSerializable(typeof(IReadOnlyList<MasterPlanSummaryDto>))]
+[JsonSerializable(typeof(List<MasterPlanSummaryDto>))]
+[JsonSerializable(typeof(MasterPlanDetailDto))]
+[JsonSerializable(typeof(MasterPlanLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<MasterPlanLineDto>))]
+[JsonSerializable(typeof(List<MasterPlanLineDto>))]
+[JsonSerializable(typeof(MasterPlanLineInput))]
+[JsonSerializable(typeof(IReadOnlyList<MasterPlanLineInput>))]
+[JsonSerializable(typeof(List<MasterPlanLineInput>))]
+[JsonSerializable(typeof(CreateMasterPlanRequest))]
+[JsonSerializable(typeof(UpdateMasterPlanRequest))]
+[JsonSerializable(typeof(DistributeMasterPlanRequest))]
+[JsonSerializable(typeof(MpsGranularity))]
+[JsonSerializable(typeof(MpsDataSource))]
+[JsonSerializable(typeof(MpsStatus))]
+[JsonSerializable(typeof(MpsDistributionStrategy))]
+// detailed production plan (#61)
+[JsonSerializable(typeof(DetailedPlanSummaryDto))]
+[JsonSerializable(typeof(IReadOnlyList<DetailedPlanSummaryDto>))]
+[JsonSerializable(typeof(List<DetailedPlanSummaryDto>))]
+[JsonSerializable(typeof(DetailedPlanDetailDto))]
+[JsonSerializable(typeof(DppProductLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<DppProductLineDto>))]
+[JsonSerializable(typeof(List<DppProductLineDto>))]
+[JsonSerializable(typeof(DppSlotDto))]
+[JsonSerializable(typeof(IReadOnlyList<DppSlotDto>))]
+[JsonSerializable(typeof(List<DppSlotDto>))]
+[JsonSerializable(typeof(DppProductLineInput))]
+[JsonSerializable(typeof(IReadOnlyList<DppProductLineInput>))]
+[JsonSerializable(typeof(List<DppProductLineInput>))]
+[JsonSerializable(typeof(CreateDetailedPlanRequest))]
+[JsonSerializable(typeof(UpdateDetailedPlanRequest))]
+[JsonSerializable(typeof(CalculateDetailedPlanRequest))]
+[JsonSerializable(typeof(DppGranularity))]
+[JsonSerializable(typeof(DppStatus))]
+[JsonSerializable(typeof(DppDistributionStrategy))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

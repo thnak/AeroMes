@@ -181,6 +181,10 @@ public static class DependencyInjection
         services.AddScoped<IErpClient, HttpErpClient>();
         // ErpSyncBackgroundService replaced by SyncErpOrdersJob (Hangfire recurring job)
 
+        // production planning repositories (#55 MPS, #61 Detailed Plan)
+        services.AddScoped<IMasterProductionPlanRepository, MasterProductionPlanRepository>();
+        services.AddScoped<IDetailedProductionPlanRepository, DetailedProductionPlanRepository>();
+
         // prod repositories
         services.AddScoped<IWorkOrderRepository, WorkOrderRepository>();
         services.AddScoped<IJobRepository, JobRepository>();
