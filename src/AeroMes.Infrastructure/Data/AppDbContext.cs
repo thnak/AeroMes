@@ -144,6 +144,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<AdapterInstance> AdapterInstances => Set<AdapterInstance>();
     public DbSet<SignalMapping> SignalMappings => Set<SignalMapping>();
     public DbSet<MachineStateRule> MachineStateRules => Set<MachineStateRule>();
+    public DbSet<SignalTag> SignalTags => Set<SignalTag>();
 
     // settings
     public DbSet<SystemOptions> SystemOptions => Set<SystemOptions>();
@@ -2552,6 +2553,21 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.Operator).HasMaxLength(10).IsRequired();
             e.Property(x => x.Description).HasMaxLength(500);
             e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<SignalTag>(e =>
+        {
+            e.ToTable("SignalTags", "iot");
+            e.HasKey(x => x.TagId);
+            e.HasIndex(x => x.Key).IsUnique();
+            e.Property(x => x.Key).HasMaxLength(100).IsRequired();
+            e.Property(x => x.DisplayName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Category).HasMaxLength(50).IsRequired();
+            e.Property(x => x.DataType).HasMaxLength(20).IsRequired();
+            e.Property(x => x.DefaultUnit).HasMaxLength(30);
+            e.Property(x => x.TypicalMin).HasColumnType("decimal(18,4)");
+            e.Property(x => x.TypicalMax).HasColumnType("decimal(18,4)");
+            e.Property(x => x.Description).HasMaxLength(500);
         });
     }
 

@@ -6,10 +6,15 @@ using AeroMes.Application.Iot.Adapters.Commands.ToggleAdapter;
 using AeroMes.Application.Iot.Adapters.Commands.UpdateAdapter;
 using AeroMes.Application.Iot.Adapters.Queries.GetAdapterDetail;
 using AeroMes.Application.Iot.Adapters.Queries.GetAdapters;
+using AeroMes.Application.Iot.Signals;
 using AeroMes.Application.Iot.Signals.Commands.AddSignal;
+using AeroMes.Application.Iot.Signals.Commands.CreateSignalTag;
 using AeroMes.Application.Iot.Signals.Commands.DeleteSignal;
+using AeroMes.Application.Iot.Signals.Commands.DeleteSignalTag;
 using AeroMes.Application.Iot.Signals.Commands.ToggleSignal;
 using AeroMes.Application.Iot.Signals.Commands.UpdateSignal;
+using AeroMes.Application.Iot.Signals.Commands.UpdateSignalTag;
+using AeroMes.Application.Iot.Signals.Queries.GetSignalTags;
 using AeroMes.Application.Iot.Signals.Queries.GetSignals;
 using AeroMes.Application.Iot.StateRules.Commands.CreateStateRule;
 using AeroMes.Application.Iot.StateRules.Commands.DeleteStateRule;
@@ -29,6 +34,53 @@ namespace AeroMes.Api.Controllers;
 [Authorize]
 public class IotController(ICommandMediator commandMediator, IQueryMediator queryMediator) : ControllerBase
 {
+    // ── Signal Tags ───────────────────────────────────────────────────────
+
+    [HttpGet("tags")]
+    [RequirePermission(Permissions.IotRead)]
+    [ProducesResponseType<IReadOnlyList<SignalTagDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSignalTags([FromQuery] string? category, [FromQuery] string? dataType, CancellationToken ct)
+        => Ok(await queryMediator.QueryAsync(new GetSignalTagsQuery(category, dataType), null, ct));
+
+    [HttpPost("tags")]
+    [RequirePermission(Permissions.IotWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> CreateSignalTag([FromBody] CreateSignalTagRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new CreateSignalTagCommand(req.Key, req.DisplayName, req.Category, req.DataType,
+                req.DefaultUnit, req.TypicalMin, req.TypicalMax, req.Description), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpPut("tags/{key}")]
+    [RequirePermission(Permissions.IotWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateSignalTag(string key, [FromBody] UpdateSignalTagRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new UpdateSignalTagCommand(key, req.DisplayName, req.Category, req.DataType,
+                req.DefaultUnit, req.TypicalMin, req.TypicalMax, req.Description), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpDelete("tags/{key}")]
+    [RequirePermission(Permissions.IotWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> DeleteSignalTag(string key, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(new DeleteSignalTagCommand(key), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
     // ── Adapters ──────────────────────────────────────────────────────────
 
     [HttpGet("adapters")]
@@ -246,6 +298,10 @@ public class IotController(ICommandMediator commandMediator, IQueryMediator quer
     }
 }
 
+public record CreateSignalTagRequest(string Key, string DisplayName, string Category, string DataType,
+    string? DefaultUnit, decimal? TypicalMin, decimal? TypicalMax, string? Description);
+public record UpdateSignalTagRequest(string DisplayName, string Category, string DataType,
+    string? DefaultUnit, decimal? TypicalMin, decimal? TypicalMax, string? Description);
 public record CreateAdapterRequest(string MachineCode, string AdapterType, string ConfigJson);
 public record UpdateAdapterRequest(string ConfigJson);
 public record AddSignalRequest(string TagKey, string DisplayName, string SourceAddress,

@@ -121,6 +121,7 @@ public static class DependencyInjection
         services.AddScoped<IAdapterRepository, AdapterRepository>();
         services.AddScoped<ISignalMappingRepository, SignalMappingRepository>();
         services.AddScoped<IMachineStateRuleRepository, MachineStateRuleRepository>();
+        services.AddScoped<ISignalTagRepository, SignalTagRepository>();
 
         // cross-cutting
         services.AddScoped<IModuleStatusRepository, ModuleStatusRepository>();

@@ -123,6 +123,7 @@ using AeroMes.Application.Wms.Queries.GetGrnList;
 using AeroMes.Application.Wms.Queries.GetGrnDetail;
 using AeroMes.Application.Iot.Adapters.Queries.GetAdapters;
 using AeroMes.Application.Iot.Adapters.Queries.GetAdapterDetail;
+using AeroMes.Application.Iot.Signals;
 using AeroMes.Application.Iot.Signals.Queries.GetSignals;
 using AeroMes.Application.Iot.StateRules.Queries.GetStateRules;
 using AeroMes.Application.Quality.InspectionOrders;
@@ -615,6 +616,11 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(AdapterCreatedResult))]
 [JsonSerializable(typeof(SignalCreatedResult))]
 [JsonSerializable(typeof(StateRuleCreatedResult))]
+// iot signal tags
+[JsonSerializable(typeof(SignalTagDto))]
+[JsonSerializable(typeof(IReadOnlyList<SignalTagDto>))]
+[JsonSerializable(typeof(CreateSignalTagRequest))]
+[JsonSerializable(typeof(UpdateSignalTagRequest))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

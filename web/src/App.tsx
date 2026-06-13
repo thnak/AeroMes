@@ -60,6 +60,7 @@ const DefectAnalysisPage = lazy(() => import('./pages/quality/DefectAnalysisPage
 const IotAdaptersPage   = lazy(() => import('./pages/iot/IotAdaptersPage'));
 const IotSignalsPage    = lazy(() => import('./pages/iot/IotSignalsPage'));
 const IotStateRulesPage = lazy(() => import('./pages/iot/IotStateRulesPage'));
+const IotTagsPage       = lazy(() => import('./pages/iot/IotTagsPage'));
 
 // Maintenance
 const MaintenancePage = lazy(() => import('./pages/maintenance/MaintenancePage'));
@@ -188,6 +189,7 @@ export default function App() {
 
           {/* ── IoT module ───────────────────────────────────── */}
           <Route element={<ModuleLayout />}>
+            <Route path="iot/tags"                              element={<IotTagsPage />} />
             <Route path="iot/machines/:machineCode/adapters"    element={<IotAdaptersPage />} />
             <Route path="iot/adapters/:adapterId/signals"       element={<IotSignalsPage />} />
             <Route path="iot/machines/:machineCode/state-rules" element={<IotStateRulesPage />} />

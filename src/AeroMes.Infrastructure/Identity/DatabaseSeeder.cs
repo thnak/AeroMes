@@ -1,5 +1,6 @@
 using AeroMes.Domain.Auth;
 using AeroMes.Infrastructure.Data;
+using AeroMes.Infrastructure.Data.Seeders;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -20,6 +21,7 @@ public class DatabaseSeeder(
         await SeedPermissionsAsync(ct);
         await SeedRolePermissionsAsync(ct);
         await SeedDefaultAdminAsync(ct);
+        await SignalTagSeeder.SeedAsync(db, ct);
     }
 
     private async Task SeedRolesAsync(CancellationToken ct)
