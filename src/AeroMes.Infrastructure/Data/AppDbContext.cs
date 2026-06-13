@@ -105,6 +105,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<InventoryStock> InventoryStocks => Set<InventoryStock>();
     public DbSet<StageHandoverForm> StageHandoverForms => Set<StageHandoverForm>();
     public DbSet<HandoverLineItem> HandoverLineItems => Set<HandoverLineItem>();
+    public DbSet<MultiProductionOrder> MultiProductionOrders => Set<MultiProductionOrder>();
+    public DbSet<MultiProductionOrderLine> MultiProductionOrderLines => Set<MultiProductionOrderLine>();
 
     // wms schema
     public DbSet<WarehouseZone> WarehouseZones => Set<WarehouseZone>();
@@ -1781,6 +1783,40 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.Qty).HasColumnType("NUMERIC(18,4)");
             e.Property(x => x.Unit).HasMaxLength(20).IsRequired();
             e.Property(x => x.Notes).HasMaxLength(500);
+        });
+
+        b.Entity<MultiProductionOrder>(e =>
+        {
+            e.ToTable("MultiProductionOrders", "integration");
+            e.HasKey(x => x.MPOId);
+            e.Property(x => x.MPOId).ValueGeneratedOnAdd();
+            e.Property(x => x.OrderNumber).HasMaxLength(30).IsRequired();
+            e.Property(x => x.OrderType).HasConversion<string>().HasMaxLength(30).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.SourceReference).HasMaxLength(100);
+            e.Property(x => x.PlannedStart).HasColumnType("datetime2");
+            e.Property(x => x.PlannedEnd).HasColumnType("datetime2");
+            e.Property(x => x.Priority).HasDefaultValue((byte)5);
+            e.Property(x => x.ProductionUnit).HasMaxLength(100);
+            e.Property(x => x.Notes).HasMaxLength(1000);
+            e.Property(x => x.CreatedBy).HasMaxLength(256);
+            e.Property(x => x.CreatedAt).HasColumnType("datetime2");
+            e.HasIndex(x => x.OrderNumber).IsUnique();
+            e.HasMany(x => x.Lines)
+                .WithOne(l => l.Order)
+                .HasForeignKey(l => l.MPOId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines).HasField("_lines").UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<MultiProductionOrderLine>(e =>
+        {
+            e.ToTable("MultiProductionOrderLines", "integration");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).ValueGeneratedOnAdd();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.UoMCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.BomVersion).HasMaxLength(30);
         });
     }
 
