@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -29,10 +30,11 @@ public class AlertThresholdsController(ICommandMediator commandMediator, IQueryM
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateAlertThresholdRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateAlertThresholdCommand(req.MetricKey, req.Scope, req.ScopeId,
                 req.WarningLevel, req.CriticalLevel, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetAll), null, new AlertThresholdCreatedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetAll), null, new AlertThresholdCreatedResult(result.Value!));
     }
 
     [HttpPut("{id:int}")]
@@ -42,9 +44,10 @@ public class AlertThresholdsController(ICommandMediator commandMediator, IQueryM
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateAlertThresholdRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateAlertThresholdCommand(id, req.MetricKey, req.Scope, req.ScopeId,
                 req.WarningLevel, req.CriticalLevel, req.IsActive, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

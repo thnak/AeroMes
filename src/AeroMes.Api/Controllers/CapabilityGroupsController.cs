@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.CapabilityGroups.Commands.CreateCapabilityGroup;
 using AeroMes.Application.Master.CapabilityGroups.Commands.DeleteCapabilityGroup;
 using AeroMes.Application.Master.CapabilityGroups.Commands.UpdateCapabilityGroup;
@@ -32,8 +33,9 @@ public class CapabilityGroupsController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateCapabilityGroupRequest req, CancellationToken ct)
     {
-        var code = await commandMediator.SendAsync(new CreateCapabilityGroupCommand(req.Code, req.Name, req.Description), null, ct);
-        return CreatedAtAction(nameof(GetAll), null, new CapabilityGroupCreatedResult(code));
+        var result = await commandMediator.SendAsync(new CreateCapabilityGroupCommand(req.Code, req.Name, req.Description), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetAll), null, new CapabilityGroupCreatedResult(result.Value!));
     }
 
     [HttpPut("{code}")]
@@ -45,7 +47,8 @@ public class CapabilityGroupsController(
     public async Task<IActionResult> Update(string code, [FromBody] UpdateCapabilityGroupRequest req, CancellationToken ct)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        await commandMediator.SendAsync(new UpdateCapabilityGroupCommand(code, req.Name, req.Description, req.IsActive, userId), null, ct);
+        var result = await commandMediator.SendAsync(new UpdateCapabilityGroupCommand(code, req.Name, req.Description, req.IsActive, userId), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

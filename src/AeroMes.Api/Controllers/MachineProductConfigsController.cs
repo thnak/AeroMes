@@ -6,6 +6,7 @@ using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -27,10 +28,11 @@ public class MachineProductConfigsController(ICommandMediator commandMediator, I
     public async Task<IActionResult> Upsert(string machineCode, string productCode,
         [FromBody] UpsertMachineProductConfigRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpsertMachineProductConfigCommand(machineCode, productCode,
                 req.IdealCycleTimeSeconds, req.TargetThroughputPerHour,
                 req.SetupTimeSeconds, req.EffectiveFrom, req.RoutingStepId), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

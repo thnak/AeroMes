@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.Products.Commands.AddProductSpecification;
 using AeroMes.Application.Master.Products.Commands.CreateProductVariant;
 using AeroMes.Application.Master.Products.Commands.RemoveProductSpecification;
@@ -32,9 +33,10 @@ public class ProductVariantsController(ICommandMediator commandMediator, IQueryM
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CreateVariant(string productCode, [FromBody] CreateVariantRequest req, CancellationToken ct)
     {
-        var code = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateProductVariantCommand(productCode, req.Code, req.Name, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetVariants), new { productCode }, new VariantCreatedResult(code));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetVariants), new { productCode }, new VariantCreatedResult(result.Value!));
     }
 
     // ── Specification codes (MaterialManagementType = SpecificationCode) ────
@@ -56,9 +58,10 @@ public class ProductVariantsController(ICommandMediator commandMediator, IQueryM
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> AddSpecification(string productCode, [FromBody] AddSpecificationRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new AddProductSpecificationCommand(productCode, req.SpecCode, req.Description, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetSpecifications), new { productCode }, new SpecificationCreatedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetSpecifications), new { productCode }, new SpecificationCreatedResult(result.Value!));
     }
 
     [HttpPut("specifications/{specificationId:int}")]
@@ -68,8 +71,9 @@ public class ProductVariantsController(ICommandMediator commandMediator, IQueryM
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateSpecification(string productCode, int specificationId, [FromBody] UpdateSpecificationRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateProductSpecificationCommand(productCode, specificationId, req.Description, req.IsActive, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

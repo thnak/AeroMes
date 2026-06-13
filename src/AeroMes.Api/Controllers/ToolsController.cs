@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.Tools.Commands.AddToolOperation;
 using AeroMes.Application.Master.Tools.Commands.CheckoutTool;
 using AeroMes.Application.Master.Tools.Commands.DeleteTool;
@@ -70,13 +71,15 @@ public class ToolsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Register([FromBody] RegisterToolRequest req, CancellationToken ct)
     {
-        var code = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new RegisterToolCommand(
                 req.Code, req.Name, req.ToolType, req.Brand, req.Model, req.Specification,
                 req.MaxUsageCount, req.PmIntervalCount,
                 req.RequiresCalibration, req.CalibrationIntervalDays,
                 req.StorageLocation, req.PurchaseDate, req.PurchaseCost,
                 req.Notes, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var code = result.Value!;
         return CreatedAtAction(nameof(GetByCode), new { code }, new ToolCreatedResult(code));
     }
 
@@ -87,13 +90,14 @@ public class ToolsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateToolRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateToolCommand(
                 code, req.Name, req.ToolType, req.Brand, req.Model, req.Specification,
                 req.MaxUsageCount, req.PmIntervalCount,
                 req.RequiresCalibration, req.CalibrationIntervalDays,
                 req.StorageLocation, req.PurchaseDate, req.PurchaseCost,
                 req.Notes, req.IsActive, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -118,11 +122,12 @@ public class ToolsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> AddOperation(string code, [FromBody] AddToolOperationRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new AddToolOperationCommand(
                 code, req.OperationCode, req.ProductCode, req.IsRequired, req.UsageCountPerOp,
                 User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetByCode), new { code }, new ToolOperationAddedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetByCode), new { code }, new ToolOperationAddedResult(result.Value!));
     }
 
     [HttpDelete("{code}/operations/{mappingId:int}")]
@@ -146,9 +151,10 @@ public class ToolsController(ICommandMediator commandMediator, IQueryMediator qu
     public async Task<IActionResult> Checkout(string code, [FromBody] CheckoutToolRequest req, CancellationToken ct)
     {
         var checkedOutBy = req.CheckedOutBy ?? User.Identity?.Name ?? "system";
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CheckoutToolCommand(code, req.WorkCenterId, checkedOutBy, req.ExpectedReturnAt, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetByCode), new { code }, new ToolCheckedOutResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetByCode), new { code }, new ToolCheckedOutResult(result.Value!));
     }
 
     [HttpPost("{code}/return")]
@@ -159,8 +165,9 @@ public class ToolsController(ICommandMediator commandMediator, IQueryMediator qu
     public async Task<IActionResult> Return(string code, [FromBody] ReturnToolRequest req, CancellationToken ct)
     {
         var returnedBy = req.ReturnedBy ?? User.Identity?.Name ?? "system";
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new ReturnToolCommand(code, returnedBy, req.Condition, req.Notes, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -173,8 +180,9 @@ public class ToolsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> SendForService(string code, [FromBody] SendToolServiceRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new SendToolForServiceCommand(code, req.ServiceType, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -185,12 +193,13 @@ public class ToolsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> RecordMaintenance(string code, [FromBody] RecordToolMaintenanceRequest req, CancellationToken ct)
     {
-        var logId = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new RecordToolMaintenanceCommand(
                 code, req.MaintenanceType, req.PerformedAt, req.PerformedBy,
                 req.Cost, req.NextDueCount, req.NextDueDate, req.Notes,
                 User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetByCode), new { code }, new ToolMaintenanceLoggedResult(logId));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetByCode), new { code }, new ToolMaintenanceLoggedResult(result.Value!));
     }
 
     [HttpPost("{code}/usage")]
@@ -199,8 +208,12 @@ public class ToolsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> RecordUsage(string code, [FromBody] RecordToolUsageRequest req, CancellationToken ct)
-        => Ok(await commandMediator.SendAsync(
-            new RecordToolUsageCommand(code, req.Count, User.Identity?.Name), null, ct));
+    {
+        var result = await commandMediator.SendAsync(
+            new RecordToolUsageCommand(code, req.Count, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return Ok(result.Value!);
+    }
 
     [HttpPost("{code}/scrap")]
     [RequirePermission(Permissions.MasterDataWrite)]

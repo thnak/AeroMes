@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -31,9 +32,10 @@ public class MachinesController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateMachineRequest req, CancellationToken ct)
     {
-        var code = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateMachineCommand(req.Code, req.Name, req.WorkCenterId, req.Brand, req.Model, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetAll), null, new MachineCreatedResult(code));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetAll), null, new MachineCreatedResult(result.Value!));
     }
 
     [HttpPut("{code}")]
@@ -44,8 +46,9 @@ public class MachinesController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateMachineRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateMachineCommand(code, req.Name, req.WorkCenterId, req.Brand, req.Model, User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.EngChanges.Commands.ApproveEngChange;
 using AeroMes.Application.Master.EngChanges.Commands.CreateEcoFromEcr;
 using AeroMes.Application.Master.EngChanges.Commands.CreateEngChange;
@@ -46,11 +47,13 @@ public class EngChangesController(ICommandMediator commandMediator, IQueryMediat
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateEngChangeRequest req, CancellationToken ct)
     {
-        var ecNumber = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateEngChangeCommand(
                 req.EcNumber, req.EcType, req.Title, req.Description,
                 req.Reason, req.Priority, req.TargetDate, req.AffectedProducts,
                 User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var ecNumber = result.Value!;
         return CreatedAtAction(nameof(GetByNumber), new { ecNumber }, new EngChangeCreatedResult(ecNumber));
     }
 
@@ -97,8 +100,10 @@ public class EngChangesController(ICommandMediator commandMediator, IQueryMediat
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CreateEco(string ecNumber, [FromBody] CreateEcoRequest req, CancellationToken ct)
     {
-        var ecoNumber = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateEcoFromEcrCommand(ecNumber, req.NewEcNumber, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var ecoNumber = result.Value!;
         return CreatedAtAction(nameof(GetByNumber),
             new { ecNumber = ecoNumber }, new EngChangeCreatedResult(ecoNumber));
     }
@@ -114,7 +119,8 @@ public class EngChangesController(ICommandMediator commandMediator, IQueryMediat
             new ImplementEcoCommand(
                 ecNumber, req.ProductCode, req.NewVersion, req.CloneFromActive,
                 User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetByNumber), new { ecNumber }, result);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetByNumber), new { ecNumber }, result.Value!);
     }
 }
 

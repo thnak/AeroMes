@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -31,8 +32,9 @@ public class OperationsController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateOperationRequest req, CancellationToken ct)
     {
-        var code = await commandMediator.SendAsync(new CreateOperationCommand(req.Code, req.Name, req.Description), null, ct);
-        return CreatedAtAction(nameof(GetAll), null, new OperationCreatedResult(code));
+        var result = await commandMediator.SendAsync(new CreateOperationCommand(req.Code, req.Name, req.Description), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetAll), null, new OperationCreatedResult(result.Value!));
     }
 
     [HttpPut("{code}")]
@@ -43,7 +45,8 @@ public class OperationsController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateOperationRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new UpdateOperationCommand(code, req.Name, req.Description), null, ct);
+        var result = await commandMediator.SendAsync(new UpdateOperationCommand(code, req.Name, req.Description), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

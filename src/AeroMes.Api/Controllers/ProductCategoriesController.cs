@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -36,12 +37,13 @@ public class ProductCategoriesController(ICommandMediator commandMediator,
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateProductCategoryRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateProductCategoryCommand(
                 req.ParentId, req.Code, req.Name,
                 req.Description, req.StandardProductionTime, req.Color,
                 User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetAll), null, new ProductCategoryCreatedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetAll), null, new ProductCategoryCreatedResult(result.Value!));
     }
 
     [HttpPut("{id:int}")]
@@ -51,11 +53,12 @@ public class ProductCategoriesController(ICommandMediator commandMediator,
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateProductCategoryRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateProductCategoryCommand(
                 id, req.ParentId, req.Name,
                 req.Description, req.StandardProductionTime, req.Color,
                 req.IsActive, User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

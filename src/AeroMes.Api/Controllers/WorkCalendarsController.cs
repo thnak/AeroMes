@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.WorkCalendars.Commands.AddCalendarException;
 using AeroMes.Application.Master.WorkCalendars.Commands.CreateWorkCalendar;
 using AeroMes.Application.Master.WorkCalendars.Commands.DeleteWorkCalendar;
@@ -42,11 +43,13 @@ public class WorkCalendarsController(ICommandMediator commandMediator, IQueryMed
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateWorkCalendarRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateWorkCalendarCommand(req.Code, req.Name, req.Description,
                 req.Days.Select(d => new CalendarDayInput(d.DayOfWeek, d.IsWorkingDay,
                     d.Shifts.Select(s => new CalendarShiftInput(s.WorkShiftId, s.Sequence)).ToList())).ToList(),
                 User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var id = result.Value!;
         return CreatedAtAction(nameof(GetById), new { id }, new WorkCalendarCreatedResult(id));
     }
 
@@ -57,11 +60,12 @@ public class WorkCalendarsController(ICommandMediator commandMediator, IQueryMed
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateWorkCalendarRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateWorkCalendarCommand(id, req.Name, req.Description, req.IsActive,
                 req.Days.Select(d => new CalendarDayInput(d.DayOfWeek, d.IsWorkingDay,
                     d.Shifts.Select(s => new CalendarShiftInput(s.WorkShiftId, s.Sequence)).ToList())).ToList(),
                 User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -83,8 +87,10 @@ public class WorkCalendarsController(ICommandMediator commandMediator, IQueryMed
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> AddException(int id, [FromBody] AddCalendarExceptionRequest req, CancellationToken ct)
     {
-        var exId = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new AddCalendarExceptionCommand(id, req.Date, req.ExceptionType, req.WorkShiftId, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var exId = result.Value!;
         return CreatedAtAction(nameof(GetById), new { id }, new CalendarExceptionCreatedResult(exId));
     }
 

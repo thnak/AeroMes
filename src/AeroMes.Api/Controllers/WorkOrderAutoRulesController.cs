@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -27,12 +28,13 @@ public class WorkOrderAutoRulesController(ICommandMediator commandMediator, IQue
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Upsert([FromBody] UpsertWorkOrderAutoRulesRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpsertWorkOrderAutoRulesCommand(req.WorkCenterId, req.AutoStartEnabled,
                 req.AutoCompleteOnTargetReached, req.RequireDeleteConfirmToken,
                 req.MaxConcurrentJobs, req.RequireCertification,
                 User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
-        return Ok(new WorkOrderAutoRulesUpsertResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return Ok(new WorkOrderAutoRulesUpsertResult(result.Value!));
     }
 
     [HttpDelete("{id:int}")]

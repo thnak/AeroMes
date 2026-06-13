@@ -6,6 +6,7 @@ using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -27,9 +28,10 @@ public class UnitOfMeasuresController(ICommandMediator commandMediator,
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateUoMRequest req, CancellationToken ct)
     {
-        var code = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateUoMCommand(req.Code, req.Name, req.Group, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetAll), null, new UoMCreatedResult(code));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetAll), null, new UoMCreatedResult(result.Value!));
     }
 
     [HttpPut("{code}")]
@@ -39,7 +41,8 @@ public class UnitOfMeasuresController(ICommandMediator commandMediator,
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateUoMRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new UpdateUoMCommand(code, req.Name, req.Group), null, ct);
+        var result = await commandMediator.SendAsync(new UpdateUoMCommand(code, req.Name, req.Group), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

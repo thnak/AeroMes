@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Common;
 using AeroMes.Application.Jobs.Commands.FinishJob;
 using AeroMes.Application.Jobs.Commands.StartJob;
@@ -57,14 +58,14 @@ public class JobsController(ICommandMediator commandMediator, IQueryMediator que
         [FromBody] StartJobRequest request,
         CancellationToken ct)
     {
-        var result = await commandMediator.SendAsync(new StartJobCommand(
+        var cmdResult = await commandMediator.SendAsync(new StartJobCommand(
             request.WorkOrderId,
             request.MachineCode,
             request.ShiftCode,
             request.OperatorId,
             request.StartTime), null, ct);
-
-        return StatusCode(StatusCodes.Status201Created, new ApiResponse<StartJobResult>(true, "Job started.", result));
+        if (!cmdResult.IsSuccess) return cmdResult.ToErrorResult();
+        return StatusCode(StatusCodes.Status201Created, new ApiResponse<StartJobResult>(true, "Job started.", cmdResult.Value!));
     }
 
     [HttpPost("{jobId:long}/finish")]
@@ -79,8 +80,9 @@ public class JobsController(ICommandMediator commandMediator, IQueryMediator que
         [FromBody] FinishJobRequest request,
         CancellationToken ct)
     {
-        var result = await commandMediator.SendAsync(new FinishJobCommand(jobId, request.EndTime), null, ct);
-        return Ok(new ApiResponse<FinishJobResult>(true, "Job finished.", result));
+        var cmdResult = await commandMediator.SendAsync(new FinishJobCommand(jobId, request.EndTime), null, ct);
+        if (!cmdResult.IsSuccess) return cmdResult.ToErrorResult();
+        return Ok(new ApiResponse<FinishJobResult>(true, "Job finished.", cmdResult.Value!));
     }
 }
 

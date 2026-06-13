@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.Molds.Commands.AddMoldProduct;
 using AeroMes.Application.Master.Molds.Commands.AssignMoldToMachine;
 using AeroMes.Application.Master.Molds.Commands.CompleteMoldMaintenance;
@@ -62,13 +63,14 @@ public class MoldsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Register([FromBody] RegisterMoldRequest req, CancellationToken ct)
     {
-        var code = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new RegisterMoldCommand(
                 req.Code, req.Name, req.MoldType, req.Material, req.Cavities,
                 req.MaxShots, req.PmIntervalShots, req.Manufacturer,
                 req.PurchaseDate, req.PurchaseCost, req.WeightKg,
                 req.StorageLocation, req.Notes, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetByCode), new { code }, new MoldCreatedResult(code));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetByCode), new { code = result.Value! }, new MoldCreatedResult(result.Value!));
     }
 
     [HttpPut("{code}")]
@@ -78,12 +80,13 @@ public class MoldsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateMoldRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateMoldCommand(
                 code, req.Name, req.MoldType, req.Material, req.Cavities,
                 req.MaxShots, req.PmIntervalShots, req.Manufacturer,
                 req.PurchaseDate, req.PurchaseCost, req.WeightKg,
                 req.StorageLocation, req.Notes, req.IsActive, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -108,9 +111,10 @@ public class MoldsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> AddProduct(string code, [FromBody] AddMoldProductRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new AddMoldProductCommand(code, req.ProductCode, req.IsDefault, req.CycleTimeSeconds, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetByCode), new { code }, new MoldProductAddedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetByCode), new { code }, new MoldProductAddedResult(result.Value!));
     }
 
     [HttpDelete("{code}/products/{mappingId:int}")]
@@ -133,8 +137,9 @@ public class MoldsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Assign(string code, [FromBody] AssignMoldRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new AssignMoldToMachineCommand(code, req.MachineCode, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -158,8 +163,9 @@ public class MoldsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> SendForMaintenance(string code, [FromBody] SendMoldMaintenanceRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new SendMoldForMaintenanceCommand(code, req.MaintenanceType, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -170,12 +176,13 @@ public class MoldsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CompleteMaintenance(string code, [FromBody] CompleteMoldMaintenanceRequest req, CancellationToken ct)
     {
-        var logId = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CompleteMoldMaintenanceCommand(
                 code, req.MaintenanceType, req.StartDate, req.EndDate,
                 req.TechnicianId, req.Description, req.PartReplaced,
                 req.Cost, req.NextDueShots, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetByCode), new { code }, new MoldMaintenanceLoggedResult(logId));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetByCode), new { code }, new MoldMaintenanceLoggedResult(result.Value!));
     }
 
     [HttpPost("{code}/shots")]
@@ -184,8 +191,12 @@ public class MoldsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> RecordShots(string code, [FromBody] RecordMoldShotsRequest req, CancellationToken ct)
-        => Ok(await commandMediator.SendAsync(
-            new RecordMoldShotsCommand(code, req.Shots, User.Identity?.Name), null, ct));
+    {
+        var result = await commandMediator.SendAsync(
+            new RecordMoldShotsCommand(code, req.Shots, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return Ok(result.Value!);
+    }
 
     [HttpPost("{code}/scrap")]
     [RequirePermission(Permissions.MasterDataWrite)]

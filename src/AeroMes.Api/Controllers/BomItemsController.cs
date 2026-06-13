@@ -7,6 +7,7 @@ using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -30,9 +31,10 @@ public class BomItemsController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateBomItemRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateBomItemCommand(req.ParentProductCode, req.ChildProductCode, req.RequiredQty, req.ScrapFactor, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetByParent), new { parentCode = req.ParentProductCode }, new BomItemCreatedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetByParent), new { parentCode = req.ParentProductCode }, new BomItemCreatedResult(result.Value!));
     }
 
     [HttpPut("{id:int}")]
@@ -43,7 +45,8 @@ public class BomItemsController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateBomItemRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new UpdateBomItemCommand(id, req.RequiredQty, req.ScrapFactor, User.Identity?.Name ?? "system"), null, ct);
+        var result = await commandMediator.SendAsync(new UpdateBomItemCommand(id, req.RequiredQty, req.ScrapFactor, User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

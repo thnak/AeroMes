@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -29,10 +30,11 @@ public class ShiftTemplatesController(ICommandMediator commandMediator, IQueryMe
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateShiftTemplateRequest req, CancellationToken ct)
     {
-        var code = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateShiftTemplateCommand(req.Code, req.Name, req.StartTime, req.EndTime,
                 req.IsNightShift, req.ValidDays, req.WorkCenterId, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetAll), null, new ShiftTemplateCreatedResult(code));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetAll), null, new ShiftTemplateCreatedResult(result.Value!));
     }
 
     [HttpPut("{code}")]
@@ -42,9 +44,10 @@ public class ShiftTemplatesController(ICommandMediator commandMediator, IQueryMe
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateShiftTemplateRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateShiftTemplateCommand(code, req.Name, req.StartTime, req.EndTime,
                 req.IsNightShift, req.ValidDays, req.WorkCenterId, req.IsActive, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Common;
 using AeroMes.Application.Downtime.Commands.EndDowntime;
 using AeroMes.Application.Downtime.Commands.StartDowntime;
@@ -56,16 +57,17 @@ public class DowntimeController(ICommandMediator commandMediator, IQueryMediator
         [FromBody] StartDowntimeRequest request,
         CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(new StartDowntimeCommand(
+        var result = await commandMediator.SendAsync(new StartDowntimeCommand(
             request.MachineCode,
             request.ReasonCode,
             request.ReasonName,
             request.StartTime,
             request.OperatorId,
             request.Notes), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
 
         return StatusCode(StatusCodes.Status201Created,
-            new ApiResponse<DowntimeStartedResult>(true, "Downtime started.", new DowntimeStartedResult(id)));
+            new ApiResponse<DowntimeStartedResult>(true, "Downtime started.", new DowntimeStartedResult(result.Value!)));
     }
 
     [HttpPost("{downtimeLogId:long}/end")]
@@ -82,8 +84,9 @@ public class DowntimeController(ICommandMediator commandMediator, IQueryMediator
     {
         var result = await commandMediator.SendAsync(
             new EndDowntimeCommand(downtimeLogId, request.EndTime, request.Notes), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
 
-        return Ok(new ApiResponse<EndDowntimeResult>(true, "Downtime resolved.", result));
+        return Ok(new ApiResponse<EndDowntimeResult>(true, "Downtime resolved.", result.Value!));
     }
 }
 

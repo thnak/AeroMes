@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -29,10 +30,11 @@ public class DowntimeReasonCodesController(ICommandMediator commandMediator, IQu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateDowntimeReasonCodeRequest req, CancellationToken ct)
     {
-        var code = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateDowntimeReasonCodeCommand(req.Code, req.Name, req.Category,
                 req.SlaMinutes, req.RequiresApproval, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetAll), null, new DowntimeReasonCodeCreatedResult(code));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetAll), null, new DowntimeReasonCodeCreatedResult(result.Value!));
     }
 
     [HttpPut("{code}")]
@@ -42,9 +44,10 @@ public class DowntimeReasonCodesController(ICommandMediator commandMediator, IQu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateDowntimeReasonCodeRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateDowntimeReasonCodeCommand(code, req.Name, req.Category,
                 req.SlaMinutes, req.RequiresApproval, req.IsActive, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

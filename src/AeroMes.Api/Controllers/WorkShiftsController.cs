@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.WorkShifts.Commands.CreateWorkShift;
 using AeroMes.Application.Master.WorkShifts.Commands.DeleteWorkShift;
 using AeroMes.Application.Master.WorkShifts.Commands.UpdateWorkShift;
@@ -39,10 +40,12 @@ public class WorkShiftsController(ICommandMediator commandMediator, IQueryMediat
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateWorkShiftRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateWorkShiftCommand(req.Code, req.Name, req.StartTime, req.EndTime,
                 req.Breaks.Select(b => new BreakPeriodInput(b.BreakStart, b.BreakEnd)).ToList(),
                 User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var id = result.Value!;
         return CreatedAtAction(nameof(GetById), new { id }, new WorkShiftCreatedResult(id));
     }
 
@@ -53,10 +56,11 @@ public class WorkShiftsController(ICommandMediator commandMediator, IQueryMediat
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateWorkShiftRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateWorkShiftCommand(id, req.Name, req.StartTime, req.EndTime,
                 req.Breaks.Select(b => new BreakPeriodInput(b.BreakStart, b.BreakEnd)).ToList(),
                 req.IsActive, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

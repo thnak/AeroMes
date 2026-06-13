@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.ProductionTeams.Commands.AddTeamMember;
 using AeroMes.Application.Master.ProductionTeams.Commands.CreateProductionTeam;
 using AeroMes.Application.Master.ProductionTeams.Commands.DeleteProductionTeam;
@@ -46,13 +47,15 @@ public class ProductionTeamsController(ICommandMediator commandMediator, IQueryM
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateProductionTeamRequest req, CancellationToken ct)
     {
-        var code = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateProductionTeamCommand(
                 req.Code, req.Name, req.OrgUnitId,
                 req.StandardLaborQuantity, req.ProductionRate,
                 req.IsOrderBasedPlanningEnabled,
                 req.ProductGroupCategoryIds ?? [],
                 User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var code = result.Value!;
         return CreatedAtAction(nameof(GetByCode), new { code }, new ProductionTeamCreatedResult(code));
     }
 
@@ -63,13 +66,14 @@ public class ProductionTeamsController(ICommandMediator commandMediator, IQueryM
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateProductionTeamRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateProductionTeamCommand(
                 code, req.Name, req.OrgUnitId,
                 req.StandardLaborQuantity, req.ProductionRate,
                 req.IsOrderBasedPlanningEnabled,
                 req.ProductGroupCategoryIds ?? [],
                 req.IsActive, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -91,8 +95,10 @@ public class ProductionTeamsController(ICommandMediator commandMediator, IQueryM
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Duplicate(string code, [FromBody] DuplicateTeamRequest req, CancellationToken ct)
     {
-        var newCode = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new DuplicateProductionTeamCommand(code, req.NewCode, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var newCode = result.Value!;
         return CreatedAtAction(nameof(GetByCode), new { code = newCode }, new ProductionTeamCreatedResult(newCode));
     }
 
@@ -105,9 +111,10 @@ public class ProductionTeamsController(ICommandMediator commandMediator, IQueryM
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> AddMember(string code, [FromBody] AddTeamMemberRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new AddTeamMemberCommand(code, req.EmployeeCode, req.IsLeader, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetByCode), new { code }, new TeamMemberAddedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetByCode), new { code }, new TeamMemberAddedResult(result.Value!));
     }
 
     [HttpDelete("{code}/members/{employeeCode}")]

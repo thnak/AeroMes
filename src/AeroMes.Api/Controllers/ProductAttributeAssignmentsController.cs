@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.ProductAttributes.Commands.AssignAttributeToProduct;
 using AeroMes.Application.Master.ProductAttributes.Commands.UnassignAttributeFromProduct;
 using AeroMes.Application.Master.ProductAttributes.Queries.GetProductAttributeAssignments;
@@ -28,9 +29,10 @@ public class ProductAttributeAssignmentsController(ICommandMediator commandMedia
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Assign(string productCode, int attributeId, [FromBody] AssignAttributeRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new AssignAttributeToProductCommand(productCode, attributeId, req.SelectedValueId, User.Identity?.Name), null, ct);
-        return Ok(new AttributeAssignedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return Ok(new AttributeAssignedResult(result.Value!));
     }
 
     [HttpDelete("{attributeId:int}")]

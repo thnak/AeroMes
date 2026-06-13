@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -45,8 +46,10 @@ public class RoutingsController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateRoutingRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateRoutingCommand(req.Code, req.Name, req.ProductCode, req.IsDefault, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var id = result.Value!;
         return CreatedAtAction(nameof(GetWithSteps), new { id }, new RoutingCreatedResult(id));
     }
 
@@ -58,7 +61,8 @@ public class RoutingsController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateRoutingRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new UpdateRoutingCommand(id, req.Name, req.IsDefault, User.Identity?.Name ?? "system"), null, ct);
+        var result = await commandMediator.SendAsync(new UpdateRoutingCommand(id, req.Name, req.IsDefault, User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -81,8 +85,10 @@ public class RoutingsController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> AddStep(int id, [FromBody] AddRoutingStepRequest req, CancellationToken ct)
     {
-        var stepId = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new AddRoutingStepCommand(id, req.StepNumber, req.OperationCode, req.DefaultWorkCenterId, req.StandardCycleTime, req.IsQcRequired), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var stepId = result.Value!;
         return CreatedAtAction(nameof(GetWithSteps), new { id }, new RoutingStepCreatedResult(stepId));
     }
 

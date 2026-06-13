@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -50,11 +51,13 @@ public class ProductsController(ICommandMediator commandMediator,
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateProductRequest req, CancellationToken ct)
     {
-        var code = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateProductCommand(req.Code, req.Name, req.BaseUoMCode, req.ItemType, req.CategoryId,
                 req.BarcodePattern, req.LotControlled, req.SerialControlled, req.ShelfLifeDays,
                 req.ProcurementType, req.CustomerPartNo, req.DrawingNo, req.Revision,
                 User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var code = result.Value!;
         return CreatedAtAction(nameof(GetByCode), new { code }, new ProductCreatedResult(code));
     }
 
@@ -65,7 +68,7 @@ public class ProductsController(ICommandMediator commandMediator,
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateProductRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateProductCommand(code, req.Name, req.BaseUoMCode, req.PurchaseUoMCode, req.PurchaseToBaseQty,
                 req.ItemType, req.CategoryId, req.BarcodePattern,
                 req.LotControlled, req.SerialControlled, req.ShelfLifeDays,
@@ -75,6 +78,7 @@ public class ProductsController(ICommandMediator commandMediator,
                 req.ImageUrl, req.ThumbnailUrl,
                 req.FixedPurchasePrice, req.TechnicalStandard, req.QuantityFormula,
                 User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -85,8 +89,9 @@ public class ProductsController(ICommandMediator commandMediator,
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> ChangeLifecycle(string code, [FromBody] ChangeLifecycleRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new ChangeLifecycleStatusCommand(code, req.Status, User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -110,9 +115,10 @@ public class ProductsController(ICommandMediator commandMediator,
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> AddUoMConversion(string code, [FromBody] AddUoMConversionRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new AddProductUoMConversionCommand(code, req.UoMCode, req.ToBaseFactor, req.Notes, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetByCode), new { code }, new UoMConversionCreatedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetByCode), new { code }, new UoMConversionCreatedResult(result.Value!));
     }
 
     [HttpPut("{code}/uom-conversions/{conversionId:int}")]
@@ -122,8 +128,9 @@ public class ProductsController(ICommandMediator commandMediator,
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateUoMConversion(string code, int conversionId, [FromBody] UpdateUoMConversionRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateProductUoMConversionCommand(code, conversionId, req.ToBaseFactor, req.Notes, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

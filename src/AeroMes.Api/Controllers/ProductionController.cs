@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Common;
 using AeroMes.Application.Production.Commands.SubmitOutput;
 using AeroMes.Application.Production.Queries.GetOee;
@@ -37,9 +38,10 @@ public class ProductionController(ICommandMediator commandMediator,
             request.Timestamp,
             request.Defects.Select(d => new DefectEntry(d.DefectCode, d.Qty)).ToList());
 
-        var result = await commandMediator.SendAsync(cmd, null, ct);
+        var cmdResult = await commandMediator.SendAsync(cmd, null, ct);
+        if (!cmdResult.IsSuccess) return cmdResult.ToErrorResult();
         return StatusCode(StatusCodes.Status201Created, new ApiResponse<SubmitOutputResult>(true,
-            "Production output recorded successfully.", result));
+            "Production output recorded successfully.", cmdResult.Value!));
     }
 
     [HttpGet("oee")]

@@ -6,7 +6,7 @@ namespace AeroMes.Api.Extensions;
 
 public static class ValidationResultExtensions
 {
-    public static IActionResult ToErrorResult<T>(this ValidationResult<T> result)
+    public static ActionResult ToErrorResult<T>(this ValidationResult<T> result)
     {
         if (result.IsNotFound)
             return new NotFoundObjectResult(

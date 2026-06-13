@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Quality.DefectCodes.Commands.CreateDefectCode;
 using AeroMes.Application.Quality.DefectCodes.Commands.DeleteDefectCode;
 using AeroMes.Application.Quality.DefectCodes.Commands.UpdateDefectCode;
@@ -28,10 +29,11 @@ public class DefectCodesController(ICommandMediator commandMediator, IQueryMedia
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateDefectCodeRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateDefectCodeCommand(req.Code, req.DefectName, req.DefectCategory,
                 User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetAll), null, new DefectCodeCreatedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetAll), null, new DefectCodeCreatedResult(result.Value!));
     }
 
     [HttpPut("{id:int}")]
@@ -40,9 +42,10 @@ public class DefectCodesController(ICommandMediator commandMediator, IQueryMedia
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateDefectCodeRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateDefectCodeCommand(id, req.DefectName, req.DefectCategory, req.IsActive,
                 User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

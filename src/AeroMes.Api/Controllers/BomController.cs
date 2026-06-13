@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.Boms.Commands.ActivateBomVersion;
 using AeroMes.Application.Master.Boms.Commands.ApproveBom;
 using AeroMes.Application.Master.Boms.Commands.CreateBomDraft;
@@ -74,12 +75,13 @@ public class BomController(ICommandMediator commandMediator, IQueryMediator quer
     public async Task<IActionResult> CreateDraft(
         string productCode, [FromBody] CreateBomDraftRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateBomDraftCommand(
                 productCode, req.Version, req.BaseQuantity, req.Notes,
                 req.CloneFromVersion, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return CreatedAtAction(nameof(GetVersion),
-            new { productCode, version = req.Version }, new BomDraftCreatedResult(id, req.Version));
+            new { productCode, version = req.Version }, new BomDraftCreatedResult(result.Value!, req.Version));
     }
 
     [HttpPut("{productCode}/versions/{version}/lines")]
@@ -90,8 +92,9 @@ public class BomController(ICommandMediator commandMediator, IQueryMediator quer
     public async Task<IActionResult> UpdateLines(
         string productCode, string version, [FromBody] UpdateBomLinesRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateBomLinesCommand(productCode, version, req.Lines, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.ProductAttributes.Commands.AddAttributeValue;
 using AeroMes.Application.Master.ProductAttributes.Commands.CreateProductAttribute;
 using AeroMes.Application.Master.ProductAttributes.Commands.DeleteProductAttribute;
@@ -55,8 +56,10 @@ public class ProductAttributesController(ICommandMediator commandMediator, IQuer
         var values = (req.Values ?? [])
             .Select(v => new AttributeValueEntry(v.Value, v.GroupName, v.SortOrder))
             .ToList();
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateProductAttributeCommand(req.Code, req.Name, values, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var id = result.Value!;
         return CreatedAtAction(nameof(GetById), new { id }, new ProductAttributeCreatedResult(id));
     }
 
@@ -67,8 +70,9 @@ public class ProductAttributesController(ICommandMediator commandMediator, IQuer
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateProductAttributeRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateProductAttributeCommand(id, req.Name, req.IsActive, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -93,8 +97,10 @@ public class ProductAttributesController(ICommandMediator commandMediator, IQuer
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> AddValue(int id, [FromBody] AttributeValueRequest req, CancellationToken ct)
     {
-        var valueId = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new AddAttributeValueCommand(id, req.Value, req.GroupName, req.SortOrder, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var valueId = result.Value!;
         return CreatedAtAction(nameof(GetById), new { id }, new AttributeValueCreatedResult(valueId));
     }
 
@@ -105,8 +111,9 @@ public class ProductAttributesController(ICommandMediator commandMediator, IQuer
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateValue(int id, int valueId, [FromBody] AttributeValueRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateAttributeValueCommand(id, valueId, req.Value, req.GroupName, req.SortOrder, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

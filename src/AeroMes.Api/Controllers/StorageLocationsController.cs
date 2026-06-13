@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -32,9 +33,10 @@ public class StorageLocationsController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateStorageLocationRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateStorageLocationCommand(req.Code, req.Name, req.LocationType, req.WorkCenterId), null, ct);
-        return CreatedAtAction(nameof(GetAll), null, new StorageLocationCreatedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetAll), null, new StorageLocationCreatedResult(result.Value!));
     }
 
     [HttpPut("{id:int}")]
@@ -45,7 +47,8 @@ public class StorageLocationsController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateStorageLocationRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new UpdateStorageLocationCommand(id, req.Name, req.LocationType, req.WorkCenterId), null, ct);
+        var result = await commandMediator.SendAsync(new UpdateStorageLocationCommand(id, req.Name, req.LocationType, req.WorkCenterId), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

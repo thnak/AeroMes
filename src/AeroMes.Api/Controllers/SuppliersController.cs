@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.Suppliers.Commands.AddAvlItem;
 using AeroMes.Application.Master.Suppliers.Commands.CreateSupplier;
 using AeroMes.Application.Master.Suppliers.Commands.DeleteSupplier;
@@ -43,11 +44,13 @@ public class SuppliersController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateSupplierRequest req, CancellationToken ct)
     {
-        var code = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateSupplierCommand(
                 req.Code, req.Name, req.Country, req.City, req.Address,
                 req.Phone, req.Email, req.ContactName, req.TaxCode,
                 User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var code = result.Value!;
         return CreatedAtAction(nameof(GetById), new { code }, new SupplierCreatedResult(code));
     }
 
@@ -58,11 +61,12 @@ public class SuppliersController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateSupplierRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateSupplierCommand(
                 code, req.Name, req.Country, req.City, req.Address,
                 req.Phone, req.Email, req.ContactName, req.TaxCode,
                 req.IsActive, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -86,14 +90,15 @@ public class SuppliersController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> AddAvlItem(string code, [FromBody] AddAvlItemRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new AddAvlItemCommand(
                 code, req.ProductCode, req.Status,
                 req.UnitPrice, req.CurrencyCode, req.LeadTimeDays,
                 req.MinOrderQty, req.AqlLevel, req.IsPreferred,
                 req.ApprovedFrom, req.ApprovedTo, req.Notes,
                 User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetById), new { code }, new AvlItemCreatedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetById), new { code }, new AvlItemCreatedResult(result.Value!));
     }
 
     [HttpPut("{code}/avl/{avlItemId:int}")]
@@ -103,13 +108,14 @@ public class SuppliersController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateAvlItem(string code, int avlItemId, [FromBody] UpdateAvlItemRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateAvlItemCommand(
                 code, avlItemId, req.Status,
                 req.UnitPrice, req.CurrencyCode, req.LeadTimeDays,
                 req.MinOrderQty, req.AqlLevel, req.IsPreferred,
                 req.ApprovedFrom, req.ApprovedTo, req.Notes,
                 User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

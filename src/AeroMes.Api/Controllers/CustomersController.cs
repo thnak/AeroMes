@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.Customers.Commands.AddCustomerPartNumber;
 using AeroMes.Application.Master.Customers.Commands.CreateCustomer;
 using AeroMes.Application.Master.Customers.Commands.DeleteCustomer;
@@ -46,13 +47,15 @@ public class CustomersController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateCustomerRequest req, CancellationToken ct)
     {
-        var code = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateCustomerCommand(
                 req.Code, req.Name, req.CustomerType,
                 req.TaxId, req.Country, req.Address, req.ShippingAddress,
                 req.ContactName, req.ContactPhone, req.ContactEmail,
                 req.CreditTermsDays, req.Currency, req.Notes,
                 User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var code = result.Value!;
         return CreatedAtAction(nameof(GetById), new { code }, new CustomerCreatedResult(code));
     }
 
@@ -63,13 +66,14 @@ public class CustomersController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateCustomerRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateCustomerCommand(
                 code, req.Name, req.CustomerType,
                 req.TaxId, req.Country, req.Address, req.ShippingAddress,
                 req.ContactName, req.ContactPhone, req.ContactEmail,
                 req.CreditTermsDays, req.Currency, req.Notes,
                 req.IsActive, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -103,12 +107,13 @@ public class CustomersController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> AddPartNumber(string code, [FromBody] AddCustomerPartNumberRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new AddCustomerPartNumberCommand(
                 code, req.CustomerPartNo, req.ProductCode,
                 req.Description, req.DrawingReference, req.Revision,
                 User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetById), new { code }, new CustomerPartNumberCreatedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetById), new { code }, new CustomerPartNumberCreatedResult(result.Value!));
     }
 
     [HttpPut("{code}/parts/{partNumberId:int}")]
@@ -118,11 +123,12 @@ public class CustomersController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdatePartNumber(string code, int partNumberId, [FromBody] UpdateCustomerPartNumberRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateCustomerPartNumberCommand(
                 code, partNumberId,
                 req.Description, req.DrawingReference, req.Revision,
                 User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -146,7 +152,7 @@ public class CustomersController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> SetQualitySpec(string code, [FromBody] SetCustomerQualitySpecRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new SetCustomerQualitySpecCommand(
                 code, req.ProductCode,
                 req.AqlLevel, req.InspectionLevel,
@@ -154,7 +160,8 @@ public class CustomersController(ICommandMediator commandMediator, IQueryMediato
                 req.SpecialRequirements,
                 req.EffectiveFrom, req.EffectiveTo,
                 User.Identity?.Name), null, ct);
-        return Ok(new CustomerQualitySpecSavedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return Ok(new CustomerQualitySpecSavedResult(result.Value!));
     }
 
     [HttpDelete("{code}/quality-specs/{specId:int}")]

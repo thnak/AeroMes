@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.Employees.Commands.AddShiftAssignment;
 using AeroMes.Application.Master.Employees.Commands.CreateEmployee;
 using AeroMes.Application.Master.Employees.Commands.DeleteEmployee;
@@ -56,11 +57,13 @@ public class EmployeesController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateEmployeeRequest req, CancellationToken ct)
     {
-        var code = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new CreateEmployeeCommand(
                 req.Code, req.FullName, req.Department,
                 req.RoleType, req.DefaultWorkCenterId,
                 User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        var code = result.Value!;
         return CreatedAtAction(nameof(GetById), new { code }, new EmployeeCreatedResult(code));
     }
 
@@ -71,11 +74,12 @@ public class EmployeesController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateEmployeeRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UpdateEmployeeCommand(
                 code, req.FullName, req.Department,
                 req.RoleType, req.DefaultWorkCenterId,
                 req.IsActive, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -99,12 +103,13 @@ public class EmployeesController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> SetSkill(string code, [FromBody] SetEmployeeSkillRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new SetEmployeeSkillCommand(
                 code, req.OperationCode, req.CertificationLevel,
                 req.CertifiedAt, req.ExpiresAt,
                 User.Identity?.Name), null, ct);
-        return Ok(new EmployeeSkillSavedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return Ok(new EmployeeSkillSavedResult(result.Value!));
     }
 
     [HttpDelete("{code}/skills/{skillId:int}")]
@@ -127,12 +132,13 @@ public class EmployeesController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> AddShiftAssignment(string code, [FromBody] AddShiftAssignmentRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new AddShiftAssignmentCommand(
                 code, req.WorkCenterId, req.ShiftCode,
                 req.ValidFrom, req.ValidTo,
                 User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetById), new { code }, new ShiftAssignmentCreatedResult(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetById), new { code }, new ShiftAssignmentCreatedResult(result.Value!));
     }
 
     [HttpPut("{code}/shift-assignments/{assignmentId:int}/end")]

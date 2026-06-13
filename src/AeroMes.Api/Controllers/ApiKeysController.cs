@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Auth.ApiKeys.Commands.CreateApiKey;
 using AeroMes.Application.Auth.ApiKeys.Commands.RevokeApiKey;
 using AeroMes.Application.Auth.ApiKeys.Commands.RotateApiKey;
@@ -36,7 +37,8 @@ public class ApiKeysController(ICommandMediator commandMediator, IQueryMediator 
         var result = await commandMediator.SendAsync(
             new CreateApiKeyCommand(req.KeyName, req.AssignedRole, ownerId, req.WorkCenterId, req.ExpiresAt, req.Notes),
             null, ct);
-        return CreatedAtAction(nameof(GetAll), result);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetAll), result.Value!);
     }
 
     [HttpDelete("{id:int}")]

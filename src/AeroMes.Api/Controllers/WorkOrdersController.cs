@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Common;
 using AeroMes.Application.WorkOrders.Commands.StartWorkOrder;
 using AeroMes.Application.WorkOrders.Queries.GetWorkOrderDetail;
@@ -52,9 +53,10 @@ public class WorkOrdersController(ICommandMediator commandMediator, IQueryMediat
         [FromBody] StartWorkOrderRequest request,
         CancellationToken ct)
     {
-        var result = await commandMediator.SendAsync(
+        var cmdResult = await commandMediator.SendAsync(
             new StartWorkOrderCommand(id, request.OperatorId, request.Timestamp), null, ct);
-        return Ok(new ApiResponse<StartWorkOrderResult>(true, "Work Order started successfully.", result));
+        if (!cmdResult.IsSuccess) return cmdResult.ToErrorResult();
+        return Ok(new ApiResponse<StartWorkOrderResult>(true, "Work Order started successfully.", cmdResult.Value!));
     }
 }
 

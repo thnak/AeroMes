@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -31,8 +32,9 @@ public class WorkCentersController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateWorkCenterRequest req, CancellationToken ct)
     {
-        var id = await commandMediator.SendAsync(new CreateWorkCenterCommand(req.Code, req.Name, req.Description, User.Identity?.Name), null, ct);
-        return CreatedAtAction(nameof(GetAll), null, new WorkCenterCreatedResult(id));
+        var result = await commandMediator.SendAsync(new CreateWorkCenterCommand(req.Code, req.Name, req.Description, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetAll), null, new WorkCenterCreatedResult(result.Value!));
     }
 
     [HttpPut("{id:int}")]
@@ -43,7 +45,8 @@ public class WorkCentersController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateWorkCenterRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new UpdateWorkCenterCommand(id, req.Name, req.Description, User.Identity?.Name ?? "system"), null, ct);
+        var result = await commandMediator.SendAsync(new UpdateWorkCenterCommand(id, req.Name, req.Description, User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
