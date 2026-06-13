@@ -1126,6 +1126,16 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(CopqTrendPointDto))]
 [JsonSerializable(typeof(IReadOnlyList<CopqTrendPointDto>))]
 [JsonSerializable(typeof(List<CopqTrendPointDto>))]
+// quality inspection requests — #81
+[JsonSerializable(typeof(CreateInspectionRequestRequest))]
+[JsonSerializable(typeof(UpdateInspectionRequestRequest))]
+[JsonSerializable(typeof(UpdateRequestStatusRequest))]
+[JsonSerializable(typeof(InspectionRequestDto))]
+[JsonSerializable(typeof(PagedResult<InspectionRequestDto>))]
+[JsonSerializable(typeof(InspectionRequestDetailDto))]
+[JsonSerializable(typeof(LinkedVoucherSummaryDto))]
+[JsonSerializable(typeof(IReadOnlyList<LinkedVoucherSummaryDto>))]
+[JsonSerializable(typeof(List<LinkedVoucherSummaryDto>))]
 // quality inspection vouchers — #92
 [JsonSerializable(typeof(CreateInspectionVoucherRequest))]
 [JsonSerializable(typeof(AddDefectRequest))]

@@ -202,6 +202,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<RepairMaterialLine> RepairMaterialLines => Set<RepairMaterialLine>();
     public DbSet<QualityInspectionVoucher> QualityInspectionVouchers => Set<QualityInspectionVoucher>();
     public DbSet<VoucherDefectDetail> VoucherDefectDetails => Set<VoucherDefectDetail>();
+    public DbSet<QualityInspectionRequest> QualityInspectionRequests => Set<QualityInspectionRequest>();
 
     // iot schema
     public DbSet<AdapterInstance> AdapterInstances => Set<AdapterInstance>();
@@ -2599,6 +2600,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.DetailID).UseIdentityColumn();
             e.Property(x => x.DefectName).HasMaxLength(200).IsRequired();
             e.Property(x => x.Quantity).HasColumnType("DECIMAL(12,4)");
+        });
+
+        b.Entity<QualityInspectionRequest>(e =>
+        {
+            e.ToTable("QualityInspectionRequests", "qual");
+            e.HasKey(x => x.RequestID);
+            e.Property(x => x.RequestID).UseIdentityColumn();
+            e.Property(x => x.RequestNumber).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.RequestNumber).IsUnique();
+            e.Property(x => x.RequesterName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.RequestingDepartment).HasMaxLength(100).IsRequired();
+            e.Property(x => x.RecipientPerson).HasMaxLength(100).IsRequired();
+            e.Property(x => x.InspectionPurpose).HasConversion<string>().HasMaxLength(30).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20)
+                .HasDefaultValue(InspectionRequestStatus.NotStarted);
+            e.HasQueryFilter(x => !x.IsDeleted);
         });
     }
 
