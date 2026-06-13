@@ -361,6 +361,7 @@ public static class DependencyInjection
         services.AddSingleton<ILabelRenderer, QuestPdfLabelRenderer>();
 
         // Document templates & print
+        services.AddScoped<AeroMes.Domain.Cost.Repositories.IStandardCostRepository, Repositories.StandardCostRepository>();
         services.AddScoped<AeroMes.Application.Templates.IDocumentTemplateRepository, DocumentTemplateRepository>();
         services.AddScoped<AeroMes.Application.Documents.IDocumentPrintService, Documents.DocumentPrintService>();
 

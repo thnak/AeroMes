@@ -224,6 +224,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<WOMaterialCostLine> WOMaterialCostLines => Set<WOMaterialCostLine>();
     public DbSet<WOLaborCostLine> WOLaborCostLines => Set<WOLaborCostLine>();
     public DbSet<WOMachineCostLine> WOMachineCostLines => Set<WOMachineCostLine>();
+    public DbSet<StandardCostHeader> StandardCostHeaders => Set<StandardCostHeader>();
+    public DbSet<StandardCostMaterialLine> StandardCostMaterialLines => Set<StandardCostMaterialLine>();
+    public DbSet<StandardCostRoutingLine> StandardCostRoutingLines => Set<StandardCostRoutingLine>();
 
     // iot schema
     public DbSet<AdapterInstance> AdapterInstances => Set<AdapterInstance>();
@@ -4675,6 +4678,62 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.TotalRateSnapshot).HasColumnType("DECIMAL(14,4)").IsRequired();
             e.Ignore(x => x.LineTotal);
             e.HasIndex(x => x.WOID);
+        });
+
+        b.Entity<StandardCostHeader>(e =>
+        {
+            e.ToTable("StandardCostHeaders", "cost");
+            e.HasKey(x => x.StdCostId);
+            e.Property(x => x.StdCostId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.TotalMaterialCost).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.TotalLaborCost).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.TotalMachineCost).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.TotalOverheadCost).HasColumnType("DECIMAL(18,4)");
+            e.Ignore(x => x.TotalStandardCost);
+            e.Property(x => x.Currency).HasMaxLength(3).HasDefaultValue("VND");
+            e.Property(x => x.ApprovedBy).HasMaxLength(256);
+            e.HasIndex(x => new { x.ProductCode, x.CostVersion }).IsUnique();
+            e.HasIndex(x => x.Status);
+
+            e.HasMany(x => x.MaterialLines)
+                .WithOne()
+                .HasForeignKey(x => x.StdCostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasMany(x => x.RoutingLines)
+                .WithOne()
+                .HasForeignKey(x => x.StdCostId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<StandardCostMaterialLine>(e =>
+        {
+            e.ToTable("StandardCostMaterialLines", "cost");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).UseIdentityColumn();
+            e.Property(x => x.ComponentCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.RequiredQty).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.ScrapFactor).HasColumnType("DECIMAL(5,2)");
+            e.Property(x => x.UnitCost).HasColumnType("DECIMAL(18,6)");
+            e.Ignore(x => x.AdjustedQty);
+            e.Ignore(x => x.LineTotal);
+            e.HasIndex(x => x.StdCostId);
+        });
+
+        b.Entity<StandardCostRoutingLine>(e =>
+        {
+            e.ToTable("StandardCostRoutingLines", "cost");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).UseIdentityColumn();
+            e.Property(x => x.StepName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.CycleTimeSec).HasColumnType("DECIMAL(10,2)");
+            e.Property(x => x.LaborRateSnapshot).HasColumnType("DECIMAL(12,4)");
+            e.Property(x => x.MachineRateSnapshot).HasColumnType("DECIMAL(14,4)");
+            e.Ignore(x => x.LaborCostLine);
+            e.Ignore(x => x.MachineCostLine);
+            e.HasIndex(x => x.StdCostId);
         });
     }
 

@@ -188,6 +188,8 @@ using AeroMes.Application.Master.DisassemblyBoms.Queries.GetDisassemblyBoms;
 using AeroMes.Application.Master.DisassemblyBoms.Queries.GetDisassemblyBomById;
 using AeroMes.Application.Master.Boms.Commands.UpdateBomByProducts;
 using AeroMes.Application.Cost.WOCosts.Queries.GetWOCostBreakdown;
+using AeroMes.Application.Cost.StandardCost.Queries.GetStandardCostDetail;
+using AeroMes.Application.Cost.StandardCost.Queries.GetStandardCosts;
 using AeroMes.Application.Production.MRP.Commands.UpdateMrp;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Master;
@@ -1286,6 +1288,15 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(List<MachineEnergyProfileDto>))]
 [JsonSerializable(typeof(SetItemStandardCostRequest))]
 [JsonSerializable(typeof(ItemCostHistoryDto))]
+[JsonSerializable(typeof(StandardCostSummaryDto))]
+[JsonSerializable(typeof(IReadOnlyList<StandardCostSummaryDto>))]
+[JsonSerializable(typeof(StandardCostDetailDto))]
+[JsonSerializable(typeof(StdCostMaterialLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<StdCostMaterialLineDto>))]
+[JsonSerializable(typeof(StdCostRoutingLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<StdCostRoutingLineDto>))]
+[JsonSerializable(typeof(RollupStandardCostRequest))]
+[JsonSerializable(typeof(ActivateStdCostRequest))]
 [JsonSerializable(typeof(IReadOnlyList<ItemCostHistoryDto>))]
 [JsonSerializable(typeof(List<ItemCostHistoryDto>))]
 [JsonSerializable(typeof(MachineCostRateType))]
