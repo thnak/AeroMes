@@ -24,8 +24,14 @@ public class ProductionOrder : Entity
     public DateTime? CreatedAt { get; private set; }
     public DateTime SyncedAt { get; private set; }
 
-    // EF navigation
+    // EF navigations
     public SalesOrder? SalesOrder { get; private set; }
+
+    private readonly List<ProductionOrderMaterialLine> _materialLines = [];
+    public IReadOnlyList<ProductionOrderMaterialLine> MaterialLines => _materialLines.AsReadOnly();
+
+    private readonly List<ProductionOrderStage> _stages = [];
+    public IReadOnlyList<ProductionOrderStage> Stages => _stages.AsReadOnly();
 
     private ProductionOrder() { }
 
@@ -62,7 +68,8 @@ public class ProductionOrder : Entity
         DateTime? deadline,
         byte priority,
         string? assignedTo,
-        string? createdBy)
+        string? createdBy,
+        int? soId = null)
     {
         if (targetQuantity <= 0)
             throw new DomainException($"Target quantity must be positive. Got: {targetQuantity}.");
@@ -77,6 +84,7 @@ public class ProductionOrder : Entity
             ProductionDeadline = deadline,
             Priority = priority,
             AssignedTo = assignedTo,
+            SOID = soId,
             Status = ProductionOrderStatus.Released,
             CreatedBy = createdBy,
             CreatedAt = DateTime.UtcNow,
@@ -108,6 +116,37 @@ public class ProductionOrder : Entity
             throw new DomainException($"Cannot cancel a completed PO '{POCode}'.");
         Status = ProductionOrderStatus.Cancelled;
     }
+
+    public void Pause()
+    {
+        if (Status != ProductionOrderStatus.Running)
+            throw new DomainException($"PO '{POCode}' must be Running to pause. Current: {Status}.");
+        Status = ProductionOrderStatus.Paused;
+    }
+
+    public void Resume()
+    {
+        if (Status != ProductionOrderStatus.Paused)
+            throw new DomainException($"PO '{POCode}' must be Paused to resume. Current: {Status}.");
+        Status = ProductionOrderStatus.Running;
+    }
+
+    public void Update(
+        DateTime? plannedStart, DateTime? plannedEnd, DateTime? deadline,
+        byte priority, string? assignedTo)
+    {
+        PlannedStartDate = plannedStart;
+        PlannedEndDate = plannedEnd;
+        ProductionDeadline = deadline;
+        Priority = priority;
+        AssignedTo = assignedTo;
+    }
+
+    public void AddMaterialLine(string materialCode, decimal standardQty, string unit)
+        => _materialLines.Add(ProductionOrderMaterialLine.Create(POID, materialCode, standardQty, unit));
+
+    public void AddStage(int sequenceNo, string operationCode, string? workCenterCode)
+        => _stages.Add(ProductionOrderStage.Create(POID, sequenceNo, operationCode, workCenterCode));
 
     public void Resync() => SyncedAt = DateTime.UtcNow;
 }

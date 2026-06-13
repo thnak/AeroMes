@@ -10,11 +10,20 @@ public class ProductionOrderRepository(AppDbContext db) : IProductionOrderReposi
     public Task<ProductionOrder?> GetByIdAsync(int id, CancellationToken ct) =>
         db.ProductionOrders.FirstOrDefaultAsync(x => x.POID == id, ct);
 
+    public Task<ProductionOrder?> GetByIdWithDetailsAsync(int id, CancellationToken ct) =>
+        db.ProductionOrders
+            .Include(x => x.MaterialLines)
+            .Include(x => x.Stages)
+            .FirstOrDefaultAsync(x => x.POID == id, ct);
+
     public Task<ProductionOrder?> GetByCodeAsync(string poCode, CancellationToken ct) =>
         db.ProductionOrders.FirstOrDefaultAsync(x => x.POCode == poCode, ct);
 
     public Task<bool> ExistsAsync(int id, CancellationToken ct) =>
         db.ProductionOrders.AnyAsync(x => x.POID == id, ct);
+
+    public async Task<bool> HasDownstreamDocumentsAsync(int id, CancellationToken ct)
+        => await db.WorkOrders.AnyAsync(w => w.POID == id, ct);
 
     public async Task<IReadOnlyList<ProductionOrder>> GetBySoIdAsync(int soId, CancellationToken ct) =>
         await db.ProductionOrders.AsNoTracking()
@@ -46,6 +55,16 @@ public class ProductionOrderRepository(AppDbContext db) : IProductionOrderReposi
         return Task.CompletedTask;
     }
 
+    public void Remove(ProductionOrder entity) => db.ProductionOrders.Remove(entity);
+
     public Task<int> CountAsync(CancellationToken ct) =>
         db.ProductionOrders.CountAsync(ct);
+
+    public async Task<string> NextPoCodeAsync(CancellationToken ct)
+    {
+        var year = DateTime.UtcNow.Year;
+        var count = await db.ProductionOrders
+            .CountAsync(x => x.CreatedAt.HasValue && x.CreatedAt.Value.Year == year, ct);
+        return $"PO-{year}-{count + 1:D4}";
+    }
 }

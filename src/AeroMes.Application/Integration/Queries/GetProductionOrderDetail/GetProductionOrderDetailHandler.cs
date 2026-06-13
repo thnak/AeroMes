@@ -13,18 +13,23 @@ public class GetProductionOrderDetailHandler(
     public async Task<QueryResult<ProductionOrderDetailDto>> HandleAsync(
         GetProductionOrderDetailQuery q, CancellationToken ct)
     {
-        var po = await poRepo.GetByIdAsync(q.Id, ct);
+        var po = await poRepo.GetByIdWithDetailsAsync(q.Id, ct);
         if (po is null) return QueryResult<ProductionOrderDetailDto>.NotFound($"ProductionOrder '{q.Id}' was not found.");
 
         var wos = await woRepo.GetByPoIdAsync(q.Id, ct);
 
         return QueryResult<ProductionOrderDetailDto>.Found(new ProductionOrderDetailDto(
             po.POID, po.POCode, po.SOID, po.ProductCode, po.TargetQuantity,
-            po.Status.ToString(), po.PlannedStartDate, po.PlannedEndDate,
+            po.Status.ToString(), po.Priority, po.AssignedTo,
+            po.PlannedStartDate, po.PlannedEndDate, po.ProductionDeadline,
             po.ActualStartDate, po.ActualEndDate, po.SyncedAt,
             [.. wos.Select(w => new WorkOrderSummaryDto(
                 w.WOID, w.WOCode, w.WorkCenterID, w.WorkCenter?.WorkCenterName,
                 w.TargetQuantity.Value, w.ActualQtyOK.Value, w.ActualQtyNG.Value,
-                w.Status.ToString()))]));
+                w.Status.ToString()))],
+            [.. po.MaterialLines.Select(m => new PoMaterialLineDto(
+                m.LineId, m.MaterialCode, m.StandardQty, m.ActualQty, m.Unit))],
+            [.. po.Stages.Select(s => new PoStageDto(
+                s.StageId, s.SequenceNo, s.OperationCode, s.WorkCenterCode, s.IsCompleted))]));
     }
 }

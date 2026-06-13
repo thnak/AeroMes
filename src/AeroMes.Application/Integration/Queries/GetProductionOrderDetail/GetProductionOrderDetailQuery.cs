@@ -12,12 +12,17 @@ public record ProductionOrderDetailDto(
     string ProductCode,
     int TargetQuantity,
     string Status,
+    byte Priority,
+    string? AssignedTo,
     DateTime? PlannedStartDate,
     DateTime? PlannedEndDate,
+    DateTime? ProductionDeadline,
     DateTime? ActualStartDate,
     DateTime? ActualEndDate,
     DateTime SyncedAt,
-    IReadOnlyList<WorkOrderSummaryDto> WorkOrders);
+    IReadOnlyList<WorkOrderSummaryDto> WorkOrders,
+    IReadOnlyList<PoMaterialLineDto> MaterialLines,
+    IReadOnlyList<PoStageDto> Stages);
 
 public record WorkOrderSummaryDto(
     int WOID,
@@ -28,3 +33,17 @@ public record WorkOrderSummaryDto(
     int ActualOK,
     int ActualNG,
     string Status);
+
+public record PoMaterialLineDto(
+    int LineId,
+    string MaterialCode,
+    decimal StandardQty,
+    decimal ActualQty,
+    string Unit);
+
+public record PoStageDto(
+    int StageId,
+    int SequenceNo,
+    string OperationCode,
+    string? WorkCenterCode,
+    bool IsCompleted);

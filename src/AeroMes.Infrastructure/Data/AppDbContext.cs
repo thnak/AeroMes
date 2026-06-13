@@ -117,6 +117,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
     public DbSet<ProductionOrder> ProductionOrders => Set<ProductionOrder>();
+    public DbSet<ProductionOrderMaterialLine> ProductionOrderMaterialLines => Set<ProductionOrderMaterialLine>();
+    public DbSet<ProductionOrderStage> ProductionOrderStages => Set<ProductionOrderStage>();
 
     // prod schema
     public DbSet<ProductionSchedule> ProductionSchedules => Set<ProductionSchedule>();
@@ -1959,6 +1961,36 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.HasOne<Product>().WithMany()
                 .HasForeignKey(x => x.ProductCode)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasMany(x => x.MaterialLines)
+                .WithOne()
+                .HasForeignKey(x => x.POID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasMany(x => x.Stages)
+                .WithOne()
+                .HasForeignKey(x => x.POID)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<ProductionOrderMaterialLine>(e =>
+        {
+            e.ToTable("ProductionOrderMaterialLines", "integration");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.MaterialCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.StandardQty).HasPrecision(18, 4);
+            e.Property(x => x.ActualQty).HasPrecision(18, 4);
+            e.Property(x => x.Unit).HasMaxLength(20);
+            e.HasIndex(x => x.POID);
+        });
+
+        b.Entity<ProductionOrderStage>(e =>
+        {
+            e.ToTable("ProductionOrderStages", "integration");
+            e.HasKey(x => x.StageId);
+            e.Property(x => x.OperationCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.WorkCenterCode).HasMaxLength(50);
+            e.HasIndex(x => x.POID);
         });
     }
 
