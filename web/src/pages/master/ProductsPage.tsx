@@ -4,6 +4,7 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Divider,
   FormControlLabel,
   Grid,
   IconButton,
@@ -24,9 +25,11 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  AttachmentList,
   ConfirmDialog,
   EmptyState,
   ExportButton,
+  FileUpload,
   FormDrawer,
   PageHeader,
   PageRoot,
@@ -35,6 +38,8 @@ import {
   TablePageSkeleton,
   TableToolbar,
 } from '../../components';
+import type { FileUploadResult } from '../../api/model';
+import { getGetApiV1FilesQueryKey } from '../../api/files/files';
 import {
   useGetApiV1Products,
   getGetApiV1ProductsQueryKey,
@@ -671,6 +676,20 @@ export default function ProductsPage() {
             } : {}}
             onSubmit={handleSave}
           />
+        )}
+        {drawerMode === 'edit' && editTarget && (
+          <>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>Attachments</Typography>
+            <AttachmentList ownerType="product" ownerId={editTarget.productCode} canDelete layout="gallery" />
+            <FileUpload
+              ownerType="product"
+              ownerId={editTarget.productCode}
+              onUploaded={(_r: FileUploadResult) => {
+                queryClient.invalidateQueries({ queryKey: getGetApiV1FilesQueryKey({ ownerType: 'product', ownerId: editTarget.productCode }) });
+              }}
+            />
+          </>
         )}
       </FormDrawer>
 

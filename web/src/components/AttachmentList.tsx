@@ -13,7 +13,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { SolarIcon } from './SolarIcon';
+import SolarIcon from './SolarIcon';
 import { useGetApiV1Files, deleteApiV1FilesId, getGetApiV1FilesQueryKey } from '../api/files/files';
 import type { FileObjectDto } from '../api/model';
 import { useQueryClient } from '@tanstack/react-query';

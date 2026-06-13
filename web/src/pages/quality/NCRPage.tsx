@@ -21,8 +21,10 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  AttachmentList,
   ConfirmDialog,
   EmptyState,
+  FileUpload,
   FormDrawer,
   PageHeader,
   PageRoot,
@@ -31,6 +33,8 @@ import {
   TablePageSkeleton,
   TableToolbar,
 } from '../../components';
+import type { FileUploadResult } from '../../api/model';
+import { getGetApiV1FilesQueryKey } from '../../api/files/files';
 import {
   useGetApiV1QualityNcrs,
   getGetApiV1QualityNcrsQueryKey,
@@ -634,6 +638,16 @@ export default function NcrPage() {
                 </Stack>
               </>
             )}
+            <Divider />
+            <Typography variant="subtitle2" color="text.secondary">Attachments</Typography>
+            <AttachmentList ownerType="ncr" ownerId={String(Number(detail.ncrId))} canDelete layout="gallery" />
+            <FileUpload
+              ownerType="ncr"
+              ownerId={String(Number(detail.ncrId))}
+              onUploaded={(_r: FileUploadResult) => {
+                queryClient.invalidateQueries({ queryKey: getGetApiV1FilesQueryKey({ ownerType: 'ncr', ownerId: String(Number(detail.ncrId)) }) });
+              }}
+            />
           </Stack>
         ) : (
           <Stack sx={{ height: '100%', alignItems: 'center', justifyContent: 'center' }}>

@@ -3,7 +3,9 @@ import {
   Box,
   Button,
   Chip,
+  Divider,
   Drawer,
+  IconButton,
   MenuItem,
   Stack,
   TextField,
@@ -20,14 +22,18 @@ import {
   type GridRenderCellParams,
 } from '@mui/x-data-grid';
 import {
+  AttachmentList,
   EmptyState,
-  TablePageSkeleton,
+  FileUpload,
   PageHeader,
   PageRoot,
   RefreshButton,
-  TableToolbar,
   SolarIcon,
+  TablePageSkeleton,
+  TableToolbar,
 } from '../../components';
+import type { FileUploadResult } from '../../api/model';
+import { getGetApiV1FilesQueryKey } from '../../api/files/files';
 import {
   useGetApiV1SopDocuments,
   postApiV1SopDocuments,
@@ -82,6 +88,7 @@ export default function SopDocumentsPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
+  const [viewTarget, setViewTarget] = useState<SopDocumentListDto | null>(null);
 
   const { data, isLoading, error, refetch } = useGetApiV1SopDocuments({
     status: filterStatus || undefined,
@@ -280,9 +287,54 @@ export default function SopDocumentsPage() {
           pageSizeOptions={[25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
           disableRowSelectionOnClick
-          sx={{ bgcolor: 'background.paper', borderRadius: 2 }}
+          onRowClick={(params) => setViewTarget(params.row as SopDocumentListDto)}
+          sx={{ bgcolor: 'background.paper', borderRadius: 2, cursor: 'pointer' }}
         />
       )}
+
+      {/* ── Detail Drawer ──────────────────────────────────────────────── */}
+      <Drawer
+        anchor="right"
+        open={!!viewTarget}
+        onClose={() => setViewTarget(null)}
+        slotProps={{ paper: { sx: { width: { xs: '100%', sm: 480 }, p: 3 } } }}
+      >
+        {viewTarget && (
+          <Stack spacing={2}>
+            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>{viewTarget.title}</Typography>
+                <Typography variant="caption" color="text.secondary">{viewTarget.code} · v{viewTarget.version}</Typography>
+              </Box>
+              <IconButton onClick={() => setViewTarget(null)} size="small">
+                <SolarIcon name="close" size={18} />
+              </IconButton>
+            </Stack>
+            <Stack direction="row" spacing={1}>
+              <Chip label={viewTarget.status} size="small"
+                color={STATUS_COLORS[viewTarget.status] ?? 'default'} />
+            </Stack>
+            <Divider />
+            <Stack spacing={0.75}>
+              {viewTarget.productCode && <SopDetailRow label="Product" value={viewTarget.productCode} />}
+              <SopDetailRow label="Routing Step" value={String(Number(viewTarget.routingStepId))} />
+              <SopDetailRow label="Items" value={String(Number(viewTarget.itemCount))} />
+              <SopDetailRow label="Effective" value={new Date(viewTarget.effectiveFrom).toLocaleDateString()} />
+              {viewTarget.approvedBy && <SopDetailRow label="Approved By" value={viewTarget.approvedBy} />}
+            </Stack>
+            <Divider />
+            <Typography variant="subtitle2" color="text.secondary">Attachments</Typography>
+            <AttachmentList ownerType="sop" ownerId={String(Number(viewTarget.sopId))} canDelete />
+            <FileUpload
+              ownerType="sop"
+              ownerId={String(Number(viewTarget.sopId))}
+              onUploaded={(_r: FileUploadResult) => {
+                qc.invalidateQueries({ queryKey: getGetApiV1FilesQueryKey({ ownerType: 'sop', ownerId: String(Number(viewTarget.sopId)) }) });
+              }}
+            />
+          </Stack>
+        )}
+      </Drawer>
 
       {/* ── Create Drawer ──────────────────────────────────────────────── */}
       <Drawer
@@ -400,5 +452,14 @@ export default function SopDocumentsPage() {
         </form>
       </Drawer>
     </PageRoot>
+  );
+}
+
+function SopDetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <Stack direction="row" sx={{ justifyContent: 'space-between' }} spacing={2}>
+      <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>{label}</Typography>
+      <Typography variant="body2" sx={{ textAlign: 'right' }}>{value}</Typography>
+    </Stack>
   );
 }

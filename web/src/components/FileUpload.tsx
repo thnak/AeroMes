@@ -6,7 +6,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { SolarIcon } from './SolarIcon';
+import SolarIcon from './SolarIcon';
 import { apiClient } from '../lib/apiClient';
 import type { FileUploadResult } from '../api/model';
 
@@ -86,7 +86,7 @@ export default function FileUpload({ ownerType, ownerId, onUploaded, disabled }:
         }}
       >
         <SolarIcon name="upload" size={32} color="action" />
-        <Typography variant="body2" color="text.secondary" mt={1}>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
           Drag & drop a file here, or{' '}
           <Typography component="span" color="primary" sx={{ fontWeight: 600 }}>
             browse
@@ -117,7 +117,7 @@ export default function FileUpload({ ownerType, ownerId, onUploaded, disabled }:
         </Typography>
       )}
 
-      <Stack direction="row" justifyContent="flex-end" mt={1}>
+      <Stack direction="row" sx={{ justifyContent: 'flex-end', mt: 1 }}>
         <Button
           size="small"
           startIcon={<SolarIcon name="upload" size={16} />}

@@ -3,8 +3,10 @@ import {
   Box,
   Button,
   Chip,
+  Divider,
   Drawer,
   Grid,
+  IconButton,
   MenuItem,
   Stack,
   TextField,
@@ -21,16 +23,20 @@ import {
   type GridRenderCellParams,
 } from '@mui/x-data-grid';
 import {
+  AttachmentList,
+  ConfirmDialog,
   EmptyState,
+  FileUpload,
   KpiCard,
-  TablePageSkeleton,
   PageHeader,
   PageRoot,
   RefreshButton,
-  ConfirmDialog,
-  TableToolbar,
   SolarIcon,
+  TablePageSkeleton,
+  TableToolbar,
 } from '../../components';
+import type { FileUploadResult } from '../../api/model';
+import { getGetApiV1FilesQueryKey } from '../../api/files/files';
 import {
   useGetApiV1LabRequests,
   postApiV1LabRequests,
@@ -84,6 +90,7 @@ export default function LabRequestsPage() {
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<LabRequestListDto | null>(null);
+  const [viewTarget, setViewTarget] = useState<LabRequestListDto | null>(null);
 
   const { data, isLoading, error, refetch } = useGetApiV1LabRequests({
     status: filterStatus || undefined,
@@ -316,9 +323,57 @@ export default function LabRequestsPage() {
           pageSizeOptions={[25, 50, 100]}
           initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
           disableRowSelectionOnClick
-          sx={{ bgcolor: 'background.paper', borderRadius: 2 }}
+          onRowClick={(params) => setViewTarget(params.row as LabRequestListDto)}
+          sx={{ bgcolor: 'background.paper', borderRadius: 2, cursor: 'pointer' }}
         />
       )}
+
+      {/* ── Detail Drawer ──────────────────────────────────────────────── */}
+      <Drawer
+        anchor="right"
+        open={!!viewTarget}
+        onClose={() => setViewTarget(null)}
+        slotProps={{ paper: { sx: { width: { xs: '100%', sm: 480 }, p: 3 } } }}
+      >
+        {viewTarget && (
+          <Stack spacing={2}>
+            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6" sx={{ fontFamily: 'monospace', fontWeight: 700 }}>
+                {viewTarget.requestNo}
+              </Typography>
+              <IconButton onClick={() => setViewTarget(null)} size="small">
+                <SolarIcon name="close" size={18} />
+              </IconButton>
+            </Stack>
+            <Stack direction="row" spacing={1}>
+              <Chip label={viewTarget.status} size="small"
+                color={STATUS_COLORS[viewTarget.status] ?? 'default'} />
+              <Chip label={viewTarget.priority} size="small"
+                color={PRIORITY_COLORS[viewTarget.priority] ?? 'default'} />
+            </Stack>
+            <Divider />
+            <Stack spacing={0.75}>
+              <DetailRow label="Type" value={viewTarget.requestType} />
+              <DetailRow label="Product" value={viewTarget.productCode} />
+              {viewTarget.lotNumber && <DetailRow label="Lot" value={viewTarget.lotNumber} />}
+              {viewTarget.assignedTo && <DetailRow label="Assigned To" value={viewTarget.assignedTo} />}
+              {viewTarget.requiredBy && <DetailRow label="Required By" value={new Date(viewTarget.requiredBy).toLocaleDateString()} />}
+              <DetailRow label="Requested" value={new Date(viewTarget.requestedAt).toLocaleString()} />
+              <DetailRow label="Requested By" value={viewTarget.requestedBy} />
+            </Stack>
+            <Divider />
+            <Typography variant="subtitle2" color="text.secondary">Attachments / CoA</Typography>
+            <AttachmentList ownerType="lab-request" ownerId={String(Number(viewTarget.requestId))} canDelete />
+            <FileUpload
+              ownerType="lab-request"
+              ownerId={String(Number(viewTarget.requestId))}
+              onUploaded={(_r: FileUploadResult) => {
+                qc.invalidateQueries({ queryKey: getGetApiV1FilesQueryKey({ ownerType: 'lab-request', ownerId: String(Number(viewTarget.requestId)) }) });
+              }}
+            />
+          </Stack>
+        )}
+      </Drawer>
 
       {/* ── Create Drawer ──────────────────────────────────────────────── */}
       <Drawer
@@ -426,5 +481,14 @@ export default function LabRequestsPage() {
         loading={cancelMut.isPending}
       />
     </PageRoot>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <Stack direction="row" sx={{ justifyContent: 'space-between' }} spacing={2}>
+      <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>{label}</Typography>
+      <Typography variant="body2" sx={{ textAlign: 'right', wordBreak: 'break-word' }}>{value}</Typography>
+    </Stack>
   );
 }
