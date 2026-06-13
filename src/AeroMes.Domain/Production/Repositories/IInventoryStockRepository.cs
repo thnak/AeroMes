@@ -8,4 +8,6 @@ public interface IInventoryStockRepository
         LocationType? locationType, string? productCode, CancellationToken ct = default);
     Task<IReadOnlyList<InventoryStock>> GetByLotNumberAsync(
         string lotNumber, CancellationToken ct = default);
+    Task<IReadOnlyList<InventoryStock>> GetByBinAsync(int binId, CancellationToken ct = default);
+    Task<int> CountByBinAsync(int binId, CancellationToken ct = default);
 }

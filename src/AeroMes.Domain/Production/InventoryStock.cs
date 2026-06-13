@@ -8,6 +8,7 @@ public class InventoryStock : Entity
 {
     public long StockID { get; private set; }
     public int LocationID { get; private set; }
+    public int? BinId { get; private set; }
     public string ProductCode { get; private set; } = string.Empty;
     public string LotNumber { get; private set; } = string.Empty;
     public decimal Quantity { get; private set; }

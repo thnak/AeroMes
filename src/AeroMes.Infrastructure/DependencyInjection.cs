@@ -3,6 +3,7 @@ using AeroMes.Domain.Integration.Repositories;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production.Repositories;
 using AeroMes.Domain.Quality.Repositories;
+using AeroMes.Domain.Wms.Repositories;
 using AeroMes.Infrastructure.Data;
 using AeroMes.Infrastructure.Identity;
 using AeroMes.Infrastructure.Repositories;
@@ -57,6 +58,12 @@ public static class DependencyInjection
         services.AddScoped<IToolRepository, ToolRepository>();
         services.AddScoped<IBomHeaderRepository, BomHeaderRepository>();
         services.AddScoped<IEngChangeRepository, EngChangeRepository>();
+
+        // wms repositories
+        services.AddScoped<IWarehouseZoneRepository, WarehouseZoneRepository>();
+        services.AddScoped<IAisleRepository, AisleRepository>();
+        services.AddScoped<IRackRepository, RackRepository>();
+        services.AddScoped<IBinRepository, BinRepository>();
 
         // integration repositories
         services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();

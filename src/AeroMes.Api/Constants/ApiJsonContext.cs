@@ -73,6 +73,12 @@ using AeroMes.Application.Master.MachineProductParams.Queries.GetMachineSetupShe
 using AeroMes.Application.Master.OperatorCertifications.Queries.CheckOperatorEligibility;
 using AeroMes.Application.Master.OperatorCertifications.Queries.GetOperatorCertifications;
 using AeroMes.Application.Master.Warehouses.Queries.GetWarehouses;
+using AeroMes.Application.Wms.Queries.GetAisles;
+using AeroMes.Application.Wms.Queries.GetBins;
+using AeroMes.Application.Wms.Queries.GetBinStock;
+using AeroMes.Application.Wms.Queries.GetRacks;
+using AeroMes.Application.Wms.Queries.GetWarehouseMap;
+using AeroMes.Application.Wms.Queries.GetZones;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AeroMes.Api.Constants;
@@ -337,6 +343,24 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(UpdateWarehouseRequest))]
 // machine additions
 [JsonSerializable(typeof(DuplicateMachineRequest))]
+// wms location hierarchy
+[JsonSerializable(typeof(IReadOnlyList<ZoneDto>))]
+[JsonSerializable(typeof(ZoneCreatedResult))]
+[JsonSerializable(typeof(CreateZoneRequest))]
+[JsonSerializable(typeof(UpdateZoneRequest))]
+[JsonSerializable(typeof(IReadOnlyList<AisleDto>))]
+[JsonSerializable(typeof(AisleCreatedResult))]
+[JsonSerializable(typeof(CreateAisleRequest))]
+[JsonSerializable(typeof(IReadOnlyList<RackDto>))]
+[JsonSerializable(typeof(RackCreatedResult))]
+[JsonSerializable(typeof(CreateRackRequest))]
+[JsonSerializable(typeof(IReadOnlyList<BinDto>))]
+[JsonSerializable(typeof(BinCreatedResult))]
+[JsonSerializable(typeof(CreateBinRequest))]
+[JsonSerializable(typeof(UpdateBinRequest))]
+[JsonSerializable(typeof(IReadOnlyList<BinStockDto>))]
+[JsonSerializable(typeof(IReadOnlyList<ZoneMapDto>))]
+[JsonSerializable(typeof(ZoneMapDto))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

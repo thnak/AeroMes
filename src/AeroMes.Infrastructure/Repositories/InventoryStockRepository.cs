@@ -31,4 +31,14 @@ public class InventoryStockRepository(AppDbContext db) : IInventoryStockReposito
             .Where(s => s.LotNumber == lotNumber.Trim())
             .OrderBy(s => s.StorageLocation!.LocationCode)
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<InventoryStock>> GetByBinAsync(int binId, CancellationToken ct) =>
+        await db.InventoryStocks.AsNoTracking()
+            .Where(s => s.BinId == binId && s.Quantity > 0)
+            .OrderBy(s => s.ProductCode).ThenBy(s => s.LotNumber)
+            .ToListAsync(ct);
+
+    public Task<int> CountByBinAsync(int binId, CancellationToken ct) =>
+        db.InventoryStocks.AsNoTracking()
+            .CountAsync(s => s.BinId == binId && s.Quantity > 0, ct);
 }

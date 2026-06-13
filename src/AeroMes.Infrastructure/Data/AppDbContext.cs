@@ -8,6 +8,7 @@ using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.ValueObjects;
 using AeroMes.Domain.Quality;
 using AeroMes.Domain.Settings;
+using AeroMes.Domain.Wms;
 using AeroMes.Infrastructure.Identity;
 using LiteBus.Events.Abstractions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -88,6 +89,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<DowntimeLog> DowntimeLogs => Set<DowntimeLog>();
     public DbSet<InventoryStock> InventoryStocks => Set<InventoryStock>();
 
+    // wms schema
+    public DbSet<WarehouseZone> WarehouseZones => Set<WarehouseZone>();
+    public DbSet<Aisle> Aisles => Set<Aisle>();
+    public DbSet<Rack> Racks => Set<Rack>();
+    public DbSet<Bin> Bins => Set<Bin>();
+
     // qual schema
     public DbSet<DefectCode> DefectCodes => Set<DefectCode>();
     public DbSet<DefectDetail> DefectDetails => Set<DefectDetail>();
@@ -123,6 +130,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureMasterSchema(b);
         ConfigureIntegrationSchema(b);
         ConfigureProdSchema(b);
+        ConfigureWmsSchema(b);
         ConfigureQualSchema(b);
         ConfigureSettingsSchema(b);
     }
@@ -1469,6 +1477,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.Quantity).HasColumnType("NUMERIC(18,4)");
             e.HasIndex(x => new { x.LocationID, x.ProductCode, x.LotNumber }).IsUnique();
             e.HasIndex(x => new { x.ProductCode, x.LotNumber });
+            e.HasIndex(x => x.BinId).HasFilter("[BinId] IS NOT NULL");
 
             e.HasOne(x => x.StorageLocation)
                 .WithMany()
@@ -1478,6 +1487,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .WithMany()
                 .HasForeignKey(x => x.ProductCode)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<Bin>()
+                .WithMany()
+                .HasForeignKey(x => x.BinId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 
@@ -1506,6 +1520,69 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.DefectCodeID);
 
             // ProductionLog ↔ DefectDetails relationship configured on ProductionLog side
+        });
+    }
+
+    // ── wms ───────────────────────────────────────────────────────────────
+    private static void ConfigureWmsSchema(ModelBuilder b)
+    {
+        b.Entity<WarehouseZone>(e =>
+        {
+            e.ToTable("WarehouseZones", "wms");
+            e.HasKey(x => x.ZoneId);
+            e.Property(x => x.ZoneId).UseIdentityColumn();
+            e.Property(x => x.ZoneCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.ZoneName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.ZoneType).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.TemperatureZone).HasConversion<string>().HasMaxLength(20);
+            e.HasIndex(x => x.ZoneCode).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<Aisle>(e =>
+        {
+            e.ToTable("Aisles", "wms");
+            e.HasKey(x => x.AisleId);
+            e.Property(x => x.AisleId).UseIdentityColumn();
+            e.Property(x => x.AisleCode).HasMaxLength(20).IsRequired();
+            e.HasIndex(x => new { x.ZoneId, x.AisleCode }).IsUnique();
+
+            e.HasOne(x => x.Zone)
+                .WithMany()
+                .HasForeignKey(x => x.ZoneId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<Rack>(e =>
+        {
+            e.ToTable("Racks", "wms");
+            e.HasKey(x => x.RackId);
+            e.Property(x => x.RackId).UseIdentityColumn();
+            e.Property(x => x.RackCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.MaxWeightKg).HasColumnType("NUMERIC(10,2)");
+            e.HasIndex(x => new { x.AisleId, x.RackCode }).IsUnique();
+
+            e.HasOne(x => x.Aisle)
+                .WithMany()
+                .HasForeignKey(x => x.AisleId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<Bin>(e =>
+        {
+            e.ToTable("Bins", "wms");
+            e.HasKey(x => x.BinId);
+            e.Property(x => x.BinId).UseIdentityColumn();
+            e.Property(x => x.BinCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.BinLevel).HasMaxLength(10).IsRequired();
+            e.Property(x => x.BinType).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.MaxQty).HasColumnType("NUMERIC(18,4)");
+            e.HasIndex(x => new { x.RackId, x.BinCode }).IsUnique();
+
+            e.HasOne(x => x.Rack)
+                .WithMany()
+                .HasForeignKey(x => x.RackId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 
