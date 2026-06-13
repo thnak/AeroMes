@@ -182,6 +182,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<Ncr> Ncrs => Set<Ncr>();
     public DbSet<NcrDefectLine> NcrDefectLines => Set<NcrDefectLine>();
     public DbSet<DefectEntry> DefectEntries => Set<DefectEntry>();
+    public DbSet<InlineInspection> InlineInspections => Set<InlineInspection>();
+    public DbSet<AQLInspection> AQLInspections => Set<AQLInspection>();
     public DbSet<RepairOrder> RepairOrders => Set<RepairOrder>();
     public DbSet<RepairOrderEntry> RepairOrderEntries => Set<RepairOrderEntry>();
     public DbSet<RepairMaterialLine> RepairMaterialLines => Set<RepairMaterialLine>();
@@ -2128,6 +2130,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.Code).HasMaxLength(20).IsRequired();
             e.Property(x => x.DefectName).HasMaxLength(150).IsRequired();
             e.Property(x => x.DefectCategory).HasMaxLength(100);
+            e.Property(x => x.IsMajorDefault).HasDefaultValue(false);
             e.HasIndex(x => x.Code).IsUnique().HasFilter("[IsDeleted] = 0");
             e.HasQueryFilter(x => !x.IsDeleted);
         });
@@ -2306,6 +2309,66 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.RequiredQty).HasColumnType("decimal(18,4)");
             e.Property(x => x.IssuedQty).HasColumnType("decimal(18,4)");
             e.Property(x => x.Unit).HasMaxLength(20).IsRequired();
+        });
+
+        b.Entity<InlineInspection>(e =>
+        {
+            e.ToTable("InlineInspections", "qual");
+            e.HasKey(x => x.InspectionID);
+            e.Property(x => x.StyleCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ColorCode).HasMaxLength(20);
+            e.Property(x => x.InspectorID).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ShiftCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.DHU).HasColumnType("DECIMAL(8,4)")
+                .HasComputedColumnSql("CAST([TotalDefects] AS float) / [SampleSize] * 100.0", stored: true);
+            e.Property(x => x.IsAboveTarget)
+                .HasComputedColumnSql(
+                    "CASE WHEN CAST([TotalDefects] AS float) / [SampleSize] * 100.0 > [DHU_Target] THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END",
+                    stored: true);
+            e.Property(x => x.DHU_Target).HasColumnType("DECIMAL(5,2)").HasDefaultValue(2.5m);
+            e.HasMany(x => x.Defects).WithOne()
+                .HasForeignKey(x => x.InspectionID)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Defects)
+                .HasField("_defects")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+            e.HasIndex(x => new { x.WOID, x.InspectedAt });
+            e.HasIndex(x => new { x.WorkCenterID, x.InspectedAt });
+            e.HasIndex(x => x.IsAboveTarget).HasFilter("[IsAboveTarget] = 1");
+        });
+
+        b.Entity<InlineInspectionDefect>(e =>
+        {
+            e.ToTable("InlineInspectionDefects", "qual");
+            e.HasKey(x => x.DefectID);
+            e.Property(x => x.DefectCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.DefectLocation).HasMaxLength(100);
+        });
+
+        b.Entity<AQLInspection>(e =>
+        {
+            e.ToTable("AQLInspections", "qual");
+            e.HasKey(x => x.AQLInspectionID);
+            e.Property(x => x.AQLLevel).HasMaxLength(5).IsRequired();
+            e.Property(x => x.InspectionLevel).HasMaxLength(5).IsRequired();
+            e.Property(x => x.Decision).HasMaxLength(10).HasDefaultValue("PENDING");
+            e.Property(x => x.InspectorID).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasMany(x => x.Defects).WithOne()
+                .HasForeignKey(x => x.AQLInspectionID)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Defects)
+                .HasField("_defects")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+            e.HasIndex(x => x.WOID);
+        });
+
+        b.Entity<AQLInspectionDefect>(e =>
+        {
+            e.ToTable("AQLInspectionDefects", "qual");
+            e.HasKey(x => x.DefectID);
+            e.Property(x => x.DefectCode).HasMaxLength(30).IsRequired();
         });
     }
 

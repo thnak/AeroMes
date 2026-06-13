@@ -178,6 +178,7 @@ using AeroMes.Application.Master.DisassemblyBoms.Queries.GetDisassemblyBoms;
 using AeroMes.Application.Master.DisassemblyBoms.Queries.GetDisassemblyBomById;
 using AeroMes.Application.Master.Boms.Commands.UpdateBomByProducts;
 using AeroMes.Domain.Master;
+using AeroMes.Domain.Quality.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AeroMes.Api.Constants;
@@ -1022,6 +1023,22 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(RegrindUsageSummaryDto))]
 [JsonSerializable(typeof(IReadOnlyList<RegrindUsageSummaryDto>))]
 [JsonSerializable(typeof(List<RegrindUsageSummaryDto>))]
+// DHU-based quality (apparel) — #128
+[JsonSerializable(typeof(RecordInlineInspectionRequest))]
+[JsonSerializable(typeof(InlineDefectRequestItem))]
+[JsonSerializable(typeof(IReadOnlyList<InlineDefectRequestItem>))]
+[JsonSerializable(typeof(List<InlineDefectRequestItem>))]
+[JsonSerializable(typeof(RecordAQLInspectionRequest))]
+[JsonSerializable(typeof(AQLDefectRequestItem))]
+[JsonSerializable(typeof(IReadOnlyList<AQLDefectRequestItem>))]
+[JsonSerializable(typeof(List<AQLDefectRequestItem>))]
+[JsonSerializable(typeof(DHUTrendDto))]
+[JsonSerializable(typeof(IReadOnlyList<DHUTrendDto>))]
+[JsonSerializable(typeof(List<DHUTrendDto>))]
+[JsonSerializable(typeof(DefectParetoDto))]
+[JsonSerializable(typeof(IReadOnlyList<DefectParetoDto>))]
+[JsonSerializable(typeof(List<DefectParetoDto>))]
+[JsonSerializable(typeof(QualitySummaryByStyleDto))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

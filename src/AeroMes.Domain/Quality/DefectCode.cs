@@ -9,12 +9,13 @@ public class DefectCode : AuditableEntity
     public string Code { get; private set; } = string.Empty;          // e.g. ERR_SCRATCH
     public string DefectName { get; private set; } = string.Empty;
     public string? DefectCategory { get; private set; }
+    public bool IsMajorDefault { get; private set; } = false;
     public bool IsActive { get; private set; } = true;
     public bool IsRepairable { get; private set; } = false;
 
     private DefectCode() { }
 
-    public static DefectCode Create(string code, string name, string? category = null, bool isRepairable = false, string? createdBy = null)
+    public static DefectCode Create(string code, string name, string? category = null, bool isRepairable = false, bool isMajorDefault = false, string? createdBy = null)
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new DomainException("Defect code is required.");
@@ -27,18 +28,21 @@ public class DefectCode : AuditableEntity
             DefectName = name.Trim(),
             DefectCategory = category,
             IsRepairable = isRepairable,
+            IsMajorDefault = isMajorDefault,
             IsActive = true,
             CreatedBy = createdBy,
             CreatedAt = DateTime.UtcNow,
         };
     }
 
-    public void UpdateDetails(string name, string? category, bool isActive, bool isRepairable, string? updatedBy)
+    public void UpdateDetails(string name, string? category, bool isActive, bool isRepairable, string? updatedBy, bool isMajorDefault = false)
     {
         DefectName = name.Trim();
         DefectCategory = category;
         IsActive = isActive;
         IsRepairable = isRepairable;
+        IsMajorDefault = isMajorDefault;
         Touch(updatedBy);
+
     }
 }

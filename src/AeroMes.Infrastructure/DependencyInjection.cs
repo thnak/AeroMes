@@ -162,6 +162,9 @@ public static class DependencyInjection
         services.AddScoped<IInspectionResultRepository, InspectionResultRepository>();
         services.AddScoped<INcrRepository, NcrRepository>();
         services.AddScoped<IDefectLifecycleRepository, DefectLifecycleRepository>();
+        services.AddScoped<IInlineInspectionRepository, InlineInspectionRepository>();
+        services.AddScoped<IAQLInspectionRepository, AQLInspectionRepository>();
+        services.AddSingleton<Application.Quality.Services.IAQLSamplingTableService, AQLSamplingTableService>();
 
         // rules / sop / lab / labels / reminders
         services.AddScoped<ISopRepository, SopRepository>();
