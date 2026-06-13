@@ -8,6 +8,7 @@ using AeroMes.Domain.Master;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.ValueObjects;
 using AeroMes.Domain.Quality;
+using AeroMes.Domain.Rules;
 using AeroMes.Domain.Settings;
 using AeroMes.Domain.Wms;
 using AeroMes.Infrastructure.Identity;
@@ -154,6 +155,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<AdapterHealth> AdapterHealths => Set<AdapterHealth>();
     public DbSet<AdapterHealthLog> AdapterHealthLogs => Set<AdapterHealthLog>();
 
+    // rules
+    public DbSet<Rule> Rules => Set<Rule>();
+    public DbSet<RuleCondition> RuleConditions => Set<RuleCondition>();
+    public DbSet<RuleAction> RuleActions => Set<RuleAction>();
+    public DbSet<RuleExecutionLog> RuleExecutionLogs => Set<RuleExecutionLog>();
+
     // settings
     public DbSet<SystemOptions> SystemOptions => Set<SystemOptions>();
 
@@ -189,6 +196,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureQualSchema(b);
         ConfigureSettingsSchema(b);
         ConfigureIotSchema(b);
+        ConfigureRulesSchema(b);
     }
 
     // ── auth ──────────────────────────────────────────────────────────────
@@ -2675,6 +2683,53 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.EventType).HasMaxLength(50).IsRequired();
             e.Property(x => x.Details).HasMaxLength(500);
             e.HasIndex(x => new { x.AdapterId, x.EventAt });
+        });
+    }
+
+    // ── rules ──────────────────────────────────────────────────────────────
+    private static void ConfigureRulesSchema(ModelBuilder b)
+    {
+        b.Entity<Rule>(e =>
+        {
+            e.ToTable("Rules", "rules");
+            e.HasKey(x => x.RuleId);
+            e.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.Code).IsUnique();
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(500);
+            e.Property(x => x.TriggerType).HasMaxLength(50).IsRequired();
+            e.Property(x => x.TriggerConfig).HasColumnType("nvarchar(max)");
+            e.Property(x => x.CreatedBy).HasMaxLength(256);
+            e.HasMany(x => x.Conditions).WithOne().HasForeignKey(x => x.RuleId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.Actions).WithOne().HasForeignKey(x => x.RuleId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<RuleCondition>(e =>
+        {
+            e.ToTable("RuleConditions", "rules");
+            e.HasKey(x => x.ConditionId);
+            e.Property(x => x.LogicOperator).HasMaxLength(5).IsRequired();
+            e.Property(x => x.ConditionType).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ConditionConfig).HasColumnType("nvarchar(max)");
+        });
+
+        b.Entity<RuleAction>(e =>
+        {
+            e.ToTable("RuleActions", "rules");
+            e.HasKey(x => x.ActionId);
+            e.Property(x => x.ActionType).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ActionConfig).HasColumnType("nvarchar(max)");
+        });
+
+        b.Entity<RuleExecutionLog>(e =>
+        {
+            e.ToTable("RuleExecutionLogs", "rules");
+            e.HasKey(x => x.ExecutionId);
+            e.Property(x => x.ExecutionId).UseIdentityColumn();
+            e.Property(x => x.EvaluationResult).HasMaxLength(30).IsRequired();
+            e.Property(x => x.ActionsExecuted).HasColumnType("nvarchar(max)");
+            e.Property(x => x.ContextSnapshot).HasColumnType("nvarchar(max)");
+            e.HasIndex(x => new { x.RuleId, x.TriggeredAt });
         });
     }
 

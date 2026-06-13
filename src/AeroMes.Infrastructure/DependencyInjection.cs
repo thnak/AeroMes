@@ -1,11 +1,12 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Application.Wms.Services;
 using AeroMes.Domain.Integration.Repositories;
-using AeroMes.Domain.Iot.Repositories;
 using AeroMes.Domain.Iot.Events;
+using AeroMes.Domain.Iot.Repositories;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production.Repositories;
 using AeroMes.Domain.Quality.Repositories;
+using AeroMes.Domain.Rules.Repositories;
 using AeroMes.Domain.Wms.Repositories;
 using AeroMes.Infrastructure.Data;
 using AeroMes.Infrastructure.Identity;
@@ -14,6 +15,7 @@ using AeroMes.Infrastructure.Iot.Modbus;
 using AeroMes.Infrastructure.Iot.Mqtt;
 using AeroMes.Infrastructure.Iot.OpcUa;
 using AeroMes.Infrastructure.Repositories;
+using AeroMes.Infrastructure.Rules;
 using AeroMes.Infrastructure.Services;
 using LiteBus.Events.Abstractions;
 using LiteBus.Extensions.Microsoft.DependencyInjection;
@@ -125,6 +127,11 @@ public static class DependencyInjection
         services.AddScoped<IInspectionOrderRepository, InspectionOrderRepository>();
         services.AddScoped<IInspectionResultRepository, InspectionResultRepository>();
         services.AddScoped<INcrRepository, NcrRepository>();
+
+        // rules
+        services.AddScoped<IRuleRepository, RuleRepository>();
+        services.AddSingleton<RuleEvaluationService>();
+        services.AddScoped<IEventHandler<MachineSignalIngestedEvent>, SignalThresholdRuleHandler>();
 
         // iot repositories
         services.AddScoped<IAdapterRepository, AdapterRepository>();

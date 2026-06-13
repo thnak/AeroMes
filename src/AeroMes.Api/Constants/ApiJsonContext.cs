@@ -670,6 +670,27 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(AdapterHealthLogDto))]
 [JsonSerializable(typeof(List<AdapterHealthLogDto>))]
 [JsonSerializable(typeof(AdapterHealthDetailDto))]
+// rules engine
+[JsonSerializable(typeof(RuleListItemDto))]
+[JsonSerializable(typeof(IReadOnlyList<RuleListItemDto>))]
+[JsonSerializable(typeof(RuleDetailDto))]
+[JsonSerializable(typeof(RuleConditionDto))]
+[JsonSerializable(typeof(IReadOnlyList<RuleConditionDto>))]
+[JsonSerializable(typeof(RuleActionDto))]
+[JsonSerializable(typeof(IReadOnlyList<RuleActionDto>))]
+[JsonSerializable(typeof(RuleExecutionLogDto))]
+[JsonSerializable(typeof(IReadOnlyList<RuleExecutionLogDto>))]
+[JsonSerializable(typeof(RuleCreatedResult))]
+[JsonSerializable(typeof(ToggleRuleRequest))]
+[JsonSerializable(typeof(RuleTestRequest))]
+[JsonSerializable(typeof(RuleTestResult))]
+[JsonSerializable(typeof(CreateRuleRequest))]
+[JsonSerializable(typeof(UpdateRuleRequest))]
+[JsonSerializable(typeof(ConditionSpec))]
+[JsonSerializable(typeof(IReadOnlyList<ConditionSpec>))]
+[JsonSerializable(typeof(ActionSpec))]
+[JsonSerializable(typeof(IReadOnlyList<ActionSpec>))]
+[JsonSerializable(typeof(Dictionary<string, string>))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

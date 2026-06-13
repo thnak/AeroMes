@@ -160,6 +160,7 @@ export const MODULES: ModuleConfig[] = [
     available: true,
     tabs: [
       { label: 'Fleet Monitor',       path: '/iot/machines' },
+      { label: 'Rule Engine',         path: '/iot/rules' },
       { label: 'Signal Tag Catalog',  path: '/iot/tags' },
       { label: 'Adapter Health',      path: '/iot/adapter-health' },
       { label: 'Machines & Adapters', path: '/master/machines' },
