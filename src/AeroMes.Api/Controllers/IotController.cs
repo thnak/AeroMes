@@ -1174,6 +1174,160 @@ public class IotController(
         return Ok(new RetentionPolicyDto(policy.RawRetentionDays, policy.Agg1minRetentionDays, policy.Agg1hrRetentionDays));
     }
 
+    // ── Auto-Resolution Signal Query ──────────────────────────────────────
+
+    /// <summary>
+    /// Returns signal time-series automatically selecting raw / 1-min / 1-hr tier based on range.
+    /// Resolution rules: ≤1hr → raw; 1hr–24hr → 1-min aggregates; >24hr → 1-hr aggregates.
+    /// </summary>
+    [HttpGet("signals/query")]
+    [RequirePermission(Permissions.IotRead)]
+    [ProducesResponseType<IReadOnlyList<SignalAggPoint>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> QuerySignals(
+        [FromQuery] string machineCode,
+        [FromQuery] string tagKey,
+        [FromQuery] DateTimeOffset from,
+        [FromQuery] DateTimeOffset? to,
+        [FromQuery] string resolution = "auto",
+        [FromQuery] int limit = 1000,
+        CancellationToken ct = default)
+    {
+        var toTime = to ?? DateTimeOffset.UtcNow;
+        var span = toTime - from;
+
+        var tier = resolution switch
+        {
+            "raw"  => "raw",
+            "1min" => "1min",
+            "1hr"  => "1hr",
+            _      => span.TotalHours <= 1 ? "raw" : span.TotalHours <= 24 ? "1min" : "1hr",
+        };
+
+        if (tier == "raw")
+        {
+            var rows = await db.MachineSignalLogs
+                .AsNoTracking()
+                .Where(l => l.MachineCode == machineCode && l.TagKey == tagKey
+                         && l.Timestamp >= from && l.Timestamp <= toTime)
+                .OrderBy(l => l.Timestamp)
+                .Take(limit)
+                .Select(l => new SignalAggPoint(l.Timestamp, 1, l.Value, l.Value, l.Value, l.Value))
+                .ToListAsync(ct);
+            return Ok((IReadOnlyList<SignalAggPoint>)rows);
+        }
+
+        if (tier == "1hr")
+        {
+            var rows = await db.SignalAgg1hrs
+                .AsNoTracking()
+                .Where(a => a.MachineCode == machineCode && a.TagKey == tagKey
+                         && a.BucketAt >= from && a.BucketAt <= toTime)
+                .OrderBy(a => a.BucketAt)
+                .Take(limit)
+                .Select(a => new SignalAggPoint(a.BucketAt, a.SampleCount, a.MinValue, a.MaxValue,
+                    a.SampleCount > 0 ? a.SumValue / a.SampleCount : 0m, a.LastValue))
+                .ToListAsync(ct);
+            return Ok((IReadOnlyList<SignalAggPoint>)rows);
+        }
+        else // 1min
+        {
+            var rows = await db.SignalAgg1mins
+                .AsNoTracking()
+                .Where(a => a.MachineCode == machineCode && a.TagKey == tagKey
+                         && a.BucketAt >= from && a.BucketAt <= toTime)
+                .OrderBy(a => a.BucketAt)
+                .Take(limit)
+                .Select(a => new SignalAggPoint(a.BucketAt, a.SampleCount, a.MinValue, a.MaxValue,
+                    a.SampleCount > 0 ? a.SumValue / a.SampleCount : 0m, a.LastValue))
+                .ToListAsync(ct);
+            return Ok((IReadOnlyList<SignalAggPoint>)rows);
+        }
+    }
+
+    // ── CSV Export ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Streams raw signal logs as CSV for the given machine + tag in [from, to].
+    /// </summary>
+    [HttpGet("signals/export")]
+    [RequirePermission(Permissions.IotRead)]
+    public async Task ExportSignalsCsv(
+        [FromQuery] string machineCode,
+        [FromQuery] string tagKey,
+        [FromQuery] DateTimeOffset from,
+        [FromQuery] DateTimeOffset? to,
+        CancellationToken ct = default)
+    {
+        var toTime = to ?? DateTimeOffset.UtcNow;
+        Response.ContentType = "text/csv";
+        Response.Headers.ContentDisposition = $"attachment; filename=\"signals_{machineCode}_{tagKey}.csv\"";
+
+        var writer = Response.BodyWriter;
+        await WriteLineAsync(writer, "Timestamp,Value,Unit,IsBadQuality", ct);
+
+        var query = db.MachineSignalLogs
+            .AsNoTracking()
+            .Where(l => l.MachineCode == machineCode && l.TagKey == tagKey
+                     && l.Timestamp >= from && l.Timestamp <= toTime)
+            .OrderBy(l => l.Timestamp)
+            .Select(l => new { l.Timestamp, l.Value, l.Unit, IsBadQuality = false });
+
+        await foreach (var row in query.AsAsyncEnumerable().WithCancellation(ct))
+        {
+            await WriteLineAsync(writer,
+                $"{row.Timestamp:O},{row.Value},{row.Unit ?? ""},{row.IsBadQuality}", ct);
+        }
+
+        await writer.FlushAsync(ct);
+
+        static async Task WriteLineAsync(System.IO.Pipelines.PipeWriter w, string line, CancellationToken tok)
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(line + "\n");
+            await w.WriteAsync(bytes, tok);
+        }
+    }
+
+    // ── Storage Stats ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns row counts and date ranges for raw log and aggregate tables (admin).
+    /// </summary>
+    [HttpGet("storage/stats")]
+    [RequirePermission(Permissions.IotRead)]
+    [ProducesResponseType<IotStorageStatsDto>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetStorageStats(CancellationToken ct)
+    {
+        var rawCount = await db.MachineSignalLogs.AsNoTracking().LongCountAsync(ct);
+        var rawOldest = rawCount > 0
+            ? await db.MachineSignalLogs.AsNoTracking().MinAsync(l => (DateTimeOffset?)l.Timestamp, ct)
+            : null;
+        var rawNewest = rawCount > 0
+            ? await db.MachineSignalLogs.AsNoTracking().MaxAsync(l => (DateTimeOffset?)l.Timestamp, ct)
+            : null;
+
+        var agg1minCount = await db.SignalAgg1mins.AsNoTracking().LongCountAsync(ct);
+        var agg1minOldest = agg1minCount > 0
+            ? await db.SignalAgg1mins.AsNoTracking().MinAsync(a => (DateTimeOffset?)a.BucketAt, ct)
+            : null;
+        var agg1minNewest = agg1minCount > 0
+            ? await db.SignalAgg1mins.AsNoTracking().MaxAsync(a => (DateTimeOffset?)a.BucketAt, ct)
+            : null;
+
+        var agg1hrCount = await db.SignalAgg1hrs.AsNoTracking().LongCountAsync(ct);
+        var agg1hrOldest = agg1hrCount > 0
+            ? await db.SignalAgg1hrs.AsNoTracking().MinAsync(a => (DateTimeOffset?)a.BucketAt, ct)
+            : null;
+        var agg1hrNewest = agg1hrCount > 0
+            ? await db.SignalAgg1hrs.AsNoTracking().MaxAsync(a => (DateTimeOffset?)a.BucketAt, ct)
+            : null;
+
+        return Ok(new IotStorageStatsDto(
+            new TableStatsDto("iot.MachineSignalLog", rawCount, rawOldest, rawNewest),
+            new TableStatsDto("iot.SignalAgg_1min", agg1minCount, agg1minOldest, agg1minNewest),
+            new TableStatsDto("iot.SignalAgg_1hr", agg1hrCount, agg1hrOldest, agg1hrNewest)
+        ));
+    }
+
     // ── Live Signals ──────────────────────────────────────────────────────
 
     /// <summary>
@@ -1282,6 +1436,9 @@ public record SignalHistoryPoint(decimal Value, string? Unit, DateTimeOffset Tim
 public record SignalAggPoint(DateTimeOffset BucketAt, int Count, decimal Min, decimal Max, decimal Avg, decimal Last);
 public record RetentionPolicyDto(int RawRetentionDays, int Agg1minRetentionDays, int Agg1hrRetentionDays);
 public record UpdateRetentionRequest(int RawRetentionDays, int Agg1minRetentionDays, int Agg1hrRetentionDays);
+// storage stats
+public record TableStatsDto(string TableName, long RowCount, DateTimeOffset? OldestRecord, DateTimeOffset? NewestRecord);
+public record IotStorageStatsDto(TableStatsDto RawLog, TableStatsDto Agg1min, TableStatsDto Agg1hr);
 // live signals
 public record LiveSignalDto(string TagKey, decimal Value, string? Unit, DateTimeOffset Timestamp);
 // adapter health
