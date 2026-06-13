@@ -43,9 +43,15 @@ export async function loadNamespaces(lng: string, namespaces: string[]) {
   }
 }
 
-// Called once at startup to seed common bundle for both languages
-loadNamespace('vi', 'common').then((b) => i18n.addResourceBundle('vi', 'common', b, true, true));
-loadNamespace('en-US', 'common').then((b) => i18n.addResourceBundle('en-US', 'common', b, true, true));
+// Seed bundles at startup — add new namespaces here as modules ship
+const INITIAL_NAMESPACES = ['common', 'auth', 'master', 'production', 'quality', 'lab'];
+const LANGUAGES = ['vi', 'en-US'];
+
+for (const lng of LANGUAGES) {
+  for (const ns of INITIAL_NAMESPACES) {
+    loadNamespace(lng, ns).then((b) => i18n.addResourceBundle(lng, ns, b, true, true));
+  }
+}
 
 export default i18n;
 

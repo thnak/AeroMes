@@ -1,0 +1,29 @@
+{
+  "ncr": {
+    "title": "Phiếu không phù hợp (NCR)",
+    "create": "Tạo NCR",
+    "ncrNo": "Số NCR",
+    "type": "Loại",
+    "severity": "Mức độ",
+    "status": "Trạng thái",
+    "product": "Sản phẩm",
+    "lotNo": "Số lô",
+    "description": "Mô tả",
+    "reportedBy": "Người báo cáo",
+    "reportedAt": "Ngày báo cáo"
+  },
+  "defectCodes": {
+    "title": "Mã lỗi",
+    "create": "Thêm mã lỗi",
+    "code": "Mã",
+    "name": "Tên lỗi",
+    "category": "Danh mục"
+  },
+  "inspection": {
+    "title": "Kiểm tra chất lượng",
+    "result": "Kết quả",
+    "pass": "Đạt",
+    "fail": "Không đạt",
+    "pendingReview": "Chờ xem xét"
+  }
+}

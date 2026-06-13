@@ -1,0 +1,42 @@
+{
+  "workOrders": {
+    "title": "Work Orders",
+    "create": "Create work order",
+    "orderNo": "Order No.",
+    "product": "Product",
+    "plannedQty": "Planned qty",
+    "actualQty": "Actual qty",
+    "plannedStart": "Planned start",
+    "plannedEnd": "Planned end",
+    "status": {
+      "draft": "Draft",
+      "released": "Released",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    }
+  },
+  "jobs": {
+    "title": "Jobs",
+    "start": "Start",
+    "end": "End",
+    "operation": "Operation",
+    "machine": "Machine",
+    "operator": "Operator",
+    "submitOutput": "Submit output"
+  },
+  "downtime": {
+    "title": "Downtime",
+    "start": "Start downtime",
+    "end": "End downtime",
+    "reason": "Reason",
+    "duration": "Duration (min)",
+    "machine": "Machine"
+  },
+  "oee": {
+    "title": "Overall Equipment Effectiveness (OEE)",
+    "availability": "Availability",
+    "performance": "Performance",
+    "quality": "Quality"
+  }
+}

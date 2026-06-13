@@ -1,0 +1,42 @@
+{
+  "workOrders": {
+    "title": "Lệnh sản xuất",
+    "create": "Tạo lệnh sản xuất",
+    "orderNo": "Số lệnh",
+    "product": "Sản phẩm",
+    "plannedQty": "SL kế hoạch",
+    "actualQty": "SL thực tế",
+    "plannedStart": "Ngày bắt đầu dự kiến",
+    "plannedEnd": "Ngày kết thúc dự kiến",
+    "status": {
+      "draft": "Nháp",
+      "released": "Đã phát hành",
+      "inProgress": "Đang thực hiện",
+      "completed": "Hoàn thành",
+      "cancelled": "Đã hủy"
+    }
+  },
+  "jobs": {
+    "title": "Công việc sản xuất",
+    "start": "Bắt đầu",
+    "end": "Kết thúc",
+    "operation": "Công đoạn",
+    "machine": "Máy",
+    "operator": "Người vận hành",
+    "submitOutput": "Ghi nhận sản lượng"
+  },
+  "downtime": {
+    "title": "Thời gian dừng máy",
+    "start": "Bắt đầu dừng",
+    "end": "Kết thúc dừng",
+    "reason": "Lý do",
+    "duration": "Thời gian (phút)",
+    "machine": "Máy"
+  },
+  "oee": {
+    "title": "Hiệu suất thiết bị tổng thể (OEE)",
+    "availability": "Khả dụng",
+    "performance": "Hiệu suất",
+    "quality": "Chất lượng"
+  }
+}

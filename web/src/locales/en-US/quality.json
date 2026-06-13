@@ -1,0 +1,29 @@
+{
+  "ncr": {
+    "title": "Non-Conformance Report (NCR)",
+    "create": "Create NCR",
+    "ncrNo": "NCR No.",
+    "type": "Type",
+    "severity": "Severity",
+    "status": "Status",
+    "product": "Product",
+    "lotNo": "Lot No.",
+    "description": "Description",
+    "reportedBy": "Reported by",
+    "reportedAt": "Reported at"
+  },
+  "defectCodes": {
+    "title": "Defect codes",
+    "create": "Add defect code",
+    "code": "Code",
+    "name": "Defect name",
+    "category": "Category"
+  },
+  "inspection": {
+    "title": "Quality inspection",
+    "result": "Result",
+    "pass": "Pass",
+    "fail": "Fail",
+    "pendingReview": "Pending review"
+  }
+}

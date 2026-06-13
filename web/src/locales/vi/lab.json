@@ -1,0 +1,26 @@
+{
+  "requests": {
+    "title": "Yêu cầu phòng thí nghiệm",
+    "create": "Tạo yêu cầu",
+    "requestNo": "Số yêu cầu",
+    "type": "Loại yêu cầu",
+    "priority": "Độ ưu tiên",
+    "status": "Trạng thái",
+    "product": "Sản phẩm",
+    "lotNo": "Số lô",
+    "requiredBy": "Cần trước",
+    "assignedTo": "Giao cho",
+    "requestedBy": "Người yêu cầu",
+    "requestedAt": "Ngày yêu cầu"
+  },
+  "sop": {
+    "title": "Quy trình thao tác chuẩn (SOP)",
+    "create": "Tạo SOP",
+    "code": "Mã",
+    "title_field": "Tiêu đề",
+    "version": "Phiên bản",
+    "status": "Trạng thái",
+    "effectiveFrom": "Ngày hiệu lực",
+    "approvedBy": "Người phê duyệt"
+  }
+}

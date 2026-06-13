@@ -13,6 +13,7 @@ import Alert from '@mui/material/Alert';
 import InputAdornment from '@mui/material/InputAdornment';
 import IconButton from '@mui/material/IconButton';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAuth, type AuthUser, type UserRole } from '../../contexts/AuthContext';
 import { postApiV1AuthLogin } from '../../api/auth/auth';
 import { getErrorMessage } from '../../lib/apiClient';
@@ -20,20 +21,21 @@ import type { LoginResponse } from '../../api/model/loginResponse';
 import type { MfaPendingResult } from '../../api/model/mfaPendingResult';
 import SolarIcon from '../../components/SolarIcon';
 
-const schema = z.object({
-  email: z.string().email('Enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
-});
-
-type FormValues = z.infer<typeof schema>;
+type FormValues = { email: string; password: string };
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation('auth');
   const from = (location.state as { from?: string })?.from ?? '/dashboard';
 
   const [showPassword, setShowPassword] = useState(false);
+
+  const schema = z.object({
+    email: z.string().email(t('login.errors.invalidEmail')),
+    password: z.string().min(1, t('login.errors.passwordRequired')),
+  });
 
   const { mutate, isPending, error } = useMutation({
     mutationFn: (req: { email: string; password: string }) =>
@@ -86,9 +88,7 @@ export default function LoginPage() {
   const errorMessage = error
     ? (() => {
         const axErr = error as { response?: { status?: number } };
-        if (axErr.response?.status === 429) {
-          return 'Account locked due to too many failed attempts.';
-        }
+        if (axErr.response?.status === 429) return t('login.errors.accountLocked');
         return getErrorMessage(error);
       })()
     : null;
@@ -116,14 +116,14 @@ export default function LoginPage() {
         </Box>
       </Box>
 
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>Sign in</Typography>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>{t('login.title')}</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Enter your credentials to continue
+        {t('login.subtitle')}
       </Typography>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <TextField
-          label="Email"
+          label={t('login.email')}
           type="email"
           autoFocus
           autoComplete="email"
@@ -133,7 +133,7 @@ export default function LoginPage() {
           {...register('email')}
         />
         <TextField
-          label="Password"
+          label={t('login.password')}
           type={showPassword ? 'text' : 'password'}
           autoComplete="current-password"
           fullWidth
@@ -144,7 +144,7 @@ export default function LoginPage() {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                     onClick={() => setShowPassword((v) => !v)}
                     edge="end"
                     size="small"
@@ -174,7 +174,7 @@ export default function LoginPage() {
         sx={{ mt: 3, mb: 2 }}
         startIcon={isPending ? <CircularProgress size={16} color="inherit" /> : undefined}
       >
-        {isPending ? 'Signing in…' : 'Sign in'}
+        {isPending ? t('login.submitting') : t('login.submit')}
       </Button>
 
       <Divider sx={{ my: 2 }}>

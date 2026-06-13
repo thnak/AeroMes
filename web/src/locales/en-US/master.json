@@ -1,0 +1,55 @@
+{
+  "products": {
+    "title": "Products",
+    "create": "Add product",
+    "edit": "Edit product",
+    "delete": "Delete product",
+    "deleteConfirm": "Are you sure you want to delete this product?",
+    "code": "Product code",
+    "name": "Product name",
+    "category": "Category",
+    "unit": "Unit",
+    "description": "Description",
+    "printLabel": "Print label"
+  },
+  "machines": {
+    "title": "Machines",
+    "create": "Add machine",
+    "code": "Machine code",
+    "name": "Machine name",
+    "type": "Machine type",
+    "workCenter": "Work center",
+    "status": "Status"
+  },
+  "workCenters": {
+    "title": "Work centers",
+    "create": "Add work center",
+    "code": "Work center code",
+    "name": "Work center name"
+  },
+  "bom": {
+    "title": "Bill of Materials (BOM)",
+    "create": "Create BOM",
+    "version": "Version",
+    "effectiveFrom": "Effective from",
+    "components": "Components"
+  },
+  "customers": {
+    "title": "Customers",
+    "create": "Add customer",
+    "code": "Customer code",
+    "name": "Customer name"
+  },
+  "suppliers": {
+    "title": "Suppliers",
+    "create": "Add supplier"
+  },
+  "employees": {
+    "title": "Employees",
+    "create": "Add employee",
+    "employeeId": "Employee ID",
+    "name": "Full name",
+    "department": "Department",
+    "position": "Position"
+  }
+}

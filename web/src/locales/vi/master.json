@@ -1,0 +1,55 @@
+{
+  "products": {
+    "title": "Sản phẩm",
+    "create": "Thêm sản phẩm",
+    "edit": "Chỉnh sửa sản phẩm",
+    "delete": "Xóa sản phẩm",
+    "deleteConfirm": "Bạn có chắc muốn xóa sản phẩm này?",
+    "code": "Mã sản phẩm",
+    "name": "Tên sản phẩm",
+    "category": "Danh mục",
+    "unit": "Đơn vị",
+    "description": "Mô tả",
+    "printLabel": "In nhãn"
+  },
+  "machines": {
+    "title": "Máy móc thiết bị",
+    "create": "Thêm thiết bị",
+    "code": "Mã thiết bị",
+    "name": "Tên thiết bị",
+    "type": "Loại thiết bị",
+    "workCenter": "Xưởng sản xuất",
+    "status": "Trạng thái"
+  },
+  "workCenters": {
+    "title": "Xưởng sản xuất",
+    "create": "Thêm xưởng",
+    "code": "Mã xưởng",
+    "name": "Tên xưởng"
+  },
+  "bom": {
+    "title": "Định mức nguyên liệu (BOM)",
+    "create": "Tạo BOM",
+    "version": "Phiên bản",
+    "effectiveFrom": "Ngày hiệu lực",
+    "components": "Thành phần"
+  },
+  "customers": {
+    "title": "Khách hàng",
+    "create": "Thêm khách hàng",
+    "code": "Mã khách hàng",
+    "name": "Tên khách hàng"
+  },
+  "suppliers": {
+    "title": "Nhà cung cấp",
+    "create": "Thêm nhà cung cấp"
+  },
+  "employees": {
+    "title": "Nhân viên",
+    "create": "Thêm nhân viên",
+    "employeeId": "Mã nhân viên",
+    "name": "Họ tên",
+    "department": "Phòng ban",
+    "position": "Chức vụ"
+  }
+}

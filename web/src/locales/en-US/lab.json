@@ -1,0 +1,26 @@
+{
+  "requests": {
+    "title": "Lab requests",
+    "create": "Create request",
+    "requestNo": "Request No.",
+    "type": "Request type",
+    "priority": "Priority",
+    "status": "Status",
+    "product": "Product",
+    "lotNo": "Lot No.",
+    "requiredBy": "Required by",
+    "assignedTo": "Assigned to",
+    "requestedBy": "Requested by",
+    "requestedAt": "Requested at"
+  },
+  "sop": {
+    "title": "Standard Operating Procedures (SOP)",
+    "create": "Create SOP",
+    "code": "Code",
+    "title_field": "Title",
+    "version": "Version",
+    "status": "Status",
+    "effectiveFrom": "Effective from",
+    "approvedBy": "Approved by"
+  }
+}
