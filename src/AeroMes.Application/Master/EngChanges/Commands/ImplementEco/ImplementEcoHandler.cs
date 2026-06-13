@@ -30,7 +30,7 @@ public class ImplementEcoHandler(
             ec.EnsureCanImplement();
 
             var header = BomHeader.Create(
-                cmd.ProductCode, cmd.NewVersion,
+                cmd.ProductCode, cmd.NewVersion, BomType.Production,
                 baseQuantity: 1m, ecoReference: ec.EcNumber, notes: ec.Title, cmd.UpdatedBy);
 
             if (cmd.CloneFromActive)
@@ -39,7 +39,7 @@ public class ImplementEcoHandler(
                 if (active is not null)
                 {
                     header = BomHeader.Create(
-                        cmd.ProductCode, cmd.NewVersion,
+                        cmd.ProductCode, cmd.NewVersion, active.BomType,
                         active.BaseQuantity, ec.EcNumber, ec.Title, cmd.UpdatedBy);
                     header.CloneLinesFrom(active);
                 }
