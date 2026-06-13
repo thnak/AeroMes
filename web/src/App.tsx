@@ -127,19 +127,30 @@ export default function App() {
         </Route>
 
         {/* ── Web app (AuthGuard) ──────────────────────────────── */}
+
+        {/* Launchpad — standalone, no module chrome */}
         <Route
           path="/"
+          element={
+            <AuthGuard>
+              <LaunchpadPage />
+            </AuthGuard>
+          }
+        />
+
+        {/* Module routes — all share ModuleLayout chrome (AppBar + tabs) */}
+        <Route
           element={
             <AuthGuard>
               <WebLayout />
             </AuthGuard>
           }
         >
-          {/* Launchpad — module home screen */}
-          <Route index element={<LaunchpadPage />} />
-
-          {/* Legacy redirect: /dashboard → / */}
+          {/* Legacy redirects */}
           <Route path="dashboard" element={<Navigate to="/" replace />} />
+          <Route path="production/inventory" element={<Navigate to="/warehouse/inventory" replace />} />
+          <Route path="master/defect-codes" element={<Navigate to="/quality/defect-catalog" replace />} />
+          <Route path="reports/quality" element={<Navigate to="/quality/reports" replace />} />
 
           {/* Account / Profile */}
           <Route element={<ModuleLayout />}>
@@ -156,8 +167,12 @@ export default function App() {
             <Route path="production/jobs/:id" element={<JobDetailPage />} />
             <Route path="production/downtime" element={<DowntimePage />} />
             <Route path="production/downtime/:id" element={<DowntimeDetailPage />} />
-            <Route path="production/inventory" element={<InventoryPage />} />
-            <Route path="production/inventory/trace" element={<InventoryTracePage />} />
+          </Route>
+
+          {/* ── Warehouse module ──────────────────────────────── */}
+          <Route element={<ModuleLayout />}>
+            <Route path="warehouse/inventory" element={<InventoryPage />} />
+            <Route path="warehouse/inventory/trace" element={<InventoryTracePage />} />
           </Route>
 
           {/* ── Master Data module ────────────────────────────── */}
@@ -171,7 +186,6 @@ export default function App() {
             <Route path="master/routings" element={<RoutingsPage />} />
             <Route path="master/routings/:id/steps" element={<RoutingStepsPage />} />
             <Route path="master/storage-locations" element={<StorageLocationsPage />} />
-            <Route path="master/defect-codes" element={<DefectCodesPage />} />
           </Route>
 
           {/* ── Quality module ────────────────────────────────── */}
@@ -179,7 +193,9 @@ export default function App() {
             <Route path="quality/inspection-orders" element={<InspectionOrdersPage />} />
             <Route path="quality/inspection-plans" element={<InspectionPlanPage />} />
             <Route path="quality/ncr" element={<NCRPage />} />
+            <Route path="quality/defect-catalog" element={<DefectCodesPage />} />
             <Route path="quality/defect-analysis" element={<DefectAnalysisPage />} />
+            <Route path="quality/reports" element={<QualityReportPage />} />
           </Route>
 
           {/* ── Integration module ────────────────────────────── */}
@@ -211,7 +227,6 @@ export default function App() {
             <Route path="reports/production" element={<ProductionReportPage />} />
             <Route path="reports/oee" element={<OeeReportPage />} />
             <Route path="reports/downtime" element={<DowntimeReportPage />} />
-            <Route path="reports/quality" element={<QualityReportPage />} />
           </Route>
 
           {/* ── Admin module ──────────────────────────────────── */}

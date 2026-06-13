@@ -50,7 +50,9 @@ export const MODULES: ModuleConfig[] = [
       { label: 'Inspection Orders', path: '/quality/inspection-orders' },
       { label: 'Inspection Plans',  path: '/quality/inspection-plans' },
       { label: 'NCR',              path: '/quality/ncr' },
+      { label: 'Defect Catalog',   path: '/quality/defect-catalog' },
       { label: 'Defect Analysis',  path: '/quality/defect-analysis' },
+      { label: 'Reports',          path: '/quality/reports' },
     ],
   },
   {
@@ -68,7 +70,6 @@ export const MODULES: ModuleConfig[] = [
       { label: 'Operations',       path: '/master/operations' },
       { label: 'Routings',         path: '/master/routings' },
       { label: 'Storage',          path: '/master/storage-locations' },
-      { label: 'Defect Codes',     path: '/master/defect-codes' },
     ],
   },
   {
@@ -108,7 +109,6 @@ export const MODULES: ModuleConfig[] = [
       { label: 'Production', path: '/reports/production' },
       { label: 'OEE',        path: '/reports/oee' },
       { label: 'Downtime',   path: '/reports/downtime' },
-      { label: 'Quality',    path: '/reports/quality' },
     ],
   },
   {
@@ -145,8 +145,10 @@ export const MODULES: ModuleConfig[] = [
     icon: 'bom',
     color: '#92400E',
     path: '/warehouse',
-    available: false,
-    tabs: [],
+    available: true,
+    tabs: [
+      { label: 'Inventory', path: '/warehouse/inventory' },
+    ],
   },
   {
     id: 'iot',
