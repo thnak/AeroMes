@@ -42,8 +42,10 @@ public class QualityInspectionRequestRepository(AppDbContext db) : IQualityInspe
             select new InspectionRequestDto(
                 r.RequestID, r.RequestNumber, r.RequestDate,
                 r.InspectionPurpose.ToString(), r.RequesterName,
-                r.RequestingDepartment, r.RecipientPerson,
-                r.InspectionDeadline, r.Status.ToString(), r.CreatedAt,
+                r.RequestingDepartment, r.RecipientPerson, r.RecipientDepartment,
+                r.InspectionDeadline, r.Status.ToString(),
+                r.Priority != null ? r.Priority.ToString() : null,
+                r.CreatedAt,
                 db.QualityInspectionVouchers.Count(v => v.LinkedRequestId == r.RequestID))
         ).ToListAsync(ct);
 
@@ -65,8 +67,13 @@ public class QualityInspectionRequestRepository(AppDbContext db) : IQualityInspe
         return new InspectionRequestDetailDto(
             r.RequestID, r.RequestNumber, r.RequestDate,
             r.InspectionPurpose.ToString(), r.RequesterName,
-            r.RequestingDepartment, r.RecipientPerson,
-            r.InspectionDeadline, r.Status.ToString(), r.CreatedAt, vouchers);
+            r.RequestingDepartment, r.RecipientPerson, r.RecipientDepartment,
+            r.InspectionDeadline, r.Status.ToString(),
+            r.Priority != null ? r.Priority.ToString() : null,
+            r.InspectionQuantity, r.Description,
+            r.ProductionOrderId, r.StatisticalSheetId, r.InspectionSubject,
+            r.SubcontractingOrderId, r.ProductId,
+            r.CreatedAt, vouchers);
     }
 
     public Task SaveChangesAsync(CancellationToken ct) => db.SaveChangesAsync(ct);

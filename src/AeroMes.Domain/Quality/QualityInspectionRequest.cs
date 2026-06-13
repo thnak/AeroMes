@@ -5,6 +5,7 @@ namespace AeroMes.Domain.Quality;
 
 public enum InspectionRequestPurpose { PostProduction, PostOutsourcing }
 public enum InspectionRequestStatus { NotStarted, InProgress, Completed }
+public enum InspectionPriority { Low, Medium, High }
 
 public class QualityInspectionRequest : AuditableEntity
 {
@@ -15,8 +16,23 @@ public class QualityInspectionRequest : AuditableEntity
     public string RequesterName { get; private set; } = string.Empty;
     public string RequestingDepartment { get; private set; } = string.Empty;
     public string RecipientPerson { get; private set; } = string.Empty;
+    public string? RecipientDepartment { get; private set; }
     public DateTime InspectionDeadline { get; private set; }
     public InspectionRequestStatus Status { get; private set; } = InspectionRequestStatus.NotStarted;
+
+    // Extended fields
+    public decimal? InspectionQuantity { get; private set; }
+    public InspectionPriority? Priority { get; private set; }
+    public string? Description { get; private set; }
+
+    // PostProduction-specific
+    public int? ProductionOrderId { get; private set; }
+    public int? StatisticalSheetId { get; private set; }
+    public string? InspectionSubject { get; private set; }
+
+    // PostOutsourcing-specific
+    public int? SubcontractingOrderId { get; private set; }
+    public int? ProductId { get; private set; }
 
     private QualityInspectionRequest() { }
 
@@ -27,7 +43,16 @@ public class QualityInspectionRequest : AuditableEntity
         string requesterName,
         string requestingDepartment,
         string recipientPerson,
+        string? recipientDepartment,
         DateTime inspectionDeadline,
+        decimal? inspectionQuantity,
+        InspectionPriority? priority,
+        string? description,
+        int? productionOrderId,
+        int? statisticalSheetId,
+        string? inspectionSubject,
+        int? subcontractingOrderId,
+        int? productId,
         string? createdBy)
     {
         if (string.IsNullOrWhiteSpace(requestNumber))
@@ -40,7 +65,16 @@ public class QualityInspectionRequest : AuditableEntity
             RequesterName = requesterName,
             RequestingDepartment = requestingDepartment,
             RecipientPerson = recipientPerson,
+            RecipientDepartment = recipientDepartment,
             InspectionDeadline = inspectionDeadline,
+            InspectionQuantity = inspectionQuantity,
+            Priority = priority,
+            Description = description,
+            ProductionOrderId = productionOrderId,
+            StatisticalSheetId = statisticalSheetId,
+            InspectionSubject = inspectionSubject,
+            SubcontractingOrderId = subcontractingOrderId,
+            ProductId = productId,
             CreatedBy = createdBy
         };
     }
@@ -51,7 +85,16 @@ public class QualityInspectionRequest : AuditableEntity
         string requesterName,
         string requestingDepartment,
         string recipientPerson,
+        string? recipientDepartment,
         DateTime inspectionDeadline,
+        decimal? inspectionQuantity,
+        InspectionPriority? priority,
+        string? description,
+        int? productionOrderId,
+        int? statisticalSheetId,
+        string? inspectionSubject,
+        int? subcontractingOrderId,
+        int? productId,
         string? updatedBy)
     {
         RequestDate = requestDate;
@@ -59,7 +102,16 @@ public class QualityInspectionRequest : AuditableEntity
         RequesterName = requesterName;
         RequestingDepartment = requestingDepartment;
         RecipientPerson = recipientPerson;
+        RecipientDepartment = recipientDepartment;
         InspectionDeadline = inspectionDeadline;
+        InspectionQuantity = inspectionQuantity;
+        Priority = priority;
+        Description = description;
+        ProductionOrderId = productionOrderId;
+        StatisticalSheetId = statisticalSheetId;
+        InspectionSubject = inspectionSubject;
+        SubcontractingOrderId = subcontractingOrderId;
+        ProductId = productId;
         UpdatedBy = updatedBy;
         UpdatedAt = DateTime.UtcNow;
     }
@@ -70,5 +122,4 @@ public class QualityInspectionRequest : AuditableEntity
         UpdatedBy = updatedBy;
         UpdatedAt = DateTime.UtcNow;
     }
-
 }

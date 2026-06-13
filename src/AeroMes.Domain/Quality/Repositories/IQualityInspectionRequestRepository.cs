@@ -8,8 +8,10 @@ public record InspectionRequestDto(
     string RequesterName,
     string RequestingDepartment,
     string RecipientPerson,
+    string? RecipientDepartment,
     DateTime InspectionDeadline,
     string Status,
+    string? Priority,
     DateTime CreatedAt,
     int LinkedVoucherCount);
 
@@ -21,8 +23,17 @@ public record InspectionRequestDetailDto(
     string RequesterName,
     string RequestingDepartment,
     string RecipientPerson,
+    string? RecipientDepartment,
     DateTime InspectionDeadline,
     string Status,
+    string? Priority,
+    decimal? InspectionQuantity,
+    string? Description,
+    int? ProductionOrderId,
+    int? StatisticalSheetId,
+    string? InspectionSubject,
+    int? SubcontractingOrderId,
+    int? ProductId,
     DateTime CreatedAt,
     IReadOnlyList<LinkedVoucherSummaryDto> LinkedVouchers);
 

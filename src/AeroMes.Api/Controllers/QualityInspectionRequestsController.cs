@@ -54,7 +54,10 @@ public class QualityInspectionRequestsController(ICommandMediator commandMediato
             new CreateInspectionRequestCommand(
                 request.RequestNumber, request.RequestDate, request.InspectionPurpose,
                 request.RequesterName, request.RequestingDepartment, request.RecipientPerson,
-                request.InspectionDeadline, User.Identity?.Name),
+                request.RecipientDepartment, request.InspectionDeadline,
+                request.InspectionQuantity, request.Priority, request.Description,
+                request.ProductionOrderId, request.StatisticalSheetId, request.InspectionSubject,
+                request.SubcontractingOrderId, request.ProductId, User.Identity?.Name),
             null, ct);
         if (!result.IsSuccess) return result.ToErrorResult();
         return Ok(result.Value);
@@ -72,7 +75,10 @@ public class QualityInspectionRequestsController(ICommandMediator commandMediato
             new UpdateInspectionRequestCommand(
                 id, request.RequestDate, request.InspectionPurpose,
                 request.RequesterName, request.RequestingDepartment, request.RecipientPerson,
-                request.InspectionDeadline, User.Identity?.Name),
+                request.RecipientDepartment, request.InspectionDeadline,
+                request.InspectionQuantity, request.Priority, request.Description,
+                request.ProductionOrderId, request.StatisticalSheetId, request.InspectionSubject,
+                request.SubcontractingOrderId, request.ProductId, User.Identity?.Name),
             null, ct);
         if (!result.IsSuccess) return result.ToErrorResult();
         return Ok();
@@ -112,7 +118,16 @@ public record CreateInspectionRequestRequest(
     string RequesterName,
     string RequestingDepartment,
     string RecipientPerson,
-    DateTime InspectionDeadline);
+    string? RecipientDepartment,
+    DateTime InspectionDeadline,
+    decimal? InspectionQuantity = null,
+    InspectionPriority? Priority = null,
+    string? Description = null,
+    int? ProductionOrderId = null,
+    int? StatisticalSheetId = null,
+    string? InspectionSubject = null,
+    int? SubcontractingOrderId = null,
+    int? ProductId = null);
 
 public record UpdateInspectionRequestRequest(
     DateOnly RequestDate,
@@ -120,6 +135,15 @@ public record UpdateInspectionRequestRequest(
     string RequesterName,
     string RequestingDepartment,
     string RecipientPerson,
-    DateTime InspectionDeadline);
+    string? RecipientDepartment,
+    DateTime InspectionDeadline,
+    decimal? InspectionQuantity = null,
+    InspectionPriority? Priority = null,
+    string? Description = null,
+    int? ProductionOrderId = null,
+    int? StatisticalSheetId = null,
+    string? InspectionSubject = null,
+    int? SubcontractingOrderId = null,
+    int? ProductId = null);
 
 public record UpdateRequestStatusRequest(InspectionRequestStatus Status);

@@ -1135,7 +1135,7 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<QualityCriteriaGroupDto>))]
 [JsonSerializable(typeof(List<QualityCriteriaGroupDto>))]
 [JsonSerializable(typeof(CriteriaGroupStatus))]
-// quality inspection requests — #81
+// quality inspection requests — #81 / #69
 [JsonSerializable(typeof(CreateInspectionRequestRequest))]
 [JsonSerializable(typeof(UpdateInspectionRequestRequest))]
 [JsonSerializable(typeof(UpdateRequestStatusRequest))]
@@ -1145,6 +1145,7 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(LinkedVoucherSummaryDto))]
 [JsonSerializable(typeof(IReadOnlyList<LinkedVoucherSummaryDto>))]
 [JsonSerializable(typeof(List<LinkedVoucherSummaryDto>))]
+[JsonSerializable(typeof(InspectionPriority))]
 // quality inspection vouchers — #92
 [JsonSerializable(typeof(CreateInspectionVoucherRequest))]
 [JsonSerializable(typeof(AddDefectRequest))]

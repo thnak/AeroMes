@@ -29,7 +29,10 @@ public class CreateInspectionRequestHandler(
             var request = QualityInspectionRequest.Create(
                 command.RequestNumber, command.RequestDate, command.InspectionPurpose,
                 command.RequesterName, command.RequestingDepartment, command.RecipientPerson,
-                command.InspectionDeadline, command.CreatedBy);
+                command.RecipientDepartment, command.InspectionDeadline,
+                command.InspectionQuantity, command.Priority, command.Description,
+                command.ProductionOrderId, command.StatisticalSheetId, command.InspectionSubject,
+                command.SubcontractingOrderId, command.ProductId, command.CreatedBy);
 
             var id = await repository.AddAsync(request, ct);
             return ValidationResult<int>.Ok(id);

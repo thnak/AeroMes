@@ -2613,9 +2613,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.RequesterName).HasMaxLength(100).IsRequired();
             e.Property(x => x.RequestingDepartment).HasMaxLength(100).IsRequired();
             e.Property(x => x.RecipientPerson).HasMaxLength(100).IsRequired();
+            e.Property(x => x.RecipientDepartment).HasMaxLength(100);
             e.Property(x => x.InspectionPurpose).HasConversion<string>().HasMaxLength(30).IsRequired();
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20)
                 .HasDefaultValue(InspectionRequestStatus.NotStarted);
+            e.Property(x => x.Priority).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.InspectionQuantity).HasColumnType("DECIMAL(14,4)");
+            e.Property(x => x.Description).HasMaxLength(1000);
+            e.Property(x => x.InspectionSubject).HasMaxLength(100);
             e.HasQueryFilter(x => !x.IsDeleted);
         });
 

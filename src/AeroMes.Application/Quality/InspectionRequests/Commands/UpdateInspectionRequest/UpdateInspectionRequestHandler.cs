@@ -17,7 +17,10 @@ public class UpdateInspectionRequestHandler(IQualityInspectionRequestRepository 
         try
         {
             request.Update(command.RequestDate, command.InspectionPurpose, command.RequesterName,
-                command.RequestingDepartment, command.RecipientPerson, command.InspectionDeadline,
+                command.RequestingDepartment, command.RecipientPerson, command.RecipientDepartment,
+                command.InspectionDeadline, command.InspectionQuantity, command.Priority,
+                command.Description, command.ProductionOrderId, command.StatisticalSheetId,
+                command.InspectionSubject, command.SubcontractingOrderId, command.ProductId,
                 command.UpdatedBy);
             await repository.SaveChangesAsync(ct);
             return ValidationResult<Unit>.Ok(Unit.Value);
