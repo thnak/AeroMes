@@ -1186,6 +1186,23 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(GanttIntervalDto))]
 [JsonSerializable(typeof(IReadOnlyList<GanttIntervalDto>))]
 [JsonSerializable(typeof(List<GanttIntervalDto>))]
+// production process catalog — #71
+[JsonSerializable(typeof(CreateProductionProcessRequest))]
+[JsonSerializable(typeof(StageInputRequest))]
+[JsonSerializable(typeof(IReadOnlyList<StageInputRequest>))]
+[JsonSerializable(typeof(List<StageInputRequest>))]
+[JsonSerializable(typeof(UpdateProductionProcessRequest))]
+[JsonSerializable(typeof(SetProcessStatusRequest))]
+[JsonSerializable(typeof(ProductionProcessListDto))]
+[JsonSerializable(typeof(PagedResult<ProductionProcessListDto>))]
+[JsonSerializable(typeof(ProductionProcessDetailDto))]
+[JsonSerializable(typeof(ProductionProcessStageDto))]
+[JsonSerializable(typeof(IReadOnlyList<ProductionProcessStageDto>))]
+[JsonSerializable(typeof(List<ProductionProcessStageDto>))]
+[JsonSerializable(typeof(ProductionProcessType))]
+[JsonSerializable(typeof(ProcessApplicationScope))]
+[JsonSerializable(typeof(StageCapacityType))]
+[JsonSerializable(typeof(PlannedTimeSource))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

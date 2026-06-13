@@ -107,6 +107,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<VariantDimension> VariantDimensions => Set<VariantDimension>();
     public DbSet<VariantDimensionValue> VariantDimensionValues => Set<VariantDimensionValue>();
     public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
+    public DbSet<ProductionProcess> ProductionProcesses => Set<ProductionProcess>();
+    public DbSet<ProductionProcessStage> ProductionProcessStages => Set<ProductionProcessStage>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -1823,6 +1825,40 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .WithMany()
                 .HasForeignKey(x => x.ShiftCode)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<ProductionProcess>(e =>
+        {
+            e.ToTable("ProductionProcesses", "master");
+            e.HasKey(x => x.ProcessID);
+            e.Property(x => x.ProcessID).UseIdentityColumn();
+            e.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.Code).IsUnique();
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.ProcessType).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.ApplicationScope).HasConversion<string>().HasMaxLength(30).IsRequired();
+            e.Property(x => x.ProductGroupIdsJson).HasColumnType("nvarchar(max)");
+            e.Property(x => x.ProductIdsJson).HasColumnType("nvarchar(max)");
+            e.HasMany(x => x.Stages)
+                .WithOne()
+                .HasForeignKey(s => s.ProcessID)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Stages)
+                .HasField("_stages")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<ProductionProcessStage>(e =>
+        {
+            e.ToTable("ProductionProcessStages", "master");
+            e.HasKey(x => x.StageID);
+            e.Property(x => x.StageID).UseIdentityColumn();
+            e.Property(x => x.ProcessStepCode).HasMaxLength(50);
+            e.Property(x => x.CapacityType).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.CapacityIdsJson).HasColumnType("nvarchar(max)").IsRequired();
+            e.Property(x => x.PlannedTimeSeconds).HasColumnType("DECIMAL(10,2)");
+            e.Property(x => x.PlannedTimeSource).HasConversion<string>().HasMaxLength(20).IsRequired();
         });
     }
 
