@@ -2,6 +2,7 @@ using AeroMes.Application.Interfaces;
 using AeroMes.Application.Wms.Services;
 using AeroMes.Domain.Integration.Repositories;
 using AeroMes.Domain.Iot.Repositories;
+using AeroMes.Domain.Iot.Events;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production.Repositories;
 using AeroMes.Domain.Quality.Repositories;
@@ -14,6 +15,8 @@ using AeroMes.Infrastructure.Iot.Mqtt;
 using AeroMes.Infrastructure.Iot.OpcUa;
 using AeroMes.Infrastructure.Repositories;
 using AeroMes.Infrastructure.Services;
+using LiteBus.Events.Abstractions;
+using LiteBus.Extensions.Microsoft.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -220,6 +223,14 @@ public static class DependencyInjection
                 sp.GetRequiredService<ISignalIngestionPipeline>(),
                 sp.GetRequiredService<ILogger<ModbusTcpAdapterManager>>(),
                 sp.GetRequiredService<ILoggerFactory>()));
+
+        // Machine State Engine
+        services.AddSingleton<SignalValueCache>();
+        services.AddSingleton<MachineStateEvaluator>();
+        services.AddScoped<MachineSignalStateHandler>();
+        services.AddScoped<IEventHandler<MachineSignalIngestedEvent>>(
+            sp => sp.GetRequiredService<MachineSignalStateHandler>());
+        services.AddHostedService<StaleSignalWatchdog>();
 
         return services;
     }

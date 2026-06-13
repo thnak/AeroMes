@@ -25,6 +25,7 @@ using AeroMes.Application.Iot.StateRules.Commands.UpdateStateRule;
 using AeroMes.Application.Iot.StateRules.Queries.GetStateRules;
 using AeroMes.Domain.Iot;
 using AeroMes.Domain.Iot.Repositories;
+using AeroMes.Infrastructure.Data;
 using AeroMes.Infrastructure.Iot;
 using AeroMes.Infrastructure.Iot.Modbus;
 using AeroMes.Infrastructure.Iot.Mqtt;
@@ -33,6 +34,7 @@ using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MQTTnet;
 using MQTTnet.Client;
 using OpcUa = Opc.Ua;
@@ -47,7 +49,8 @@ public class IotController(
     ICommandMediator commandMediator,
     IQueryMediator queryMediator,
     ISignalIngestionPipeline pipeline,
-    IAdapterRepository adapterRepository) : ControllerBase
+    IAdapterRepository adapterRepository,
+    AppDbContext db) : ControllerBase
 {
     // ── Signal Tags ───────────────────────────────────────────────────────
 
@@ -309,6 +312,99 @@ public class IotController(
         var result = await commandMediator.SendAsync(
             new ReorderStateRulesCommand(req.MachineCode, req.OrderedRuleIds, User.Identity?.Name ?? "system"), null, ct);
         if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    // ── Machine State ─────────────────────────────────────────────────────
+
+    [HttpGet("machines/states")]
+    [RequirePermission(Permissions.IotRead)]
+    [ProducesResponseType<IReadOnlyList<MachineStateSnapshotDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMachineStates(CancellationToken ct)
+    {
+        var snapshots = await db.MachineStateSnapshots
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        var result = snapshots.Select(s => new MachineStateSnapshotDto(
+            s.MachineCode, s.CurrentState, s.PreviousState, s.StateChangedAt,
+            s.TriggerTagKey, s.TriggerValue, s.SignalStaleSince.HasValue)).ToList();
+
+        return Ok((IReadOnlyList<MachineStateSnapshotDto>)result);
+    }
+
+    [HttpGet("machines/{code}/state")]
+    [RequirePermission(Permissions.IotRead)]
+    [ProducesResponseType<MachineStateSnapshotDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMachineState(string code, CancellationToken ct)
+    {
+        var s = await db.MachineStateSnapshots
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.MachineCode == code, ct);
+
+        if (s is null) return NotFound();
+
+        return Ok(new MachineStateSnapshotDto(
+            s.MachineCode, s.CurrentState, s.PreviousState, s.StateChangedAt,
+            s.TriggerTagKey, s.TriggerValue, s.SignalStaleSince.HasValue));
+    }
+
+    [HttpGet("machines/{code}/state/history")]
+    [RequirePermission(Permissions.IotRead)]
+    [ProducesResponseType<IReadOnlyList<MachineStateHistoryDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMachineStateHistory(
+        string code,
+        [FromQuery] DateTimeOffset? from,
+        [FromQuery] DateTimeOffset? to,
+        [FromQuery] int limit = 100,
+        CancellationToken ct = default)
+    {
+        var query = db.MachineStateHistories
+            .AsNoTracking()
+            .Where(h => h.MachineCode == code);
+
+        if (from.HasValue) query = query.Where(h => h.TransitionAt >= from.Value);
+        if (to.HasValue) query = query.Where(h => h.TransitionAt <= to.Value);
+
+        var rows = await query
+            .OrderByDescending(h => h.TransitionAt)
+            .Take(Math.Clamp(limit, 1, 1000))
+            .ToListAsync(ct);
+
+        var result = rows.Select(h => new MachineStateHistoryDto(
+            h.HistoryId, h.MachineCode, h.FromState, h.ToState,
+            h.TransitionAt, h.DurationMs, h.TriggerTagKey, h.IsAutomatic)).ToList();
+
+        return Ok((IReadOnlyList<MachineStateHistoryDto>)result);
+    }
+
+    [HttpPatch("machines/{code}/state/override")]
+    [RequirePermission(Permissions.IotWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> OverrideMachineState(
+        string code, [FromBody] StateOverrideRequest req, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(req.TargetState))
+            return UnprocessableEntity(new { error = "TargetState is required." });
+
+        var snapshot = await db.MachineStateSnapshots.FindAsync([code], ct);
+        if (snapshot is null) return NotFound();
+
+        var previousState = snapshot.CurrentState;
+        var stateChangedAt = snapshot.StateChangedAt;
+
+        if (snapshot.TransitionTo(req.TargetState, null, null, null))
+        {
+            db.MachineStateHistories.Add(MachineStateHistory.Record(
+                code, previousState, req.TargetState,
+                stateChangedAt, null, null, null, isAutomatic: false));
+
+            await db.SaveChangesAsync(ct);
+        }
+
         return NoContent();
     }
 
@@ -1005,3 +1101,9 @@ public record WebhookMachineBundlePayload(string MachineCode, DateTimeOffset? Ti
     Dictionary<string, decimal> Signals);
 public record WebhookIngestResponse(int Accepted, int Rejected, IReadOnlyList<WebhookIngestError>? Errors);
 public record WebhookIngestError(int Index, string? TagKey, string Reason);
+// machine state engine
+public record MachineStateSnapshotDto(string MachineCode, string CurrentState, string? PreviousState,
+    DateTimeOffset StateChangedAt, string? TriggerTagKey, decimal? TriggerValue, bool IsStale);
+public record MachineStateHistoryDto(long HistoryId, string MachineCode, string FromState, string ToState,
+    DateTimeOffset TransitionAt, long DurationMs, string? TriggerTagKey, bool IsAutomatic);
+public record StateOverrideRequest(string TargetState);

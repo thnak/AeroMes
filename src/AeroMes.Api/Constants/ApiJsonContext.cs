@@ -645,6 +645,12 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(WebhookIngestError))]
 [JsonSerializable(typeof(IReadOnlyList<WebhookIngestError>))]
 [JsonSerializable(typeof(Dictionary<string, decimal>))]
+// iot machine state engine
+[JsonSerializable(typeof(MachineStateSnapshotDto))]
+[JsonSerializable(typeof(IReadOnlyList<MachineStateSnapshotDto>))]
+[JsonSerializable(typeof(MachineStateHistoryDto))]
+[JsonSerializable(typeof(IReadOnlyList<MachineStateHistoryDto>))]
+[JsonSerializable(typeof(StateOverrideRequest))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

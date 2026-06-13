@@ -146,6 +146,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<MachineStateRule> MachineStateRules => Set<MachineStateRule>();
     public DbSet<SignalTag> SignalTags => Set<SignalTag>();
     public DbSet<MachineSignalLog> MachineSignalLogs => Set<MachineSignalLog>();
+    public DbSet<MachineStateSnapshot> MachineStateSnapshots => Set<MachineStateSnapshot>();
+    public DbSet<MachineStateHistory> MachineStateHistories => Set<MachineStateHistory>();
 
     // settings
     public DbSet<SystemOptions> SystemOptions => Set<SystemOptions>();
@@ -2582,6 +2584,30 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.Unit).HasMaxLength(30);
             e.Property(x => x.Source).HasMaxLength(50).IsRequired();
             e.HasIndex(x => new { x.MachineCode, x.TagKey, x.Timestamp });
+        });
+
+        b.Entity<MachineStateSnapshot>(e =>
+        {
+            e.ToTable("MachineStateSnapshots", "iot");
+            e.HasKey(x => x.MachineCode);
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.CurrentState).HasMaxLength(20).IsRequired();
+            e.Property(x => x.PreviousState).HasMaxLength(20);
+            e.Property(x => x.TriggerTagKey).HasMaxLength(100);
+            e.Property(x => x.TriggerValue).HasColumnType("decimal(18,4)");
+        });
+
+        b.Entity<MachineStateHistory>(e =>
+        {
+            e.ToTable("MachineStateHistories", "iot");
+            e.HasKey(x => x.HistoryId);
+            e.Property(x => x.HistoryId).UseIdentityColumn();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.FromState).HasMaxLength(20).IsRequired();
+            e.Property(x => x.ToState).HasMaxLength(20).IsRequired();
+            e.Property(x => x.TriggerTagKey).HasMaxLength(100);
+            e.Property(x => x.TriggerValue).HasColumnType("decimal(18,4)");
+            e.HasIndex(x => new { x.MachineCode, x.TransitionAt });
         });
     }
 
