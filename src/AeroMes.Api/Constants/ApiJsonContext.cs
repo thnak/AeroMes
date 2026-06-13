@@ -734,6 +734,14 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(List<UpsertResultDto>))]
 [JsonSerializable(typeof(IssueReportDto))]
 [JsonSerializable(typeof(QrTextRequest))]
+// labels
+[JsonSerializable(typeof(LabelTemplateDto))]
+[JsonSerializable(typeof(List<LabelTemplateDto>))]
+[JsonSerializable(typeof(UpsertTemplateRequest))]
+[JsonSerializable(typeof(LabelPrintJobDto))]
+[JsonSerializable(typeof(List<LabelPrintJobDto>))]
+[JsonSerializable(typeof(CreatePrintJobRequest))]
+[JsonSerializable(typeof(ScanResultDto))]
 // defect lifecycle
 [JsonSerializable(typeof(DefectEntryDto))]
 [JsonSerializable(typeof(List<DefectEntryDto>))]

@@ -9,6 +9,7 @@ using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.ValueObjects;
 using AeroMes.Domain.Quality;
 using AeroMes.Domain.Lab;
+using AeroMes.Domain.Labels;
 using AeroMes.Domain.Sop;
 using AeroMes.Domain.Rules;
 using AeroMes.Domain.Settings;
@@ -142,6 +143,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<InspectionResult> InspectionResults => Set<InspectionResult>();
     public DbSet<Ncr> Ncrs => Set<Ncr>();
     public DbSet<NcrDefectLine> NcrDefectLines => Set<NcrDefectLine>();
+    public DbSet<DefectEntry> DefectEntries => Set<DefectEntry>();
+    public DbSet<RepairOrder> RepairOrders => Set<RepairOrder>();
+    public DbSet<RepairOrderEntry> RepairOrderEntries => Set<RepairOrderEntry>();
+    public DbSet<RepairMaterialLine> RepairMaterialLines => Set<RepairMaterialLine>();
 
     // iot schema
     public DbSet<AdapterInstance> AdapterInstances => Set<AdapterInstance>();
@@ -177,6 +182,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<LabSample> LabSamples => Set<LabSample>();
     public DbSet<TestResult> TestResults => Set<TestResult>();
     public DbSet<LabReport> LabReports => Set<LabReport>();
+
+    // labels
+    public DbSet<LabelTemplate> LabelTemplates => Set<LabelTemplate>();
+    public DbSet<LabelPrintJob> LabelPrintJobs => Set<LabelPrintJob>();
 
     // settings
     public DbSet<SystemOptions> SystemOptions => Set<SystemOptions>();
@@ -216,6 +225,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureRulesSchema(b);
         ConfigureSopSchema(b);
         ConfigureLabSchema(b);
+        ConfigureLabelsSchema(b);
     }
 
     // ── auth ──────────────────────────────────────────────────────────────
@@ -1771,6 +1781,64 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.DefectCodeId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        b.Entity<DefectEntry>(e =>
+        {
+            e.ToTable("DefectEntries", "qual");
+            e.HasKey(x => x.DefectEntryId);
+            e.Property(x => x.Quantity).HasColumnType("decimal(18,4)");
+            e.Property(x => x.RepairableQty).HasColumnType("decimal(18,4)");
+            e.Property(x => x.ScrapQty).HasColumnType("decimal(18,4)");
+            e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(100).IsRequired();
+            e.HasOne(x => x.DefectCode)
+                .WithMany()
+                .HasForeignKey(x => x.DefectCodeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<RepairOrder>(e =>
+        {
+            e.ToTable("RepairOrders", "qual");
+            e.HasKey(x => x.RepairOrderId);
+            e.Property(x => x.RepairOrderNo).HasMaxLength(30).IsRequired();
+            e.HasIndex(x => x.RepairOrderNo).IsUnique();
+            e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(100).IsRequired();
+            e.HasMany(x => x.Entries)
+                .WithOne()
+                .HasForeignKey(x => x.RepairOrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Entries)
+                .HasField("_entries")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+            e.HasMany(x => x.MaterialLines)
+                .WithOne()
+                .HasForeignKey(x => x.RepairOrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.MaterialLines)
+                .HasField("_materialLines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<RepairOrderEntry>(e =>
+        {
+            e.ToTable("RepairOrderEntries", "qual");
+            e.HasKey(x => x.RepairOrderEntryId);
+        });
+
+        b.Entity<RepairMaterialLine>(e =>
+        {
+            e.ToTable("RepairMaterialLines", "qual");
+            e.HasKey(x => x.RepairMaterialLineId);
+            e.Property(x => x.MaterialCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.MaterialName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.RequiredQty).HasColumnType("decimal(18,4)");
+            e.Property(x => x.IssuedQty).HasColumnType("decimal(18,4)");
+            e.Property(x => x.Unit).HasMaxLength(20).IsRequired();
+        });
     }
 
     // ── wms ───────────────────────────────────────────────────────────────
@@ -2926,6 +2994,37 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             // ERP integration settings
             e.Property(x => x.ErpBaseUrl).HasMaxLength(500);
             e.Property(x => x.ErpApiKey).HasMaxLength(200);
+        });
+    }
+
+    // ── labels ───────────────────────────────────────────────────────────────
+    private static void ConfigureLabelsSchema(ModelBuilder b)
+    {
+        b.Entity<LabelTemplate>(e =>
+        {
+            e.ToTable("LabelTemplates", "labels");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(100).IsRequired();
+            e.Property(x => x.PaperSize).HasMaxLength(50);
+            e.Property(x => x.Orientation).HasMaxLength(20);
+            e.Property(x => x.BarcodeType).HasMaxLength(20);
+            e.Property(x => x.SelectedFields)
+                .HasConversion(
+                    v => string.Join(',', v),
+                    v => v == "" ? Array.Empty<string>() : v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .HasMaxLength(500);
+        });
+
+        b.Entity<LabelPrintJob>(e =>
+        {
+            e.ToTable("LabelPrintJobs", "labels");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.PrintScope).HasMaxLength(30);
+            e.Property(x => x.EntityType).HasMaxLength(50);
+            e.Property(x => x.EntityId).HasMaxLength(100);
+            e.Property(x => x.EntityCode).HasMaxLength(100);
+            e.Property(x => x.Status).HasMaxLength(20);
+            e.Property(x => x.PrintedBy).HasMaxLength(256);
         });
     }
 }

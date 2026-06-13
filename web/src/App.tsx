@@ -55,6 +55,7 @@ const InspectionOrdersPage = lazy(() => import('./pages/quality/InspectionOrders
 const InspectionPlanPage = lazy(() => import('./pages/quality/InspectionPlanPage'));
 const NCRPage = lazy(() => import('./pages/quality/NCRPage'));
 const DefectAnalysisPage = lazy(() => import('./pages/quality/DefectAnalysisPage'));
+const DefectLifecyclePage = lazy(() => import('./pages/quality/DefectLifecyclePage'));
 
 // IoT
 const IotAdaptersPage          = lazy(() => import('./pages/iot/IotAdaptersPage'));
@@ -81,6 +82,9 @@ const ProductionReportPage = lazy(() => import('./pages/reports/ProductionReport
 const OeeReportPage = lazy(() => import('./pages/reports/OeeReportPage'));
 const DowntimeReportPage = lazy(() => import('./pages/reports/DowntimeReportPage'));
 const QualityReportPage = lazy(() => import('./pages/reports/QualityReportPage'));
+
+// Labels
+const LabelTemplatesPage = lazy(() => import('./pages/labels/LabelTemplatesPage'));
 
 // Admin
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
@@ -212,6 +216,7 @@ export default function App() {
             <Route path="quality/ncr" element={<NCRPage />} />
             <Route path="quality/defect-catalog" element={<DefectCodesPage />} />
             <Route path="quality/defect-analysis" element={<DefectAnalysisPage />} />
+            <Route path="quality/defect-lifecycle" element={<DefectLifecyclePage />} />
             <Route path="quality/reports" element={<QualityReportPage />} />
           </Route>
 
@@ -251,6 +256,11 @@ export default function App() {
             <Route path="reports/production" element={<ProductionReportPage />} />
             <Route path="reports/oee" element={<OeeReportPage />} />
             <Route path="reports/downtime" element={<DowntimeReportPage />} />
+          </Route>
+
+          {/* ── Labels module ─────────────────────────────────── */}
+          <Route element={<ModuleLayout />}>
+            <Route path="admin/label-templates" element={<LabelTemplatesPage />} />
           </Route>
 
           {/* ── Admin module ──────────────────────────────────── */}
