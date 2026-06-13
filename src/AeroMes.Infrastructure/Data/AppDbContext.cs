@@ -94,6 +94,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<Aisle> Aisles => Set<Aisle>();
     public DbSet<Rack> Racks => Set<Rack>();
     public DbSet<Bin> Bins => Set<Bin>();
+    public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+    public DbSet<PurchaseOrderLine> PurchaseOrderLines => Set<PurchaseOrderLine>();
+    public DbSet<GoodsReceiptNote> GoodsReceiptNotes => Set<GoodsReceiptNote>();
+    public DbSet<GrnLine> GrnLines => Set<GrnLine>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
 
     // qual schema
     public DbSet<DefectCode> DefectCodes => Set<DefectCode>();
@@ -1583,6 +1588,144 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .WithMany()
                 .HasForeignKey(x => x.RackId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<PurchaseOrder>(e =>
+        {
+            e.ToTable("PurchaseOrders", "wms");
+            e.HasKey(x => x.PoId);
+            e.Property(x => x.PoId).UseIdentityColumn();
+            e.Property(x => x.PoCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.SupplierCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.ExpectedDeliveryDate).HasColumnType("date");
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasIndex(x => x.PoCode).IsUnique();
+
+            e.HasOne<Supplier>()
+                .WithMany()
+                .HasForeignKey(x => x.SupplierCode)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(x => x.PoId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines)
+                .HasField("_lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<PurchaseOrderLine>(e =>
+        {
+            e.ToTable("PurchaseOrderLines", "wms");
+            e.HasKey(x => x.PoLineId);
+            e.Property(x => x.PoLineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.OrderedQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.ReceivedQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.UnitPrice).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.ExpectedLotNumber).HasMaxLength(50);
+
+            e.HasOne<Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<GoodsReceiptNote>(e =>
+        {
+            e.ToTable("GoodsReceiptNotes", "wms");
+            e.HasKey(x => x.GrnId);
+            e.Property(x => x.GrnId).UseIdentityColumn();
+            e.Property(x => x.GrnCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ReceivedBy).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.DeliveryNoteRef).HasMaxLength(100);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasIndex(x => x.GrnCode).IsUnique();
+
+            e.HasOne<PurchaseOrder>()
+                .WithMany()
+                .HasForeignKey(x => x.PoId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<StorageLocation>()
+                .WithMany()
+                .HasForeignKey(x => x.StorageLocationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(x => x.GrnId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines)
+                .HasField("_lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<GrnLine>(e =>
+        {
+            e.ToTable("GrnLines", "wms");
+            e.HasKey(x => x.GrnLineId);
+            e.Property(x => x.GrnLineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ReceivedQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.GrossWeightKg).HasColumnType("NUMERIC(10,2)");
+            e.Property(x => x.QcStatus).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.ManufacturedDate).HasColumnType("date");
+            e.Property(x => x.ExpiryDate).HasColumnType("date");
+
+            e.HasOne<Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<PurchaseOrderLine>()
+                .WithMany()
+                .HasForeignKey(x => x.PoLineId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<Bin>()
+                .WithMany()
+                .HasForeignKey(x => x.DestinationBinId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        b.Entity<StockMovement>(e =>
+        {
+            e.ToTable("StockMovements", "wms");
+            e.HasKey(x => x.MovementId);
+            e.Property(x => x.MovementId).UseIdentityColumn();
+            e.Property(x => x.MovementType).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Quantity).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.Reference).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.HasIndex(x => new { x.ProductCode, x.LotNumber });
+            e.HasIndex(x => x.Reference);
+
+            e.HasOne<Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<StorageLocation>()
+                .WithMany()
+                .HasForeignKey(x => x.LocationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<Bin>()
+                .WithMany()
+                .HasForeignKey(x => x.BinId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 

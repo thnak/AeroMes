@@ -64,6 +64,9 @@ public static class DependencyInjection
         services.AddScoped<IAisleRepository, AisleRepository>();
         services.AddScoped<IRackRepository, RackRepository>();
         services.AddScoped<IBinRepository, BinRepository>();
+        services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
+        services.AddScoped<IGoodsReceiptNoteRepository, GoodsReceiptNoteRepository>();
+        services.AddScoped<IStockMovementRepository, StockMovementRepository>();
 
         // integration repositories
         services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();

@@ -51,4 +51,6 @@ public class InventoryStock : Entity
         Quantity = newQty;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public void SetBin(int? binId) => BinId = binId;
 }

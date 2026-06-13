@@ -41,4 +41,13 @@ public class InventoryStockRepository(AppDbContext db) : IInventoryStockReposito
     public Task<int> CountByBinAsync(int binId, CancellationToken ct) =>
         db.InventoryStocks.AsNoTracking()
             .CountAsync(s => s.BinId == binId && s.Quantity > 0, ct);
+
+    public Task<InventoryStock?> FindByKeyAsync(int locationId, string productCode, string lotNumber, CancellationToken ct) =>
+        db.InventoryStocks
+            .FirstOrDefaultAsync(s => s.LocationID == locationId
+                && s.ProductCode == productCode.Trim().ToUpperInvariant()
+                && s.LotNumber == lotNumber.Trim(), ct);
+
+    public async Task AddAsync(InventoryStock entity, CancellationToken ct) =>
+        await db.InventoryStocks.AddAsync(entity, ct);
 }

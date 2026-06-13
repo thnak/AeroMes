@@ -79,6 +79,12 @@ using AeroMes.Application.Wms.Queries.GetBinStock;
 using AeroMes.Application.Wms.Queries.GetRacks;
 using AeroMes.Application.Wms.Queries.GetWarehouseMap;
 using AeroMes.Application.Wms.Queries.GetZones;
+using AeroMes.Application.Wms.Commands.CreatePurchaseOrder;
+using AeroMes.Application.Wms.Commands.CreateGrn;
+using AeroMes.Application.Wms.Commands.AddGrnLine;
+using AeroMes.Application.Wms.Queries.GetPurchaseOrders;
+using AeroMes.Application.Wms.Queries.GetGrnList;
+using AeroMes.Application.Wms.Queries.GetGrnDetail;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AeroMes.Api.Constants;
@@ -343,6 +349,16 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(UpdateWarehouseRequest))]
 // machine additions
 [JsonSerializable(typeof(DuplicateMachineRequest))]
+// purchase orders & grn
+[JsonSerializable(typeof(IReadOnlyList<PurchaseOrderDto>))]
+[JsonSerializable(typeof(PoCreatedResult))]
+[JsonSerializable(typeof(CreatePurchaseOrderRequest))]
+[JsonSerializable(typeof(IReadOnlyList<GrnListDto>))]
+[JsonSerializable(typeof(GrnDetailDto))]
+[JsonSerializable(typeof(GrnCreatedResult))]
+[JsonSerializable(typeof(CreateGrnRequest))]
+[JsonSerializable(typeof(GrnLineAddedResult))]
+[JsonSerializable(typeof(AddGrnLineRequest))]
 // wms location hierarchy
 [JsonSerializable(typeof(IReadOnlyList<ZoneDto>))]
 [JsonSerializable(typeof(ZoneCreatedResult))]
