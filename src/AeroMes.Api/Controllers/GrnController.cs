@@ -42,7 +42,8 @@ public class GrnController(ICommandMediator commandMediator, IQueryMediator quer
     public async Task<ActionResult<ApiResponse<GrnDetailDto>>> GetById(int id, CancellationToken ct)
     {
         var result = await queryMediator.QueryAsync(new GetGrnDetailQuery(id), null, ct);
-        return Ok(new ApiResponse<GrnDetailDto>(true, "OK", result));
+        if (!result.IsFound) return NotFound(result.ErrorMessage);
+        return Ok(new ApiResponse<GrnDetailDto>(true, "OK", result.Value!));
     }
 
     [HttpPost]

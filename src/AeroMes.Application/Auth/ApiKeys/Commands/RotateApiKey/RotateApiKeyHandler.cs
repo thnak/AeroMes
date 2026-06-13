@@ -1,5 +1,5 @@
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using LiteBus.Commands.Abstractions;
 using System.Security.Cryptography;
 using System.Text;
@@ -7,12 +7,12 @@ using System.Text;
 namespace AeroMes.Application.Auth.ApiKeys.Commands.RotateApiKey;
 
 public class RotateApiKeyHandler(IApiKeyRepository repo, IUnitOfWork uow, IAuditLogger audit)
-    : ICommandHandler<RotateApiKeyCommand, RotateApiKeyResult>
+    : ICommandHandler<RotateApiKeyCommand, ValidationResult<RotateApiKeyResult>>
 {
-    public async Task<RotateApiKeyResult> HandleAsync(RotateApiKeyCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<RotateApiKeyResult>> HandleAsync(RotateApiKeyCommand cmd, CancellationToken ct)
     {
-        var key = await repo.GetByIdAsync(cmd.ApiKeyId, ct)
-            ?? throw new EntityNotFoundException("ApiKey", cmd.ApiKeyId);
+        var key = await repo.GetByIdAsync(cmd.ApiKeyId, ct);
+        if (key is null) return ValidationResult<RotateApiKeyResult>.NotFound($"ApiKey '{cmd.ApiKeyId}' was not found.");
 
         var prefixBytes = RandomNumberGenerator.GetBytes(6);
         var secretBytes = RandomNumberGenerator.GetBytes(24);
@@ -33,7 +33,7 @@ public class RotateApiKeyHandler(IApiKeyRepository repo, IUnitOfWork uow, IAudit
             Outcome = "Success",
         });
 
-        return new RotateApiKeyResult(fullKey, prefix);
+        return ValidationResult<RotateApiKeyResult>.Ok(new RotateApiKeyResult(fullKey, prefix));
     }
 
     private static string Base64UrlEncode(byte[] bytes)

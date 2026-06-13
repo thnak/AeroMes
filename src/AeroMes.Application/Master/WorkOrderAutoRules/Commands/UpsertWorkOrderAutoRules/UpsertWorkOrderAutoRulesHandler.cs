@@ -1,11 +1,11 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Master;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
 using DomainRules = AeroMes.Domain.Master.WorkOrderAutoRules;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.WorkOrderAutoRules.Commands.UpsertWorkOrderAutoRules;
 
@@ -41,12 +41,7 @@ public class UpsertWorkOrderAutoRulesHandler(
             }
             await uow.SaveChangesAsync(ct);
             return ValidationResult<int>.Ok(entity.RuleId);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<int>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<int>.Failure(ex.Message);
         }

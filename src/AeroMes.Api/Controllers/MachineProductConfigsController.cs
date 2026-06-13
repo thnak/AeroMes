@@ -42,7 +42,8 @@ public class MachineProductConfigsController(ICommandMediator commandMediator, I
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(string machineCode, string productCode, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new DeleteMachineProductConfigCommand(machineCode, productCode), null, ct);
+        var result = await commandMediator.SendAsync(new DeleteMachineProductConfigCommand(machineCode, productCode), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

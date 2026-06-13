@@ -1,12 +1,13 @@
 using AeroMes.Application.Master.Boms.Queries.GetActiveBom;
 using LiteBus.Queries.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.Master.Boms.Queries.CompareBomVersions;
 
 public record CompareBomVersionsQuery(
     string ProductCode,
     string FromVersion,
-    string ToVersion) : IQuery<BomCompareDto>;
+    string ToVersion) : IQuery<QueryResult<BomCompareDto>>;
 
 public record BomCompareDto(
     string ProductCode,

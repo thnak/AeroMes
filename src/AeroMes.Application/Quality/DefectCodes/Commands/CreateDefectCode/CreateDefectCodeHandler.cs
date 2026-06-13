@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Quality.Repositories;
 using AeroMes.Domain.Quality;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Quality.DefectCodes.Commands.CreateDefectCode;
 public class CreateDefectCodeHandler(
@@ -23,12 +23,7 @@ public class CreateDefectCodeHandler(
             await repo.AddAsync(entity, ct);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<int>.Ok(entity.DefectCodeID);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<int>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<int>.Failure(ex.Message);
         }

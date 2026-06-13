@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Tools.Commands.RecordToolUsage;
 
@@ -21,8 +21,8 @@ public class RecordToolUsageHandler(
 
         try
         {
-            var tool = await repo.GetByCodeAsync(cmd.ToolCode, ct)
-                ?? throw new EntityNotFoundException(nameof(Tool), cmd.ToolCode);
+            var tool = await repo.GetByCodeAsync(cmd.ToolCode, ct);
+            if (tool is null) return ValidationResult<RecordToolUsageResult>.NotFound($"Entity '{cmd.ToolCode}' was not found.");
 
             tool.AccumulateUsage(cmd.Count, cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
@@ -31,12 +31,7 @@ public class RecordToolUsageHandler(
                 tool.CurrentUsageCount, tool.MaxUsageCount,
                 tool.IsReconditioningDue, tool.IsNearingEndOfLife);
             return ValidationResult<RecordToolUsageResult>.Ok(result);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<RecordToolUsageResult>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<RecordToolUsageResult>.Failure(ex.Message);
         }

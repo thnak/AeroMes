@@ -73,7 +73,8 @@ public class RoutingsController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new DeleteRoutingCommand(id, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        var result = await commandMediator.SendAsync(new DeleteRoutingCommand(id, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -99,7 +100,8 @@ public class RoutingsController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DeleteStep(int stepId, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new DeleteRoutingStepCommand(stepId), null, ct);
+        var result = await commandMediator.SendAsync(new DeleteRoutingStepCommand(stepId), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

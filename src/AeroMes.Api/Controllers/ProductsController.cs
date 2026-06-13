@@ -102,7 +102,8 @@ public class ProductsController(ICommandMediator commandMediator,
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Delete(string code, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new DeleteProductCommand(code, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        var result = await commandMediator.SendAsync(new DeleteProductCommand(code, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -141,8 +142,9 @@ public class ProductsController(ICommandMediator commandMediator,
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> RemoveUoMConversion(string code, int conversionId, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new RemoveProductUoMConversionCommand(code, conversionId, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

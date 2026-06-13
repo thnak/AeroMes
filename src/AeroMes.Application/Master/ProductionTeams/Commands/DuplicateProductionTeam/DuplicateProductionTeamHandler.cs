@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.ProductionTeams.Commands.DuplicateProductionTeam;
 
@@ -19,19 +19,14 @@ public class DuplicateProductionTeamHandler(IProductionTeamRepository repo, IUni
 
         try
         {
-            var source = await repo.GetByCodeAsync(cmd.SourceCode, ct)
-                ?? throw new EntityNotFoundException(nameof(ProductionTeam), cmd.SourceCode);
+            var source = await repo.GetByCodeAsync(cmd.SourceCode, ct);
+            if (source is null) return ValidationResult<string>.NotFound($"Entity '{cmd.SourceCode}' was not found.");
 
             var copy = source.Duplicate(cmd.NewCode, cmd.CreatedBy);
             await repo.AddAsync(copy, ct);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<string>.Ok(copy.TeamCode);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<string>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<string>.Failure(ex.Message);
         }

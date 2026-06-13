@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Products.Commands.CreateProductVariant;
 
@@ -24,8 +24,8 @@ public class CreateProductVariantHandler(
         {
             await optionsRepo.EnsureModeAsync(MaterialManagementModes.VariantCode, ct);
 
-            var parent = await repo.GetByCodeAsync(cmd.ParentProductCode, ct)
-                ?? throw new EntityNotFoundException("Product", cmd.ParentProductCode);
+            var parent = await repo.GetByCodeAsync(cmd.ParentProductCode, ct);
+            if (parent is null) return ValidationResult<string>.NotFound($"Product '{cmd.ParentProductCode}' was not found.");
 
             if (parent.ParentProductCode is not null)
                 throw new DomainException(
@@ -44,12 +44,7 @@ public class CreateProductVariantHandler(
             await repo.AddAsync(variant, ct);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<string>.Ok(variant.ProductCode);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<string>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<string>.Failure(ex.Message);
         }

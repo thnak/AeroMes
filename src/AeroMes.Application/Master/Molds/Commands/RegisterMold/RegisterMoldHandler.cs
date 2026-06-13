@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Master;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Molds.Commands.RegisterMold;
 public class RegisterMoldHandler(
@@ -27,12 +27,7 @@ public class RegisterMoldHandler(
             await repo.AddAsync(mold, ct);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<string>.Ok(mold.MoldCode);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<string>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<string>.Failure(ex.Message);
         }

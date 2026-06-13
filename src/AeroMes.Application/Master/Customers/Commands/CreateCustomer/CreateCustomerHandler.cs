@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Customers.Commands.CreateCustomer;
 
@@ -30,12 +30,7 @@ public class CreateCustomerHandler(
             await repo.AddAsync(customer, ct);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<string>.Ok(customer.CustomerCode);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<string>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<string>.Failure(ex.Message);
         }

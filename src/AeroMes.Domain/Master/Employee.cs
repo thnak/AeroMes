@@ -1,5 +1,5 @@
-using AeroMes.Domain.Common;
 using AeroMes.Domain.Exceptions;
+using AeroMes.Domain.Common;
 
 namespace AeroMes.Domain.Master;
 
@@ -78,7 +78,7 @@ public class Employee : AuditableEntity
     public void RemoveSkill(int employeeSkillId)
     {
         var skill = _skills.FirstOrDefault(x => x.EmployeeSkillId == employeeSkillId)
-            ?? throw new EntityNotFoundException(nameof(employeeSkillId), employeeSkillId);
+            ?? throw new DomainException($"employeeSkillId '{employeeSkillId}' was not found.");
         _skills.Remove(skill);
     }
 
@@ -115,7 +115,7 @@ public class Employee : AuditableEntity
     public void EndShiftAssignment(int shiftAssignmentId, DateOnly validTo)
     {
         var assignment = _shiftAssignments.FirstOrDefault(x => x.ShiftAssignmentId == shiftAssignmentId)
-            ?? throw new EntityNotFoundException(nameof(shiftAssignmentId), shiftAssignmentId);
+            ?? throw new DomainException($"shiftAssignmentId '{shiftAssignmentId}' was not found.");
         if (validTo < assignment.ValidFrom)
             throw new DomainException("ValidTo must be on or after ValidFrom.");
         assignment.End(validTo);
@@ -124,7 +124,7 @@ public class Employee : AuditableEntity
     public void RemoveShiftAssignment(int shiftAssignmentId)
     {
         var assignment = _shiftAssignments.FirstOrDefault(x => x.ShiftAssignmentId == shiftAssignmentId)
-            ?? throw new EntityNotFoundException(nameof(shiftAssignmentId), shiftAssignmentId);
+            ?? throw new DomainException($"shiftAssignmentId '{shiftAssignmentId}' was not found.");
         _shiftAssignments.Remove(assignment);
     }
 }

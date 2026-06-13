@@ -63,7 +63,8 @@ public class MachinesController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(string code, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new DeleteMachineCommand(code, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        var result = await commandMediator.SendAsync(new DeleteMachineCommand(code, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

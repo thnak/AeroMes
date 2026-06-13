@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Molds.Commands.RecordMoldShots;
 
@@ -31,12 +31,7 @@ public class RecordMoldShotsHandler(
             return ValidationResult<RecordMoldShotsResult>.Ok(
                 new RecordMoldShotsResult(
                     mold.CurrentShots, mold.MaxShots, mold.IsPmDue, mold.IsNearingEndOfLife));
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<RecordMoldShotsResult>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<RecordMoldShotsResult>.Failure(ex.Message);
         }

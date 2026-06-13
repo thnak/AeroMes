@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Downtime.Commands.StartDowntime;
 
@@ -30,12 +30,7 @@ public class StartDowntimeHandler(
             await uow.SaveChangesAsync(ct);
 
             return ValidationResult<long>.Ok(log.DowntimeLogID);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<long>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<long>.Failure(ex.Message);
         }

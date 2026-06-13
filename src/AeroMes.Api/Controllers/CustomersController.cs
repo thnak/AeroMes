@@ -83,8 +83,9 @@ public class CustomersController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(string code, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new DeleteCustomerCommand(code, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -138,8 +139,9 @@ public class CustomersController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemovePartNumber(string code, int partNumberId, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new RemoveCustomerPartNumberCommand(code, partNumberId, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -170,8 +172,9 @@ public class CustomersController(ICommandMediator commandMediator, IQueryMediato
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemoveQualitySpec(string code, int specId, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new RemoveCustomerQualitySpecCommand(code, specId, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

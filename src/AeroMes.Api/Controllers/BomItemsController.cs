@@ -57,7 +57,8 @@ public class BomItemsController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new DeleteBomItemCommand(id), null, ct);
+        var result = await commandMediator.SendAsync(new DeleteBomItemCommand(id), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

@@ -43,7 +43,8 @@ public class DowntimeController(ICommandMediator commandMediator, IQueryMediator
     public async Task<ActionResult<ApiResponse<DowntimeLogDto>>> GetById(long id, CancellationToken ct)
     {
         var result = await queryMediator.QueryAsync(new GetDowntimeDetailQuery(id), null, ct);
-        return Ok(new ApiResponse<DowntimeLogDto>(true, "OK", result));
+        if (!result.IsFound) return NotFound(result.ErrorMessage);
+        return Ok(new ApiResponse<DowntimeLogDto>(true, "OK", result.Value!));
     }
 
     [HttpPost("start")]

@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.WorkOrders.Commands.StartWorkOrder;
 
@@ -22,8 +22,8 @@ public class StartWorkOrderHandler(
 
         try
         {
-            var workOrder = await workOrderRepo.GetByIdAsync(cmd.WorkOrderId, ct)
-                ?? throw new EntityNotFoundException(nameof(WorkOrder), cmd.WorkOrderId);
+            var workOrder = await workOrderRepo.GetByIdAsync(cmd.WorkOrderId, ct);
+            if (workOrder is null) return ValidationResult<StartWorkOrderResult>.NotFound($"Entity '{cmd.WorkOrderId}' was not found.");
 
             workOrder.Start(cmd.OperatorId, cmd.Timestamp);
             await uow.SaveChangesAsync(ct);
@@ -33,12 +33,7 @@ public class StartWorkOrderHandler(
                 workOrder.Status.ToString().ToUpperInvariant(),
                 workOrder.ActualStartDate!.Value);
             return ValidationResult<StartWorkOrderResult>.Ok(result);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<StartWorkOrderResult>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<StartWorkOrderResult>.Failure(ex.Message);
         }

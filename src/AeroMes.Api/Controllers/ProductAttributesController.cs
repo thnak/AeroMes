@@ -83,8 +83,9 @@ public class ProductAttributesController(ICommandMediator commandMediator, IQuer
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new DeleteProductAttributeCommand(id, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -124,8 +125,9 @@ public class ProductAttributesController(ICommandMediator commandMediator, IQuer
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> RemoveValue(int id, int valueId, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new RemoveAttributeValueCommand(id, valueId, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

@@ -1,8 +1,9 @@
 using LiteBus.Queries.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.Integration.Queries.GetSalesOrderDetail;
 
-public record GetSalesOrderDetailQuery(int Id) : IQuery<SalesOrderDetailDto>;
+public record GetSalesOrderDetailQuery(int Id) : IQuery<QueryResult<SalesOrderDetailDto>>;
 
 public record SalesOrderDetailDto(
     int SOID,

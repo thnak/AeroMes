@@ -48,7 +48,8 @@ public class ApiKeysController(ICommandMediator commandMediator, IQueryMediator 
     public async Task<IActionResult> Revoke(int id, CancellationToken ct)
     {
         var actorId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        await commandMediator.SendAsync(new RevokeApiKeyCommand(id, actorId), null, ct);
+        var result = await commandMediator.SendAsync(new RevokeApiKeyCommand(id, actorId), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -60,7 +61,8 @@ public class ApiKeysController(ICommandMediator commandMediator, IQueryMediator 
     {
         var actorId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var result = await commandMediator.SendAsync(new RotateApiKeyCommand(id, actorId), null, ct);
-        return Ok(result);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return Ok(result.Value!);
     }
 }
 

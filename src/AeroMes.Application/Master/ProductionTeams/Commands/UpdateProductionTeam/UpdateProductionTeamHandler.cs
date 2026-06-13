@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.ProductionTeams.Commands.UpdateProductionTeam;
 
@@ -19,8 +19,8 @@ public class UpdateProductionTeamHandler(IProductionTeamRepository repo, IUnitOf
 
         try
         {
-            var team = await repo.GetByCodeAsync(cmd.Code, ct)
-                ?? throw new EntityNotFoundException(nameof(ProductionTeam), cmd.Code);
+            var team = await repo.GetByCodeAsync(cmd.Code, ct);
+            if (team is null) return ValidationResult<Unit>.NotFound($"Entity '{cmd.Code}' was not found.");
 
             team.UpdateDetails(
                 cmd.Name, cmd.OrgUnitId,
@@ -30,12 +30,7 @@ public class UpdateProductionTeamHandler(IProductionTeamRepository repo, IUnitOf
                 cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<Unit>.Failure(ex.Message);
         }

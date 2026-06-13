@@ -43,7 +43,8 @@ public class WorkOrderAutoRulesController(ICommandMediator commandMediator, IQue
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new DeleteWorkOrderAutoRulesCommand(id, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        var result = await commandMediator.SendAsync(new DeleteWorkOrderAutoRulesCommand(id, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

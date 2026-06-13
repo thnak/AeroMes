@@ -75,8 +75,9 @@ public class WorkCalendarsController(ICommandMediator commandMediator, IQueryMed
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new DeleteWorkCalendarCommand(id, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -100,8 +101,9 @@ public class WorkCalendarsController(ICommandMediator commandMediator, IQueryMed
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemoveException(int id, int exceptionId, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new RemoveCalendarExceptionCommand(id, exceptionId, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

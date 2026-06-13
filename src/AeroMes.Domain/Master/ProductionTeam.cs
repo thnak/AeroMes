@@ -1,5 +1,5 @@
-using AeroMes.Domain.Common;
 using AeroMes.Domain.Exceptions;
+using AeroMes.Domain.Common;
 
 namespace AeroMes.Domain.Master;
 
@@ -103,7 +103,7 @@ public class ProductionTeam : AuditableEntity
     {
         var normalized = employeeCode.Trim().ToUpperInvariant();
         var member = _members.FirstOrDefault(m => m.EmployeeCode == normalized)
-            ?? throw new EntityNotFoundException(nameof(ProductionTeamMember), normalized);
+            ?? throw new DomainException($"ProductionTeamMember '{normalized}' was not found.");
         _members.Remove(member);
         Touch(updatedBy);
     }

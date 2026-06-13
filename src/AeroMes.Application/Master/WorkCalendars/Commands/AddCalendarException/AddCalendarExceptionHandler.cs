@@ -1,9 +1,9 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.WorkCalendars.Commands.AddCalendarException;
 
@@ -20,17 +20,12 @@ public class AddCalendarExceptionHandler(
 
         try
         {
-            var calendar = await repo.GetByIdWithDetailsAsync(cmd.WorkCalendarId, ct)
-                ?? throw new EntityNotFoundException(nameof(cmd.WorkCalendarId), cmd.WorkCalendarId);
+            var calendar = await repo.GetByIdWithDetailsAsync(cmd.WorkCalendarId, ct);
+            if (calendar is null) return ValidationResult<int>.NotFound($"Entity '{cmd.WorkCalendarId}' was not found.");
             var ex = calendar.AddException(cmd.Date, cmd.ExceptionType, cmd.WorkShiftId, cmd.CreatedBy);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<int>.Ok(ex.CalendarExceptionId);
-        }
-        catch (EntityNotFoundException e)
-        {
-            return ValidationResult<int>.NotFound(e.Message);
-        }
-        catch (DomainException e)
+        }        catch (DomainException e)
         {
             return ValidationResult<int>.Failure(e.Message);
         }

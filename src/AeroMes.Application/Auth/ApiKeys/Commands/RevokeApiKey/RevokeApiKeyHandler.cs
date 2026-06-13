@@ -1,17 +1,17 @@
 using AeroMes.Application.Auth;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.Auth.ApiKeys.Commands.RevokeApiKey;
 
 public class RevokeApiKeyHandler(IApiKeyRepository repo, IUnitOfWork uow, IAuditLogger audit)
-    : ICommandHandler<RevokeApiKeyCommand>
+    : ICommandHandler<RevokeApiKeyCommand, ValidationResult<Unit>>
 {
-    public async Task HandleAsync(RevokeApiKeyCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<Unit>> HandleAsync(RevokeApiKeyCommand cmd, CancellationToken ct)
     {
-        var key = await repo.GetByIdAsync(cmd.ApiKeyId, ct)
-            ?? throw new EntityNotFoundException("ApiKey", cmd.ApiKeyId);
+        var key = await repo.GetByIdAsync(cmd.ApiKeyId, ct);
+        if (key is null) return ValidationResult<Unit>.NotFound($"ApiKey '{cmd.ApiKeyId}' was not found.");
 
         key.Revoke();
         await uow.SaveChangesAsync(ct);
@@ -24,5 +24,6 @@ public class RevokeApiKeyHandler(IApiKeyRepository repo, IUnitOfWork uow, IAudit
             TargetId = cmd.ApiKeyId.ToString(),
             Outcome = "Success",
         });
+        return ValidationResult<Unit>.Ok(Unit.Value);
     }
 }

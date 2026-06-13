@@ -1,9 +1,9 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Operations.Commands.UpdateOperation;
 
@@ -20,17 +20,12 @@ public class UpdateOperationHandler(
 
         try
         {
-            var entity = await repo.GetByCodeAsync(cmd.Code, ct)
-                ?? throw new EntityNotFoundException("Operation", cmd.Code);
+            var entity = await repo.GetByCodeAsync(cmd.Code, ct);
+            if (entity is null) return ValidationResult<Unit>.NotFound($"Operation '{cmd.Code}' was not found.");
             entity.UpdateDetails(cmd.Name, cmd.Description);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<Unit>.Failure(ex.Message);
         }

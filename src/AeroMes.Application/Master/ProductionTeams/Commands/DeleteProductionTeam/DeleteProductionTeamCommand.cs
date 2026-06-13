@@ -1,5 +1,6 @@
 using LiteBus.Commands.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.Master.ProductionTeams.Commands.DeleteProductionTeam;
 
-public record DeleteProductionTeamCommand(string Code, string? DeletedBy) : ICommand;
+public record DeleteProductionTeamCommand(string Code, string? DeletedBy) : ICommand<ValidationResult<Unit>>;

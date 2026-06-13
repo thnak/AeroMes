@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Master;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Tools.Commands.RegisterTool;
 public class RegisterToolHandler(
@@ -29,12 +29,7 @@ public class RegisterToolHandler(
             await repo.AddAsync(tool, ct);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<string>.Ok(tool.ToolCode);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<string>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<string>.Failure(ex.Message);
         }

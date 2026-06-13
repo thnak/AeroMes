@@ -1,8 +1,9 @@
 using LiteBus.Queries.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.Integration.Queries.GetProductionOrderDetail;
 
-public record GetProductionOrderDetailQuery(int Id) : IQuery<ProductionOrderDetailDto>;
+public record GetProductionOrderDetailQuery(int Id) : IQuery<QueryResult<ProductionOrderDetailDto>>;
 
 public record ProductionOrderDetailDto(
     int POID,

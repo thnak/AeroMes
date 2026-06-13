@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Master;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.BomItems.Commands.CreateBomItem;
 public class CreateBomItemHandler(
@@ -28,12 +28,7 @@ public class CreateBomItemHandler(
             await repo.AddAsync(entity, ct);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<int>.Ok(entity.BomID);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<int>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<int>.Failure(ex.Message);
         }

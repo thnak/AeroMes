@@ -1,8 +1,8 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Wms.Repositories;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Wms.Commands.ConfirmPurchaseOrder;
 
@@ -15,19 +15,14 @@ public class ConfirmPurchaseOrderHandler(
     {
         try
         {
-            var po = await poRepo.GetByIdWithLinesAsync(cmd.PoId, ct)
-                ?? throw new EntityNotFoundException("PurchaseOrder", cmd.PoId);
+            var po = await poRepo.GetByIdWithLinesAsync(cmd.PoId, ct);
+            if (po is null) return ValidationResult<Unit>.NotFound($"PurchaseOrder '{cmd.PoId}' was not found.");
 
             po.Confirm(cmd.ConfirmedBy);
             await uow.SaveChangesAsync(ct);
 
             return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<Unit>.Failure(ex.Message);
         }

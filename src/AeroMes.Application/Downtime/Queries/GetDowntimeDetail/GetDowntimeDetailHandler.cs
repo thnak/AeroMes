@@ -1,19 +1,19 @@
 using AeroMes.Application.Downtime.Queries.GetDowntimeLogs;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Production.Repositories;
 using LiteBus.Queries.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.Downtime.Queries.GetDowntimeDetail;
 
 public class GetDowntimeDetailHandler(IDowntimeLogRepository repo)
-    : IQueryHandler<GetDowntimeDetailQuery, DowntimeLogDto>
+    : IQueryHandler<GetDowntimeDetailQuery, QueryResult<DowntimeLogDto>>
 {
-    public async Task<DowntimeLogDto> HandleAsync(GetDowntimeDetailQuery q, CancellationToken ct)
+    public async Task<QueryResult<DowntimeLogDto>> HandleAsync(GetDowntimeDetailQuery q, CancellationToken ct)
     {
-        var d = await repo.GetByIdAsync(q.Id, ct)
-            ?? throw new EntityNotFoundException("DowntimeLog", q.Id);
+        var d = await repo.GetByIdAsync(q.Id, ct);
+        if (d is null) return QueryResult<DowntimeLogDto>.NotFound($"DowntimeLog '{q.Id}' was not found.");
 
-        return new DowntimeLogDto(
+        return QueryResult<DowntimeLogDto>.Found(new DowntimeLogDto(
             d.DowntimeLogID,
             d.MachineCode,
             d.ReasonCode,
@@ -23,6 +23,6 @@ public class GetDowntimeDetailHandler(IDowntimeLogRepository repo)
             d.DurationMinutes,
             d.OperatorID,
             d.Notes,
-            d.EndTime == null);
+            d.EndTime == null));
     }
 }

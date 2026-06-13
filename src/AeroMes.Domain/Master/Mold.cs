@@ -1,5 +1,5 @@
-using AeroMes.Domain.Common;
 using AeroMes.Domain.Exceptions;
+using AeroMes.Domain.Common;
 using AeroMes.Domain.Master.Events;
 
 namespace AeroMes.Domain.Master;
@@ -120,7 +120,7 @@ public class Mold : AuditableEntity
     public void RemoveProductMapping(int mappingId, string? updatedBy)
     {
         var mapping = _productMappings.FirstOrDefault(x => x.MappingId == mappingId)
-            ?? throw new EntityNotFoundException(nameof(MoldProductMapping), mappingId);
+            ?? throw new DomainException($"MoldProductMapping '{mappingId}' was not found.");
         _productMappings.Remove(mapping);
         Touch(updatedBy);
     }

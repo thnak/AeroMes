@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Molds.Commands.AddMoldProduct;
 
@@ -21,19 +21,14 @@ public class AddMoldProductHandler(
 
         try
         {
-            var mold = await repo.GetByCodeAsync(cmd.MoldCode, ct)
-                ?? throw new EntityNotFoundException(nameof(Mold), cmd.MoldCode);
+            var mold = await repo.GetByCodeAsync(cmd.MoldCode, ct);
+            if (mold is null) return ValidationResult<int>.NotFound($"Entity '{cmd.MoldCode}' was not found.");
 
             var mapping = mold.AddProductMapping(
                 cmd.ProductCode, cmd.IsDefault, cmd.CycleTimeSeconds, cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<int>.Ok(mapping.MappingId);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<int>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<int>.Failure(ex.Message);
         }

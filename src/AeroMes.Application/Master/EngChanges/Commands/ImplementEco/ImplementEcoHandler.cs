@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.EngChanges.Commands.ImplementEco;
 
@@ -22,8 +22,8 @@ public class ImplementEcoHandler(
 
         try
         {
-            var ec = await ecRepo.GetByNumberAsync(cmd.EcNumber, ct)
-                ?? throw new EntityNotFoundException(nameof(EngChange), cmd.EcNumber);
+            var ec = await ecRepo.GetByNumberAsync(cmd.EcNumber, ct);
+            if (ec is null) return ValidationResult<ImplementEcoResult>.NotFound($"Entity '{cmd.EcNumber}' was not found.");
 
             // Validate before creating the draft — the header is saved first (to get its ID),
             // so an ineligible ECO must fail before any side effects.
@@ -52,12 +52,7 @@ public class ImplementEcoHandler(
             await uow.SaveChangesAsync(ct);
 
             return ValidationResult<ImplementEcoResult>.Ok(new ImplementEcoResult(header.BomHeaderId, header.ProductCode, header.Version));
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<ImplementEcoResult>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<ImplementEcoResult>.Failure(ex.Message);
         }

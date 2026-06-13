@@ -1,7 +1,7 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Auth;
-using AeroMes.Domain.Exceptions;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.Auth.Roles.Commands.SetRolePermissions;
 
@@ -10,12 +10,12 @@ public class SetRolePermissionsHandler(
     IPermissionRepository repo,
     IUnitOfWork uow,
     IAuditLogger auditLogger)
-    : ICommandHandler<SetRolePermissionsCommand>
+    : ICommandHandler<SetRolePermissionsCommand, ValidationResult<Unit>>
 {
-    public async Task HandleAsync(SetRolePermissionsCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<Unit>> HandleAsync(SetRolePermissionsCommand cmd, CancellationToken ct)
     {
         if (!await roles.ExistsAsync(cmd.RoleId, ct))
-            throw new EntityNotFoundException("Role", cmd.RoleId);
+            return ValidationResult<Unit>.NotFound($"Role '{cmd.RoleId}' was not found.");
 
         var existing = await repo.GetRolePermissionsAsync(cmd.RoleId, ct);
         repo.RemoveRolePermissions(existing);
@@ -33,5 +33,6 @@ public class SetRolePermissionsHandler(
             TargetType = "Role", TargetId = cmd.RoleId,
             NewValues = string.Join(",", cmd.PermissionCodes),
         });
+        return ValidationResult<Unit>.Ok(Unit.Value);
     }
 }

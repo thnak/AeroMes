@@ -1,5 +1,5 @@
-using AeroMes.Domain.Common;
 using AeroMes.Domain.Exceptions;
+using AeroMes.Domain.Common;
 using AeroMes.Domain.Master.Events;
 
 namespace AeroMes.Domain.Master;
@@ -134,7 +134,7 @@ public class Tool : AuditableEntity
     public void RemoveOperationMapping(int mappingId, string? updatedBy)
     {
         var mapping = _operationMappings.FirstOrDefault(x => x.MappingId == mappingId)
-            ?? throw new EntityNotFoundException(nameof(ToolOperationMapping), mappingId);
+            ?? throw new DomainException($"ToolOperationMapping '{mappingId}' was not found.");
         _operationMappings.Remove(mapping);
         Touch(updatedBy);
     }

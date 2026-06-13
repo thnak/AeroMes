@@ -1,11 +1,11 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
 using AeroMes.Domain.Wms;
 using AeroMes.Domain.Wms.Repositories;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Wms.Commands.ConfirmGrn;
 
@@ -23,14 +23,14 @@ public class ConfirmGrnHandler(
     {
         try
         {
-            var grn = await grnRepo.GetByIdWithLinesAsync(cmd.GrnId, ct)
-                ?? throw new EntityNotFoundException("GoodsReceiptNote", cmd.GrnId);
+            var grn = await grnRepo.GetByIdWithLinesAsync(cmd.GrnId, ct);
+            if (grn is null) return ValidationResult<Unit>.NotFound($"GoodsReceiptNote '{cmd.GrnId}' was not found.");
 
             PurchaseOrder? po = null;
             if (grn.PoId.HasValue)
             {
-                po = await poRepo.GetByIdWithLinesAsync(grn.PoId.Value, ct)
-                    ?? throw new EntityNotFoundException("PurchaseOrder", grn.PoId.Value);
+                po = await poRepo.GetByIdWithLinesAsync(grn.PoId.Value, ct);
+                if (po is null) return ValidationResult<Unit>.NotFound($"PurchaseOrder '{grn.PoId.Value}' was not found.");
 
                 var errors = ValidateQtyAgainstPo(grn, po);
                 if (errors.Count > 0)
@@ -66,10 +66,6 @@ public class ConfirmGrnHandler(
             await uow.SaveChangesAsync(ct);
 
             return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
         }
         catch (DomainException ex)
         {

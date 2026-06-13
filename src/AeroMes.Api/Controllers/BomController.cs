@@ -42,7 +42,11 @@ public class BomController(ICommandMediator commandMediator, IQueryMediator quer
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Explode(
         string productCode, [FromQuery] decimal quantity = 1m, CancellationToken ct = default)
-        => Ok(await queryMediator.QueryAsync(new ExplodeBomQuery(productCode, quantity), null, ct));
+    {
+        var result = await queryMediator.QueryAsync(new ExplodeBomQuery(productCode, quantity), null, ct);
+        if (!result.IsFound) return NotFound(result.ErrorMessage);
+        return Ok(result.Value!);
+    }
 
     [HttpGet("{productCode}/compare")]
     [RequirePermission(Permissions.MasterDataRead)]
@@ -50,7 +54,11 @@ public class BomController(ICommandMediator commandMediator, IQueryMediator quer
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Compare(
         string productCode, [FromQuery] string from, [FromQuery] string to, CancellationToken ct)
-        => Ok(await queryMediator.QueryAsync(new CompareBomVersionsQuery(productCode, from, to), null, ct));
+    {
+        var result = await queryMediator.QueryAsync(new CompareBomVersionsQuery(productCode, from, to), null, ct);
+        if (!result.IsFound) return NotFound(result.ErrorMessage);
+        return Ok(result.Value!);
+    }
 
     [HttpGet("{productCode}/versions")]
     [RequirePermission(Permissions.MasterDataRead)]
@@ -105,8 +113,9 @@ public class BomController(ICommandMediator commandMediator, IQueryMediator quer
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Submit(string productCode, string version, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new SubmitBomForReviewCommand(productCode, version, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -117,8 +126,9 @@ public class BomController(ICommandMediator commandMediator, IQueryMediator quer
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Approve(string productCode, string version, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new ApproveBomCommand(productCode, version, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -130,8 +140,9 @@ public class BomController(ICommandMediator commandMediator, IQueryMediator quer
     public async Task<IActionResult> Activate(
         string productCode, string version, [FromBody] ActivateBomRequest req, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new ActivateBomVersionCommand(productCode, version, req.EffectiveFrom, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

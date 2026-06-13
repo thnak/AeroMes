@@ -53,7 +53,8 @@ public class IntegrationController(
         int id, CancellationToken ct)
     {
         var result = await queryMediator.QueryAsync(new GetSalesOrderDetailQuery(id), null, ct);
-        return Ok(new ApiResponse<SalesOrderDetailDto>(true, "OK", result));
+        if (!result.IsFound) return NotFound(result.ErrorMessage);
+        return Ok(new ApiResponse<SalesOrderDetailDto>(true, "OK", result.Value!));
     }
 
     // ── Production Orders ────────────────────────────────────────────────────
@@ -85,7 +86,8 @@ public class IntegrationController(
         int id, CancellationToken ct)
     {
         var result = await queryMediator.QueryAsync(new GetProductionOrderDetailQuery(id), null, ct);
-        return Ok(new ApiResponse<ProductionOrderDetailDto>(true, "OK", result));
+        if (!result.IsFound) return NotFound(result.ErrorMessage);
+        return Ok(new ApiResponse<ProductionOrderDetailDto>(true, "OK", result.Value!));
     }
 
     // ── ERP Settings ─────────────────────────────────────────────────────────

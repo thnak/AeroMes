@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
@@ -11,16 +12,16 @@ namespace AeroMes.Application.Master.Boms.Queries.ExplodeBom;
 /// cycles are cut per-branch and reported as a domain error.
 /// </summary>
 public class ExplodeBomHandler(IBomHeaderRepository repo)
-    : IQueryHandler<ExplodeBomQuery, IReadOnlyList<ExplodedBomLineDto>>
+    : IQueryHandler<ExplodeBomQuery, QueryResult<IReadOnlyList<ExplodedBomLineDto>>>
 {
     private const int MaxDepth = 20;
 
-    public async Task<IReadOnlyList<ExplodedBomLineDto>> HandleAsync(
+    public async Task<QueryResult<IReadOnlyList<ExplodedBomLineDto>>> HandleAsync(
         ExplodeBomQuery query, CancellationToken ct)
     {
         var rootCode = query.ProductCode.Trim().ToUpperInvariant();
-        var root = await repo.GetActiveByProductWithDetailsAsync(rootCode, ct)
-            ?? throw new EntityNotFoundException(nameof(BomHeader), rootCode);
+        var root = await repo.GetActiveByProductWithDetailsAsync(rootCode, ct);
+        if (root is null) return QueryResult<IReadOnlyList<ExplodedBomLineDto>>.NotFound($"Entity '{rootCode}' was not found.");
 
         var result = new List<ExplodedBomLineDto>();
         // (parentCode, header, multiplier = parent units to produce, ancestor path for cycle detection)
@@ -67,6 +68,6 @@ public class ExplodeBomHandler(IBomHeaderRepository repo)
             frontier = next;
         }
 
-        return result;
+        return QueryResult<IReadOnlyList<ExplodedBomLineDto>>.Found(result);
     }
 }

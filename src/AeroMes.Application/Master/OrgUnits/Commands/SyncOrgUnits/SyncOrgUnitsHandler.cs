@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.OrgUnits.Commands.SyncOrgUnits;
 
@@ -76,12 +76,7 @@ public class SyncOrgUnitsHandler(IOrgUnitRepository repo, IUnitOfWork uow, IVali
 
             await uow.SaveChangesAsync(ct);
             return ValidationResult<SyncOrgUnitsResult>.Ok(new SyncOrgUnitsResult(created, updated, deactivated));
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<SyncOrgUnitsResult>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<SyncOrgUnitsResult>.Failure(ex.Message);
         }

@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.EngChanges.Commands.CreateEcoFromEcr;
 
@@ -21,8 +21,8 @@ public class CreateEcoFromEcrHandler(
 
         try
         {
-            var ecr = await repo.GetByNumberAsync(cmd.EcrNumber, ct)
-                ?? throw new EntityNotFoundException(nameof(EngChange), cmd.EcrNumber);
+            var ecr = await repo.GetByNumberAsync(cmd.EcrNumber, ct);
+            if (ecr is null) return ValidationResult<string>.NotFound($"Entity '{cmd.EcrNumber}' was not found.");
 
             if (ecr.EcType != EcType.Ecr)
                 throw new DomainException($"Phiếu '{ecr.EcNumber}' không phải là ECR.");
@@ -37,12 +37,7 @@ public class CreateEcoFromEcrHandler(
             await repo.AddAsync(eco, ct);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<string>.Ok(eco.EcNumber);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<string>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<string>.Failure(ex.Message);
         }

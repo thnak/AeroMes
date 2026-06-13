@@ -1,8 +1,9 @@
 using LiteBus.Queries.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.WorkOrders.Queries.GetWorkOrderDetail;
 
-public record GetWorkOrderDetailQuery(int Id) : IQuery<WorkOrderDetailDto>;
+public record GetWorkOrderDetailQuery(int Id) : IQuery<QueryResult<WorkOrderDetailDto>>;
 
 public record WorkOrderDetailDto(
     int WOID,

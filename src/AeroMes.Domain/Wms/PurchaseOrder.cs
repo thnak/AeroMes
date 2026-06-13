@@ -1,5 +1,5 @@
-using AeroMes.Domain.Common;
 using AeroMes.Domain.Exceptions;
+using AeroMes.Domain.Common;
 
 namespace AeroMes.Domain.Wms;
 
@@ -62,7 +62,7 @@ public class PurchaseOrder : AuditableEntity
     public void RecordLineReceived(int poLineId, decimal qty, string updatedBy)
     {
         var line = _lines.FirstOrDefault(l => l.PoLineId == poLineId)
-            ?? throw new EntityNotFoundException("PurchaseOrderLine", poLineId);
+            ?? throw new DomainException($"PurchaseOrderLine '{poLineId}' was not found.");
         line.AddReceived(qty);
 
         var allFull = _lines.All(l => l.ReceivedQty >= l.OrderedQty);

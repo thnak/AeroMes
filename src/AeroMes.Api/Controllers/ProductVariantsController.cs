@@ -84,8 +84,9 @@ public class ProductVariantsController(ICommandMediator commandMediator, IQueryM
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> RemoveSpecification(string productCode, int specificationId, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new RemoveProductSpecificationCommand(productCode, specificationId, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

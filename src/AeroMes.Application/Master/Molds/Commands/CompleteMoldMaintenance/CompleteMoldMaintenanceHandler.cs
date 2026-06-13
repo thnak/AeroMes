@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Molds.Commands.CompleteMoldMaintenance;
 
@@ -21,8 +21,8 @@ public class CompleteMoldMaintenanceHandler(
 
         try
         {
-            var mold = await repo.GetByCodeAsync(cmd.MoldCode, ct)
-                ?? throw new EntityNotFoundException(nameof(Mold), cmd.MoldCode);
+            var mold = await repo.GetByCodeAsync(cmd.MoldCode, ct);
+            if (mold is null) return ValidationResult<long>.NotFound($"Entity '{cmd.MoldCode}' was not found.");
 
             var log = mold.CompleteMaintenance(
                 cmd.MaintenanceType, cmd.StartDate, cmd.EndDate,
@@ -30,12 +30,7 @@ public class CompleteMoldMaintenanceHandler(
                 cmd.Cost, cmd.NextDueShots, cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<long>.Ok(log.LogId);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<long>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<long>.Failure(ex.Message);
         }

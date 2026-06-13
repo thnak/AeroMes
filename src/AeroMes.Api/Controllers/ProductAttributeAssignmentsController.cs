@@ -41,8 +41,9 @@ public class ProductAttributeAssignmentsController(ICommandMediator commandMedia
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Unassign(string productCode, int attributeId, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new UnassignAttributeFromProductCommand(productCode, attributeId, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

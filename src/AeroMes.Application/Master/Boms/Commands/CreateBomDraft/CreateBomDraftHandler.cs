@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Boms.Commands.CreateBomDraft;
 
@@ -35,12 +35,7 @@ public class CreateBomDraftHandler(
             await repo.AddAsync(header, ct);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<int>.Ok(header.BomHeaderId);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<int>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<int>.Failure(ex.Message);
         }

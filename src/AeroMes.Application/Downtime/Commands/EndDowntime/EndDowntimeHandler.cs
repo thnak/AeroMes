@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Downtime.Commands.EndDowntime;
 
@@ -22,19 +22,14 @@ public class EndDowntimeHandler(
 
         try
         {
-            var log = await downtimeRepo.GetByIdAsync(cmd.DowntimeLogId, ct)
-                ?? throw new EntityNotFoundException(nameof(DowntimeLog), cmd.DowntimeLogId);
+            var log = await downtimeRepo.GetByIdAsync(cmd.DowntimeLogId, ct);
+            if (log is null) return ValidationResult<EndDowntimeResult>.NotFound($"Entity '{cmd.DowntimeLogId}' was not found.");
 
             log.End(cmd.EndTime, cmd.Notes);
             await uow.SaveChangesAsync(ct);
 
             return ValidationResult<EndDowntimeResult>.Ok(new EndDowntimeResult(log.DowntimeLogID, log.DurationMinutes!.Value, "RESOLVED"));
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<EndDowntimeResult>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<EndDowntimeResult>.Failure(ex.Message);
         }

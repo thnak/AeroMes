@@ -108,8 +108,9 @@ public class ToolsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Delete(string code, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new DeleteToolCommand(code, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -136,8 +137,9 @@ public class ToolsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemoveOperation(string code, int mappingId, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new RemoveToolOperationCommand(code, mappingId, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -222,7 +224,8 @@ public class ToolsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Scrap(string code, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new ScrapToolCommand(code, User.Identity?.Name), null, ct);
+        var result = await commandMediator.SendAsync(new ScrapToolCommand(code, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

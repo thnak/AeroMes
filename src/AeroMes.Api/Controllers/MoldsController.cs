@@ -97,8 +97,9 @@ public class MoldsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Delete(string code, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new DeleteMoldCommand(code, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -123,8 +124,9 @@ public class MoldsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemoveProduct(string code, int mappingId, CancellationToken ct)
     {
-        await commandMediator.SendAsync(
+        var result = await commandMediator.SendAsync(
             new RemoveMoldProductCommand(code, mappingId, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -150,7 +152,8 @@ public class MoldsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Unassign(string code, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new UnmountMoldCommand(code, User.Identity?.Name), null, ct);
+        var result = await commandMediator.SendAsync(new UnmountMoldCommand(code, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -205,7 +208,8 @@ public class MoldsController(ICommandMediator commandMediator, IQueryMediator qu
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Scrap(string code, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new ScrapMoldCommand(code, User.Identity?.Name), null, ct);
+        var result = await commandMediator.SendAsync(new ScrapMoldCommand(code, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

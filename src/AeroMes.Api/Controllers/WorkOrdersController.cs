@@ -38,7 +38,8 @@ public class WorkOrdersController(ICommandMediator commandMediator, IQueryMediat
     public async Task<ActionResult<ApiResponse<WorkOrderDetailDto>>> GetById(int id, CancellationToken ct)
     {
         var result = await queryMediator.QueryAsync(new GetWorkOrderDetailQuery(id), null, ct);
-        return Ok(new ApiResponse<WorkOrderDetailDto>(true, "OK", result));
+        if (!result.IsFound) return NotFound(result.ErrorMessage);
+        return Ok(new ApiResponse<WorkOrderDetailDto>(true, "OK", result.Value!));
     }
 
     [HttpPost("{id:int}/start")]

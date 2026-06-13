@@ -1,9 +1,9 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Suppliers.Commands.UpdateAvlItem;
 
@@ -20,8 +20,8 @@ public class UpdateAvlItemHandler(
 
         try
         {
-            var supplier = await repo.GetByIdWithAvlAsync(cmd.SupplierCode, ct)
-                ?? throw new EntityNotFoundException(nameof(cmd.SupplierCode), cmd.SupplierCode);
+            var supplier = await repo.GetByIdWithAvlAsync(cmd.SupplierCode, ct);
+            if (supplier is null) return ValidationResult<Unit>.NotFound($"Entity '{cmd.SupplierCode}' was not found.");
             supplier.UpdateAvlItem(
                 cmd.AvlItemId, cmd.Status,
                 cmd.UnitPrice, cmd.CurrencyCode, cmd.LeadTimeDays,
@@ -29,12 +29,7 @@ public class UpdateAvlItemHandler(
                 cmd.ApprovedFrom, cmd.ApprovedTo, cmd.Notes);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<Unit>.Failure(ex.Message);
         }

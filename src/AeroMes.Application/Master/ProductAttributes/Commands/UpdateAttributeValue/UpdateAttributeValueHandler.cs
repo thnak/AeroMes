@@ -1,9 +1,9 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.ProductAttributes.Commands.UpdateAttributeValue;
 
@@ -20,18 +20,13 @@ public class UpdateAttributeValueHandler(
 
         try
         {
-            var entity = await repo.GetByIdWithValuesAsync(cmd.AttributeId, ct)
-                ?? throw new EntityNotFoundException("ProductAttribute", cmd.AttributeId);
+            var entity = await repo.GetByIdWithValuesAsync(cmd.AttributeId, ct);
+            if (entity is null) return ValidationResult<Unit>.NotFound($"ProductAttribute '{cmd.AttributeId}' was not found.");
 
             entity.UpdateValue(cmd.ValueId, cmd.Value, cmd.GroupName, cmd.SortOrder, cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<Unit>.Failure(ex.Message);
         }

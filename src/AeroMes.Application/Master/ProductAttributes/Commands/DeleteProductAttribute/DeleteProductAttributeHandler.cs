@@ -1,18 +1,19 @@
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Application.Common;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.ProductAttributes.Commands.DeleteProductAttribute;
 
 public class DeleteProductAttributeHandler(
     IProductAttributeRepository repo,
-    IUnitOfWork uow) : ICommandHandler<DeleteProductAttributeCommand>
+    IUnitOfWork uow) : ICommandHandler<DeleteProductAttributeCommand, ValidationResult<Unit>>
 {
-    public async Task HandleAsync(DeleteProductAttributeCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<Unit>> HandleAsync(DeleteProductAttributeCommand cmd, CancellationToken ct)
     {
-        var entity = await repo.GetByIdAsync(cmd.AttributeId, ct)
-            ?? throw new EntityNotFoundException("ProductAttribute", cmd.AttributeId);
+        var entity = await repo.GetByIdAsync(cmd.AttributeId, ct);
+        if (entity is null) return ValidationResult<Unit>.NotFound($"ProductAttribute '{cmd.AttributeId}' was not found.");
 
         if (await repo.HasAssignmentsAsync(cmd.AttributeId, ct))
             throw new DomainException(
@@ -20,5 +21,6 @@ public class DeleteProductAttributeHandler(
 
         entity.SoftDelete(cmd.DeletedBy);
         await uow.SaveChangesAsync(ct);
+        return ValidationResult<Unit>.Ok(Unit.Value);
     }
 }

@@ -1,9 +1,9 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Employees.Commands.SetEmployeeSkill;
 
@@ -20,19 +20,14 @@ public class SetEmployeeSkillHandler(
 
         try
         {
-            var employee = await repo.GetByIdWithDetailsAsync(cmd.EmployeeCode, ct)
-                ?? throw new EntityNotFoundException(nameof(cmd.EmployeeCode), cmd.EmployeeCode);
+            var employee = await repo.GetByIdWithDetailsAsync(cmd.EmployeeCode, ct);
+            if (employee is null) return ValidationResult<int>.NotFound($"Entity '{cmd.EmployeeCode}' was not found.");
             var skill = employee.SetSkill(
                 cmd.OperationCode, cmd.CertificationLevel,
                 cmd.CertifiedAt, cmd.ExpiresAt);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<int>.Ok(skill.EmployeeSkillId);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<int>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<int>.Failure(ex.Message);
         }

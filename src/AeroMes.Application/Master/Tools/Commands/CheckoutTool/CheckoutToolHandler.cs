@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Tools.Commands.CheckoutTool;
 
@@ -21,19 +21,14 @@ public class CheckoutToolHandler(
 
         try
         {
-            var tool = await repo.GetByCodeAsync(cmd.ToolCode, ct)
-                ?? throw new EntityNotFoundException(nameof(Tool), cmd.ToolCode);
+            var tool = await repo.GetByCodeAsync(cmd.ToolCode, ct);
+            if (tool is null) return ValidationResult<long>.NotFound($"Entity '{cmd.ToolCode}' was not found.");
 
             var checkout = tool.Checkout(
                 cmd.WorkCenterId, cmd.CheckedOutBy, cmd.ExpectedReturnAt, cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<long>.Ok(checkout.CheckoutId);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<long>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<long>.Failure(ex.Message);
         }

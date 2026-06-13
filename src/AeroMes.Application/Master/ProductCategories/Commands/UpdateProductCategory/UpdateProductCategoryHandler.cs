@@ -1,9 +1,9 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.ProductCategories.Commands.UpdateProductCategory;
 
@@ -20,8 +20,8 @@ public class UpdateProductCategoryHandler(
 
         try
         {
-            var entity = await repo.GetByIdAsync(cmd.Id, ct)
-                ?? throw new EntityNotFoundException("ProductCategory", cmd.Id);
+            var entity = await repo.GetByIdAsync(cmd.Id, ct);
+            if (entity is null) return ValidationResult<Unit>.NotFound($"ProductCategory '{cmd.Id}' was not found.");
 
             if (cmd.ParentId is int parentId)
                 await EnsureNoCycleAsync(cmd.Id, parentId, ct);
@@ -32,12 +32,7 @@ public class UpdateProductCategoryHandler(
                 cmd.IsActive, cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<Unit>.Failure(ex.Message);
         }
@@ -50,8 +45,8 @@ public class UpdateProductCategoryHandler(
         {
             if (id == categoryId)
                 throw new DomainException("Nhóm cha không hợp lệ — tạo vòng lặp trong cây phân cấp.");
-            var parent = await repo.GetByIdAsync(id, ct)
-                ?? throw new EntityNotFoundException("ProductCategory", id);
+            var parent = await repo.GetByIdAsync(id, ct);
+            if (parent is null) return;
             current = parent.ParentId;
         }
     }

@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -283,6 +284,7 @@ public class UsersController(
     public async Task<IActionResult> GetPermissionOverrides(string id)
     {
         var result = await queryMediator.QueryAsync(new GetUserPermissionOverridesQuery(id));
+        if (!result.IsFound) return NotFound(result.ErrorMessage);
         return Ok(result);
     }
 
@@ -310,7 +312,8 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RemovePermissionOverride(string id, int overrideId)
     {
-        await commandMediator.SendAsync(new RemovePermissionOverrideCommand(id, overrideId, userManager.GetUserId(User)));
+        var result = await commandMediator.SendAsync(new RemovePermissionOverrideCommand(id, overrideId, userManager.GetUserId(User)));
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -325,6 +328,7 @@ public class UsersController(
     public async Task<IActionResult> GetSessions(string id)
     {
         var result = await queryMediator.QueryAsync(new GetUserSessionsQuery(id));
+        if (!result.IsFound) return NotFound(result.ErrorMessage);
         return Ok(result);
     }
 
@@ -336,7 +340,8 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RevokeSession(string id, long tokenId)
     {
-        await commandMediator.SendAsync(new RevokeSessionCommand(id, tokenId));
+        var result = await commandMediator.SendAsync(new RevokeSessionCommand(id, tokenId));
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 
@@ -348,7 +353,8 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RevokeAllSessions(string id)
     {
-        await commandMediator.SendAsync(new RevokeAllSessionsCommand(id));
+        var result = await commandMediator.SendAsync(new RevokeAllSessionsCommand(id));
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 

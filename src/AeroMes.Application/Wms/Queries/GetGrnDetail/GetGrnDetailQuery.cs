@@ -1,8 +1,9 @@
 using LiteBus.Queries.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.Wms.Queries.GetGrnDetail;
 
-public record GetGrnDetailQuery(int GrnId) : IQuery<GrnDetailDto>;
+public record GetGrnDetailQuery(int GrnId) : IQuery<QueryResult<GrnDetailDto>>;
 
 public record GrnDetailDto(
     int GrnId,

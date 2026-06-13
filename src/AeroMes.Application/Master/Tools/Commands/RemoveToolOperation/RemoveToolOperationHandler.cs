@@ -1,21 +1,22 @@
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.Master.Tools.Commands.RemoveToolOperation;
 
 public class RemoveToolOperationHandler(
     IToolRepository repo,
-    IUnitOfWork uow) : ICommandHandler<RemoveToolOperationCommand>
+    IUnitOfWork uow) : ICommandHandler<RemoveToolOperationCommand, ValidationResult<Unit>>
 {
-    public async Task HandleAsync(RemoveToolOperationCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<Unit>> HandleAsync(RemoveToolOperationCommand cmd, CancellationToken ct)
     {
-        var tool = await repo.GetByCodeAsync(cmd.ToolCode, ct)
-            ?? throw new EntityNotFoundException(nameof(Tool), cmd.ToolCode);
+        var tool = await repo.GetByCodeAsync(cmd.ToolCode, ct);
+        if (tool is null) return ValidationResult<Unit>.NotFound($"Entity '{cmd.ToolCode}' was not found.");
 
         tool.RemoveOperationMapping(cmd.MappingId, cmd.UpdatedBy);
         await uow.SaveChangesAsync(ct);
+        return ValidationResult<Unit>.Ok(Unit.Value);
     }
 }

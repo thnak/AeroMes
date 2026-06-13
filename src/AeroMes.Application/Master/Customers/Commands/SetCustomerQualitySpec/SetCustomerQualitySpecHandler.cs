@@ -1,9 +1,9 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Customers.Commands.SetCustomerQualitySpec;
 
@@ -20,8 +20,8 @@ public class SetCustomerQualitySpecHandler(
 
         try
         {
-            var customer = await repo.GetByIdWithDetailsAsync(cmd.CustomerCode, ct)
-                ?? throw new EntityNotFoundException(nameof(cmd.CustomerCode), cmd.CustomerCode);
+            var customer = await repo.GetByIdWithDetailsAsync(cmd.CustomerCode, ct);
+            if (customer is null) return ValidationResult<int>.NotFound($"Entity '{cmd.CustomerCode}' was not found.");
             var spec = customer.SetQualitySpec(
                 cmd.ProductCode,
                 cmd.AqlLevel, cmd.InspectionLevel,
@@ -30,12 +30,7 @@ public class SetCustomerQualitySpecHandler(
                 cmd.EffectiveFrom, cmd.EffectiveTo);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<int>.Ok(spec.CustomerQualitySpecId);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<int>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<int>.Failure(ex.Message);
         }

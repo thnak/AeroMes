@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Boms.Commands.UpdateBomLines;
 
@@ -21,8 +21,8 @@ public class UpdateBomLinesHandler(
 
         try
         {
-            var header = await repo.GetByProductAndVersionAsync(cmd.ProductCode, cmd.Version, ct)
-                ?? throw new EntityNotFoundException(nameof(BomHeader), $"{cmd.ProductCode}/{cmd.Version}");
+            var header = await repo.GetByProductAndVersionAsync(cmd.ProductCode, cmd.Version, ct);
+            if (header is null) return ValidationResult<Unit>.NotFound($"Entity '{$"{cmd.ProductCode}/{cmd.Version}"}' was not found.");
 
             header.ReplaceLines(
                 cmd.Lines
@@ -32,12 +32,7 @@ public class UpdateBomLinesHandler(
                 cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<Unit>.Failure(ex.Message);
         }

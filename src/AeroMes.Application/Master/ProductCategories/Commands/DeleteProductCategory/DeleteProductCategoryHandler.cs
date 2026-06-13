@@ -1,18 +1,19 @@
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Application.Common;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.ProductCategories.Commands.DeleteProductCategory;
 
 public class DeleteProductCategoryHandler(
     IProductCategoryRepository repo,
-    IUnitOfWork uow) : ICommandHandler<DeleteProductCategoryCommand>
+    IUnitOfWork uow) : ICommandHandler<DeleteProductCategoryCommand, ValidationResult<Unit>>
 {
-    public async Task HandleAsync(DeleteProductCategoryCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<Unit>> HandleAsync(DeleteProductCategoryCommand cmd, CancellationToken ct)
     {
-        var entity = await repo.GetByIdAsync(cmd.Id, ct)
-            ?? throw new EntityNotFoundException("ProductCategory", cmd.Id);
+        var entity = await repo.GetByIdAsync(cmd.Id, ct);
+        if (entity is null) return ValidationResult<Unit>.NotFound($"ProductCategory '{cmd.Id}' was not found.");
 
         if (await repo.HasProductsAsync(cmd.Id, ct))
             throw new DomainException(
@@ -24,5 +25,6 @@ public class DeleteProductCategoryHandler(
 
         entity.SoftDelete(cmd.DeletedBy);
         await uow.SaveChangesAsync(ct);
+        return ValidationResult<Unit>.Ok(Unit.Value);
     }
 }

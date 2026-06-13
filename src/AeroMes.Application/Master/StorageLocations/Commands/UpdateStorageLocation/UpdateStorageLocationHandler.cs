@@ -1,9 +1,9 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.StorageLocations.Commands.UpdateStorageLocation;
 
@@ -20,17 +20,12 @@ public class UpdateStorageLocationHandler(
 
         try
         {
-            var entity = await repo.GetByIdAsync(cmd.Id, ct)
-                ?? throw new EntityNotFoundException("StorageLocation", cmd.Id);
+            var entity = await repo.GetByIdAsync(cmd.Id, ct);
+            if (entity is null) return ValidationResult<Unit>.NotFound($"StorageLocation '{cmd.Id}' was not found.");
             entity.UpdateDetails(cmd.Name, cmd.LocationType, cmd.WorkCenterId);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<Unit>.Failure(ex.Message);
         }

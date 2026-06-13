@@ -1,5 +1,5 @@
-using AeroMes.Domain.Common;
 using AeroMes.Domain.Exceptions;
+using AeroMes.Domain.Common;
 
 namespace AeroMes.Domain.Master;
 
@@ -86,14 +86,14 @@ public class Supplier : AuditableEntity
         DateOnly? approvedFrom, DateOnly? approvedTo, string? notes)
     {
         var item = _avlItems.FirstOrDefault(x => x.AvlItemId == avlItemId)
-            ?? throw new EntityNotFoundException(nameof(avlItemId), avlItemId);
+            ?? throw new DomainException($"avlItemId '{avlItemId}' was not found.");
         item.Update(status, unitPrice, currencyCode, leadTimeDays, minOrderQty, aqlLevel, isPreferred, approvedFrom, approvedTo, notes);
     }
 
     public void RemoveAvlItem(int avlItemId)
     {
         var item = _avlItems.FirstOrDefault(x => x.AvlItemId == avlItemId)
-            ?? throw new EntityNotFoundException(nameof(avlItemId), avlItemId);
+            ?? throw new DomainException($"avlItemId '{avlItemId}' was not found.");
         _avlItems.Remove(item);
     }
 }

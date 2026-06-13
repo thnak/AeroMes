@@ -1,9 +1,9 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Quality.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Quality.DefectCodes.Commands.UpdateDefectCode;
 
@@ -20,19 +20,14 @@ public class UpdateDefectCodeHandler(
 
         try
         {
-            var entity = await repo.GetByIdAsync(cmd.Id, ct)
-                ?? throw new EntityNotFoundException("DefectCode", cmd.Id);
+            var entity = await repo.GetByIdAsync(cmd.Id, ct);
+            if (entity is null) return ValidationResult<Unit>.NotFound($"DefectCode '{cmd.Id}' was not found.");
 
             entity.UpdateDetails(cmd.DefectName, cmd.DefectCategory, cmd.IsActive, cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
 
             return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<Unit>.Failure(ex.Message);
         }

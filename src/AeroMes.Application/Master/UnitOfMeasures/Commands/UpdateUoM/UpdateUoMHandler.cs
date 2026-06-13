@@ -1,9 +1,9 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.UnitOfMeasures.Commands.UpdateUoM;
 
@@ -20,17 +20,12 @@ public class UpdateUoMHandler(
 
         try
         {
-            var entity = await repo.GetByCodeAsync(cmd.Code, ct)
-                ?? throw new EntityNotFoundException("UnitOfMeasure", cmd.Code);
+            var entity = await repo.GetByCodeAsync(cmd.Code, ct);
+            if (entity is null) return ValidationResult<Unit>.NotFound($"UnitOfMeasure '{cmd.Code}' was not found.");
             entity.Update(cmd.Name, cmd.Group);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<Unit>.Failure(ex.Message);
         }

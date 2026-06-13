@@ -1,20 +1,20 @@
 using AeroMes.Application.Master.Boms.Queries.GetActiveBom;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using LiteBus.Queries.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.Master.Boms.Queries.CompareBomVersions;
 
 public class CompareBomVersionsHandler(IBomHeaderRepository repo)
-    : IQueryHandler<CompareBomVersionsQuery, BomCompareDto>
+    : IQueryHandler<CompareBomVersionsQuery, QueryResult<BomCompareDto>>
 {
-    public async Task<BomCompareDto> HandleAsync(CompareBomVersionsQuery query, CancellationToken ct)
+    public async Task<QueryResult<BomCompareDto>> HandleAsync(CompareBomVersionsQuery query, CancellationToken ct)
     {
-        var from = await repo.GetByProductAndVersionWithDetailsAsync(query.ProductCode, query.FromVersion, ct)
-            ?? throw new EntityNotFoundException(nameof(BomHeader), $"{query.ProductCode}/{query.FromVersion}");
-        var to = await repo.GetByProductAndVersionWithDetailsAsync(query.ProductCode, query.ToVersion, ct)
-            ?? throw new EntityNotFoundException(nameof(BomHeader), $"{query.ProductCode}/{query.ToVersion}");
+        var from = await repo.GetByProductAndVersionWithDetailsAsync(query.ProductCode, query.FromVersion, ct);
+        if (from is null) return QueryResult<BomCompareDto>.NotFound($"Entity '{$"{query.ProductCode}/{query.FromVersion}"}' was not found.");
+        var to = await repo.GetByProductAndVersionWithDetailsAsync(query.ProductCode, query.ToVersion, ct);
+        if (to is null) return QueryResult<BomCompareDto>.NotFound($"Entity '{$"{query.ProductCode}/{query.ToVersion}"}' was not found.");
 
         // Diff is by component: a component appearing on several lines is aggregated per line set,
         // so versions are compared on the first line per component.
@@ -51,8 +51,8 @@ public class CompareBomVersionsHandler(IBomHeaderRepository repo)
                 p.Old.ScrapFactor, p.New.ScrapFactor))
             .ToList();
 
-        return new BomCompareDto(
-            from.ProductCode, from.Version, to.Version, added, removed, changed);
+        return QueryResult<BomCompareDto>.Found(new BomCompareDto(
+            from.ProductCode, from.Version, to.Version, added, removed, changed));
     }
 
     private static BomLineDto ToLineDto(BomLine l) => new(

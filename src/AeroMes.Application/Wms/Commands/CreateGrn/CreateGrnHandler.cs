@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Wms;
 using AeroMes.Domain.Wms.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Wms.Commands.CreateGrn;
 
@@ -25,8 +25,8 @@ public class CreateGrnHandler(
         {
             if (cmd.PoId.HasValue)
             {
-                var po = await poRepo.GetByIdAsync(cmd.PoId.Value, ct)
-                    ?? throw new EntityNotFoundException("PurchaseOrder", cmd.PoId.Value);
+                var po = await poRepo.GetByIdAsync(cmd.PoId.Value, ct);
+                if (po is null) return ValidationResult<GrnCreatedResult>.NotFound($"PurchaseOrder '{cmd.PoId.Value}' was not found.");
                 if (po.Status is not (PoStatus.Confirmed or PoStatus.PartiallyReceived))
                     throw new DomainException(
                         $"PO '{po.PoCode}' must be Confirmed or PartiallyReceived to receive against. Current: {po.Status}.");
@@ -40,12 +40,7 @@ public class CreateGrnHandler(
             await uow.SaveChangesAsync(ct);
 
             return ValidationResult<GrnCreatedResult>.Ok(new GrnCreatedResult(grn.GrnId, grn.GrnCode));
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<GrnCreatedResult>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<GrnCreatedResult>.Failure(ex.Message);
         }

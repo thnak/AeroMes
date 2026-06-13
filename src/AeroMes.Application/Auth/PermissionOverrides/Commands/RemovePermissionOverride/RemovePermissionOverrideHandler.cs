@@ -1,7 +1,7 @@
 using AeroMes.Application.Auth;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.Auth.PermissionOverrides.Commands.RemovePermissionOverride;
 
@@ -10,12 +10,12 @@ public class RemovePermissionOverrideHandler(
     IPermissionService permissionService,
     IUnitOfWork uow,
     IAuditLogger auditLogger)
-    : ICommandHandler<RemovePermissionOverrideCommand>
+    : ICommandHandler<RemovePermissionOverrideCommand, ValidationResult<Unit>>
 {
-    public async Task HandleAsync(RemovePermissionOverrideCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<Unit>> HandleAsync(RemovePermissionOverrideCommand cmd, CancellationToken ct)
     {
-        var entity = await repo.GetByIdAsync(cmd.OverrideId, cmd.UserId, ct)
-            ?? throw new EntityNotFoundException("PermissionOverride", cmd.OverrideId);
+        var entity = await repo.GetByIdAsync(cmd.OverrideId, cmd.UserId, ct);
+        if (entity is null) return ValidationResult<Unit>.NotFound($"PermissionOverride '{cmd.OverrideId}' was not found.");
 
         repo.Remove(entity);
         await uow.SaveChangesAsync(ct);
@@ -28,5 +28,6 @@ public class RemovePermissionOverrideHandler(
             TargetType = "User", TargetId = cmd.UserId,
             OldValues = $"{{\"permission\":\"{entity.Permission?.PermissionCode}\"}}",
         });
+        return ValidationResult<Unit>.Ok(Unit.Value);
     }
 }

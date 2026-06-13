@@ -1,19 +1,19 @@
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.Master.Boms.Commands.ActivateBomVersion;
 
 public class ActivateBomVersionHandler(
     IBomHeaderRepository repo,
-    IUnitOfWork uow) : ICommandHandler<ActivateBomVersionCommand>
+    IUnitOfWork uow) : ICommandHandler<ActivateBomVersionCommand, ValidationResult<Unit>>
 {
-    public async Task HandleAsync(ActivateBomVersionCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<Unit>> HandleAsync(ActivateBomVersionCommand cmd, CancellationToken ct)
     {
-        var header = await repo.GetByProductAndVersionAsync(cmd.ProductCode, cmd.Version, ct)
-            ?? throw new EntityNotFoundException(nameof(BomHeader), $"{cmd.ProductCode}/{cmd.Version}");
+        var header = await repo.GetByProductAndVersionAsync(cmd.ProductCode, cmd.Version, ct);
+        if (header is null) return ValidationResult<Unit>.NotFound($"Entity '{$"{cmd.ProductCode}/{cmd.Version}"}' was not found.");
 
         // Only one Active version per product — the previous one is superseded automatically.
         var currentActive = await repo.GetActiveByProductAsync(cmd.ProductCode, ct);
@@ -22,5 +22,6 @@ public class ActivateBomVersionHandler(
 
         header.Activate(cmd.EffectiveFrom, cmd.UpdatedBy);
         await uow.SaveChangesAsync(ct);
+        return ValidationResult<Unit>.Ok(Unit.Value);
     }
 }

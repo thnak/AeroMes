@@ -1,9 +1,9 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.BomItems.Commands.UpdateBomItem;
 
@@ -20,17 +20,12 @@ public class UpdateBomItemHandler(
 
         try
         {
-            var entity = await repo.GetByIdAsync(cmd.BomId, ct)
-                ?? throw new EntityNotFoundException("BomItem", cmd.BomId);
+            var entity = await repo.GetByIdAsync(cmd.BomId, ct);
+            if (entity is null) return ValidationResult<Unit>.NotFound($"BomItem '{cmd.BomId}' was not found.");
             entity.UpdateQty(cmd.RequiredQty, cmd.ScrapFactor, cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<Unit>.Failure(ex.Message);
         }

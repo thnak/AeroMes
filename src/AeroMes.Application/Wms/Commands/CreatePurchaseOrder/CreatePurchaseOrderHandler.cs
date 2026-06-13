@@ -1,11 +1,11 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Wms;
 using AeroMes.Domain.Wms.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Wms.Commands.CreatePurchaseOrder;
 
@@ -25,7 +25,7 @@ public class CreatePurchaseOrderHandler(
         try
         {
             if (!await supplierRepo.CodeExistsAsync(cmd.SupplierCode, ct))
-                throw new EntityNotFoundException("Supplier", cmd.SupplierCode);
+                return ValidationResult<PoCreatedResult>.NotFound($"Supplier '{cmd.SupplierCode}' was not found.");
 
             var po = PurchaseOrder.Create(cmd.PoCode, cmd.SupplierCode, cmd.ExpectedDeliveryDate, cmd.Notes, cmd.CreatedBy);
             foreach (var l in cmd.Lines)
@@ -35,12 +35,7 @@ public class CreatePurchaseOrderHandler(
             await uow.SaveChangesAsync(ct);
 
             return ValidationResult<PoCreatedResult>.Ok(new PoCreatedResult(po.PoId, po.PoCode));
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<PoCreatedResult>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<PoCreatedResult>.Failure(ex.Message);
         }

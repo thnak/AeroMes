@@ -44,7 +44,8 @@ public class JobsController(ICommandMediator commandMediator, IQueryMediator que
     public async Task<ActionResult<ApiResponse<JobDetailDto>>> GetById(long id, CancellationToken ct)
     {
         var result = await queryMediator.QueryAsync(new GetJobDetailQuery(id), null, ct);
-        return Ok(new ApiResponse<JobDetailDto>(true, "OK", result));
+        if (!result.IsFound) return NotFound(result.ErrorMessage);
+        return Ok(new ApiResponse<JobDetailDto>(true, "OK", result.Value!));
     }
 
     [HttpPost]

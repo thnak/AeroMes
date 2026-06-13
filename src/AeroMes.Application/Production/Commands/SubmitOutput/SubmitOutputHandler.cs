@@ -1,11 +1,11 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
 using AeroMes.Domain.Quality.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Production.Commands.SubmitOutput;
 
@@ -33,14 +33,14 @@ public class SubmitOutputHandler(
                 return ValidationResult<SubmitOutputResult>.Ok(new SubmitOutputResult(-1, -1, -1, IsDuplicate: true));
             }
 
-            var job = await jobRepo.GetByIdAsync(cmd.JobId, ct)
-                ?? throw new EntityNotFoundException(nameof(Job), cmd.JobId);
+            var job = await jobRepo.GetByIdAsync(cmd.JobId, ct);
+            if (job is null) return ValidationResult<SubmitOutputResult>.NotFound($"Entity '{cmd.JobId}' was not found.");
 
             if (job.Status != JobStatus.Active)
                 throw new DomainException($"Job {job.JobID} must be Active to submit output. Current: {job.Status}.");
 
-            var workOrder = await workOrderRepo.GetByIdAsync(job.WOID, ct)
-                ?? throw new EntityNotFoundException(nameof(WorkOrder), job.WOID);
+            var workOrder = await workOrderRepo.GetByIdAsync(job.WOID, ct);
+            if (workOrder is null) return ValidationResult<SubmitOutputResult>.NotFound($"Entity '{job.WOID}' was not found.");
 
             workOrder.AccumulateOutput(cmd.QtyOk, cmd.QtyNg, job.OperatorID);
 
@@ -56,7 +56,7 @@ public class SubmitOutputHandler(
                 foreach (var entry in cmd.Defects)
                 {
                     if (!codes.TryGetValue(entry.DefectCode, out var defectCode))
-                        throw new EntityNotFoundException("DefectCode", entry.DefectCode);
+                        return ValidationResult<SubmitOutputResult>.NotFound($"DefectCode '{entry.DefectCode}' was not found.");
                     log.AddDefect(defectCode.DefectCodeID, entry.Qty);
                 }
             }
@@ -66,12 +66,7 @@ public class SubmitOutputHandler(
 
             return ValidationResult<SubmitOutputResult>.Ok(
                 new SubmitOutputResult(log.LogID, workOrder.ActualQtyOK.Value, workOrder.ActualQtyNG.Value));
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<SubmitOutputResult>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<SubmitOutputResult>.Failure(ex.Message);
         }

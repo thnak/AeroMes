@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using AeroMes.Api.Extensions;
 
 namespace AeroMes.Api.Controllers;
 
@@ -77,6 +78,7 @@ public class RolesController(
     public async Task<IActionResult> GetPermissions(string id)
     {
         var result = await queryMediator.QueryAsync(new GetRolePermissionsQuery(id));
+        if (!result.IsFound) return NotFound(result.ErrorMessage);
         return Ok(result);
     }
 
@@ -88,7 +90,8 @@ public class RolesController(
     public async Task<IActionResult> SetPermissions(string id, [FromBody] SetPermissionsRequest request)
     {
         var actorId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        await commandMediator.SendAsync(new SetRolePermissionsCommand(id, request.PermissionCodes, actorId));
+        var result = await commandMediator.SendAsync(new SetRolePermissionsCommand(id, request.PermissionCodes, actorId));
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Tools.Commands.RecordToolMaintenance;
 
@@ -21,20 +21,15 @@ public class RecordToolMaintenanceHandler(
 
         try
         {
-            var tool = await repo.GetByCodeAsync(cmd.ToolCode, ct)
-                ?? throw new EntityNotFoundException(nameof(Tool), cmd.ToolCode);
+            var tool = await repo.GetByCodeAsync(cmd.ToolCode, ct);
+            if (tool is null) return ValidationResult<long>.NotFound($"Entity '{cmd.ToolCode}' was not found.");
 
             var log = tool.RecordMaintenance(
                 cmd.MaintenanceType, cmd.PerformedAt, cmd.PerformedBy,
                 cmd.Cost, cmd.NextDueCount, cmd.NextDueDate, cmd.Notes, cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<long>.Ok(log.LogId);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<long>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<long>.Failure(ex.Message);
         }

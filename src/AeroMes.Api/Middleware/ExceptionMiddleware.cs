@@ -30,10 +30,6 @@ public class ExceptionMiddleware
                     errors),
                 ApiJsonContext.Default.ValidationProblemResponse);
         }
-        catch (EntityNotFoundException ex)
-        {
-            await WriteSimpleProblemAsync(ctx, StatusCodes.Status404NotFound, ex.Message);
-        }
         catch (DomainException ex)
         {
             await WriteSimpleProblemAsync(ctx, StatusCodes.Status422UnprocessableEntity, ex.Message);

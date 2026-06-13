@@ -57,7 +57,8 @@ public class AlertThresholdsController(ICommandMediator commandMediator, IQueryM
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        await commandMediator.SendAsync(new DeleteAlertThresholdCommand(id, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        var result = await commandMediator.SendAsync(new DeleteAlertThresholdCommand(id, User.FindFirst(ClaimTypes.NameIdentifier)?.Value), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
 }

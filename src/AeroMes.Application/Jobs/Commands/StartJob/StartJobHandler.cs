@@ -1,11 +1,11 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Jobs.Commands.StartJob;
 
@@ -27,15 +27,15 @@ public class StartJobHandler(
 
         try
         {
-            var workOrder = await workOrderRepo.GetByIdWithRoutingStepAsync(cmd.WorkOrderId, ct)
-                ?? throw new EntityNotFoundException(nameof(WorkOrder), cmd.WorkOrderId);
+            var workOrder = await workOrderRepo.GetByIdWithRoutingStepAsync(cmd.WorkOrderId, ct);
+            if (workOrder is null) return ValidationResult<StartJobResult>.NotFound($"Entity '{cmd.WorkOrderId}' was not found.");
 
             if (workOrder.Status != WorkOrderStatus.Running)
                 throw new DomainException(
                     $"WorkOrder '{workOrder.WOCode}' must be Running before starting a Job. Current: {workOrder.Status}.");
 
             if (!await machineRepo.ExistsAsync(cmd.MachineCode, ct))
-                throw new EntityNotFoundException("Machine", cmd.MachineCode);
+                return ValidationResult<StartJobResult>.NotFound($"Machine '{cmd.MachineCode}' was not found.");
 
             await EnsureCertifiedAsync(workOrder, cmd.OperatorId, ct);
 
@@ -45,12 +45,7 @@ public class StartJobHandler(
 
             return ValidationResult<StartJobResult>.Ok(new StartJobResult(job.JobID, job.WOID, job.MachineCode,
                 job.Status.ToString().ToUpperInvariant()));
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<StartJobResult>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<StartJobResult>.Failure(ex.Message);
         }

@@ -1,8 +1,9 @@
 using LiteBus.Queries.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.Jobs.Queries.GetJobDetail;
 
-public record GetJobDetailQuery(long Id) : IQuery<JobDetailDto>;
+public record GetJobDetailQuery(long Id) : IQuery<QueryResult<JobDetailDto>>;
 
 public record JobDetailDto(
     long JobID,

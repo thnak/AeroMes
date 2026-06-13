@@ -1,6 +1,5 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using LiteBus.Commands.Abstractions;
 
@@ -12,17 +11,10 @@ public class DeleteMachineProductParamHandler(
 {
     public async Task<ValidationResult<Unit>> HandleAsync(DeleteMachineProductParamCommand cmd, CancellationToken ct)
     {
-        try
-        {
-            var entity = await repo.GetAsync(cmd.MachineCode, cmd.ProductCode, cmd.ParamName, ct)
-                ?? throw new EntityNotFoundException("MachineProductParam", $"{cmd.MachineCode}/{cmd.ProductCode}/{cmd.ParamName}");
-            repo.Remove(entity);
-            await uow.SaveChangesAsync(ct);
-            return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
-        }
+        var entity = await repo.GetAsync(cmd.MachineCode, cmd.ProductCode, cmd.ParamName, ct);
+        if (entity is null) return ValidationResult<Unit>.NotFound($"MachineProductParam '{cmd.MachineCode}/{cmd.ProductCode}/{cmd.ParamName}' was not found.");
+        repo.Remove(entity);
+        await uow.SaveChangesAsync(ct);
+        return ValidationResult<Unit>.Ok(Unit.Value);
     }
 }

@@ -1,22 +1,22 @@
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Production.Repositories;
 using LiteBus.Queries.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.Jobs.Queries.GetJobDetail;
 
 public class GetJobDetailHandler(
     IJobRepository jobRepo,
     IProductionLogRepository logRepo)
-    : IQueryHandler<GetJobDetailQuery, JobDetailDto>
+    : IQueryHandler<GetJobDetailQuery, QueryResult<JobDetailDto>>
 {
-    public async Task<JobDetailDto> HandleAsync(GetJobDetailQuery q, CancellationToken ct)
+    public async Task<QueryResult<JobDetailDto>> HandleAsync(GetJobDetailQuery q, CancellationToken ct)
     {
-        var job = await jobRepo.GetByIdAsync(q.Id, ct)
-            ?? throw new EntityNotFoundException("Job", q.Id);
+        var job = await jobRepo.GetByIdAsync(q.Id, ct);
+        if (job is null) return QueryResult<JobDetailDto>.NotFound($"Job '{q.Id}' was not found.");
 
         var logs = await logRepo.GetByJobIdAsync(q.Id, ct);
 
-        return new JobDetailDto(
+        return QueryResult<JobDetailDto>.Found(new JobDetailDto(
             job.JobID,
             job.WOID,
             job.MachineCode,
@@ -31,6 +31,6 @@ public class GetJobDetailHandler(
                 l.QtyOK,
                 l.QtyNG,
                 l.DeviceIP,
-                l.Notes)).ToList());
+                l.Notes)).ToList()));
     }
 }

@@ -1,9 +1,9 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Products.Commands.UpdateProduct;
 
@@ -20,8 +20,8 @@ public class UpdateProductHandler(
 
         try
         {
-            var entity = await repo.GetByCodeAsync(cmd.Code, ct)
-                ?? throw new EntityNotFoundException("Product", cmd.Code);
+            var entity = await repo.GetByCodeAsync(cmd.Code, ct);
+            if (entity is null) return ValidationResult<Unit>.NotFound($"Product '{cmd.Code}' was not found.");
             entity.UpdateDetails(
                 cmd.Name, cmd.BaseUoMCode, cmd.PurchaseUoMCode, cmd.PurchaseToBaseQty,
                 cmd.ItemType, cmd.CategoryId, cmd.BarcodePattern,
@@ -35,12 +35,7 @@ public class UpdateProductHandler(
                 cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<Unit>.Failure(ex.Message);
         }

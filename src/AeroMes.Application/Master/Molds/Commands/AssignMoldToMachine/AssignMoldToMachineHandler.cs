@@ -1,10 +1,10 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Molds.Commands.AssignMoldToMachine;
 
@@ -21,19 +21,14 @@ public class AssignMoldToMachineHandler(
 
         try
         {
-            var mold = await repo.GetByCodeAsync(cmd.MoldCode, ct)
-                ?? throw new EntityNotFoundException(nameof(Mold), cmd.MoldCode);
+            var mold = await repo.GetByCodeAsync(cmd.MoldCode, ct);
+            if (mold is null) return ValidationResult<Unit>.NotFound($"Entity '{cmd.MoldCode}' was not found.");
 
             mold.AssignToMachine(cmd.MachineCode, cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
 
             return ValidationResult<Unit>.Ok(Unit.Value);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<Unit>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<Unit>.Failure(ex.Message);
         }

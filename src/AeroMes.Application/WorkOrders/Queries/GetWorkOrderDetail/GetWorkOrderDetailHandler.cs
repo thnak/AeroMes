@@ -1,22 +1,22 @@
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Production.Repositories;
 using LiteBus.Queries.Abstractions;
+using AeroMes.Application.Common;
 
 namespace AeroMes.Application.WorkOrders.Queries.GetWorkOrderDetail;
 
 public class GetWorkOrderDetailHandler(
     IWorkOrderRepository workOrderRepo,
     IJobRepository jobRepo)
-    : IQueryHandler<GetWorkOrderDetailQuery, WorkOrderDetailDto>
+    : IQueryHandler<GetWorkOrderDetailQuery, QueryResult<WorkOrderDetailDto>>
 {
-    public async Task<WorkOrderDetailDto> HandleAsync(GetWorkOrderDetailQuery q, CancellationToken ct)
+    public async Task<QueryResult<WorkOrderDetailDto>> HandleAsync(GetWorkOrderDetailQuery q, CancellationToken ct)
     {
-        var wo = await workOrderRepo.GetByIdAsync(q.Id, ct)
-            ?? throw new EntityNotFoundException("WorkOrder", q.Id);
+        var wo = await workOrderRepo.GetByIdAsync(q.Id, ct);
+        if (wo is null) return QueryResult<WorkOrderDetailDto>.NotFound($"WorkOrder '{q.Id}' was not found.");
 
         var jobs = await jobRepo.GetByWoIdAsync(q.Id, ct);
 
-        return new WorkOrderDetailDto(
+        return QueryResult<WorkOrderDetailDto>.Found(new WorkOrderDetailDto(
             wo.WOID,
             wo.WOCode,
             wo.POID,
@@ -35,6 +35,6 @@ public class GetWorkOrderDetailHandler(
                 j.OperatorID,
                 j.StartTime,
                 j.EndTime,
-                j.Status.ToString().ToUpperInvariant())).ToList());
+                j.Status.ToString().ToUpperInvariant())).ToList()));
     }
 }

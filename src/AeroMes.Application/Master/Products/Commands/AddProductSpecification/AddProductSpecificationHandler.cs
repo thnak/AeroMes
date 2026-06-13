@@ -1,9 +1,9 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Master.Products.Commands.AddProductSpecification;
 
@@ -23,18 +23,13 @@ public class AddProductSpecificationHandler(
         {
             await optionsRepo.EnsureModeAsync(MaterialManagementModes.SpecificationCode, ct);
 
-            var product = await repo.GetByCodeWithSpecificationsAsync(cmd.ProductCode, ct)
-                ?? throw new EntityNotFoundException("Product", cmd.ProductCode);
+            var product = await repo.GetByCodeWithSpecificationsAsync(cmd.ProductCode, ct);
+            if (product is null) return ValidationResult<int>.NotFound($"Product '{cmd.ProductCode}' was not found.");
 
             var spec = product.AddSpecification(cmd.SpecCode, cmd.Description, cmd.CreatedBy);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<int>.Ok(spec.SpecificationId);
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<int>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<int>.Failure(ex.Message);
         }

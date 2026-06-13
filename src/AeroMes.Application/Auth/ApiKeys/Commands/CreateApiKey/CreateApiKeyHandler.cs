@@ -1,11 +1,11 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Auth;
-using AeroMes.Domain.Exceptions;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
 using System.Security.Cryptography;
 using System.Text;
+using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Auth.ApiKeys.Commands.CreateApiKey;
 public class CreateApiKeyHandler(IApiKeyRepository repo, IUnitOfWork uow, IValidator<CreateApiKeyCommand> validator)
@@ -29,12 +29,7 @@ public class CreateApiKeyHandler(IApiKeyRepository repo, IUnitOfWork uow, IValid
             await repo.AddAsync(entity, ct);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<CreateApiKeyResult>.Ok(new CreateApiKeyResult(entity.ApiKeyId, fullKey, prefix, entity.KeyName));
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return ValidationResult<CreateApiKeyResult>.NotFound(ex.Message);
-        }
-        catch (DomainException ex)
+        }        catch (DomainException ex)
         {
             return ValidationResult<CreateApiKeyResult>.Failure(ex.Message);
         }

@@ -1,5 +1,5 @@
-using AeroMes.Domain.Common;
 using AeroMes.Domain.Exceptions;
+using AeroMes.Domain.Common;
 
 namespace AeroMes.Domain.Master;
 
@@ -101,14 +101,14 @@ public class Customer : AuditableEntity
         string? description, string? drawingReference, string? revision)
     {
         var partNumber = _partNumbers.FirstOrDefault(x => x.CustomerPartNumberId == customerPartNumberId)
-            ?? throw new EntityNotFoundException(nameof(customerPartNumberId), customerPartNumberId);
+            ?? throw new DomainException($"customerPartNumberId '{customerPartNumberId}' was not found.");
         partNumber.Update(description, drawingReference, revision);
     }
 
     public void RemovePartNumber(int customerPartNumberId)
     {
         var partNumber = _partNumbers.FirstOrDefault(x => x.CustomerPartNumberId == customerPartNumberId)
-            ?? throw new EntityNotFoundException(nameof(customerPartNumberId), customerPartNumberId);
+            ?? throw new DomainException($"customerPartNumberId '{customerPartNumberId}' was not found.");
         _partNumbers.Remove(partNumber);
     }
 
@@ -142,7 +142,7 @@ public class Customer : AuditableEntity
     public void RemoveQualitySpec(int customerQualitySpecId)
     {
         var spec = _qualitySpecs.FirstOrDefault(x => x.CustomerQualitySpecId == customerQualitySpecId)
-            ?? throw new EntityNotFoundException(nameof(customerQualitySpecId), customerQualitySpecId);
+            ?? throw new DomainException($"customerQualitySpecId '{customerQualitySpecId}' was not found.");
         _qualitySpecs.Remove(spec);
     }
 }
