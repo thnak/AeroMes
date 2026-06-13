@@ -97,6 +97,24 @@ Run `/code-style` before writing any new feature. Key rules:
 - File-scoped namespaces. Primary constructors for DI. Collection expressions `[...]` over `new List<T>()`.
 - Vietnamese log/error messages are acceptable; English preferred for identifiers.
 
+## Localization
+
+Supported cultures: `vi` (default) and `en-US`. The request culture resolves in this order: `?culture=` query string → `preferred_language` JWT/cookie claim → `Accept-Language` header.
+
+### Resource file convention
+
+**Shared messages** (used across many validators/handlers):
+- Marker class: `src/AeroMes.Application/Localization/SharedResources.cs`
+- Files: `Localization/SharedResources.resx` (vi) and `Localization/SharedResources.en-US.resx` (en-US)
+- Inject as `IStringLocalizer<SharedResources>` (use `L["KeyName"].Value` for `.WithMessage` lambdas)
+
+**Per-use-case messages** (custom messages for a single command/query):
+- Co-locate alongside the handler: `Application/{Context}/{Commands|Queries}/{UseCaseName}/{UseCaseName}Messages.resx`
+- Marker class with the same name in the same namespace
+- Inject as `IStringLocalizer<{UseCaseName}Messages>`
+
+AOT safe: `.resx` files are fine. No reflection-based dynamic lookup beyond `IStringLocalizer`.
+
 ## Serialization (cold-start / AOT safety)
 
 - **No anonymous types** in LINQ projections or across method boundaries — use named `record` types.
