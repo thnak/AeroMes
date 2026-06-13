@@ -18,6 +18,7 @@ using AeroMes.Domain.Settings;
 using AeroMes.Domain.Traceability;
 using AeroMes.Domain.Wms;
 using AeroMes.Domain.Cost;
+using AeroMes.Domain.Maintenance;
 using AeroMes.Infrastructure.Identity;
 using LiteBus.Events.Abstractions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -247,6 +248,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     // storage
     public DbSet<FileObject> FileObjects => Set<FileObject>();
 
+    // maintenance schema
+    public DbSet<MaintenanceOrder> MaintenanceOrders => Set<MaintenanceOrder>();
+    public DbSet<MaintCostLine> MaintCostLines => Set<MaintCostLine>();
+    public DbSet<MachineTcoSummary> MachineTcoSummaries => Set<MachineTcoSummary>();
+
     // cost schema
     public DbSet<ScrapTransaction> ScrapTransactions => Set<ScrapTransaction>();
     public DbSet<ReworkOrder> CostReworkOrders => Set<ReworkOrder>();
@@ -298,6 +304,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureRecallSchema(b);
         ConfigureProcessRecordSchema(b);
         ConfigureSerialTraceabilitySchema(b);
+        ConfigureMaintenanceSchema(b);
         ConfigureCostSchema(b);
     }
 
@@ -4077,6 +4084,77 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasDefaultValueSql("SYSUTCDATETIME()");
             e.HasIndex(x => new { x.SerialID, x.EventTimestamp });
             e.HasIndex(x => x.WorkOrderID);
+        });
+    }
+
+    // ── maintenance ───────────────────────────────────────────────────────
+    private static void ConfigureMaintenanceSchema(ModelBuilder b)
+    {
+        b.Entity<MaintenanceOrder>(e =>
+        {
+            e.ToTable("MaintenanceOrders", "maint");
+            e.HasKey(x => x.MaintOrderID);
+            e.Property(x => x.MaintOrderID).UseIdentityColumn();
+            e.Property(x => x.MaintOrderCode).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.MaintOrderCode).IsUnique();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.MachineCode);
+            e.Property(x => x.TriggerRef).HasMaxLength(100);
+            e.Property(x => x.OrderType).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20)
+                .HasDefaultValue(MaintenanceOrderStatus.Open);
+            e.HasIndex(x => x.Status);
+            e.Property(x => x.Priority).HasConversion<string>().HasMaxLength(10)
+                .HasDefaultValue(MaintenancePriority.Normal);
+            e.Property(x => x.PlannedStartAt).HasColumnType("datetime2(3)");
+            e.Property(x => x.PlannedEndAt).HasColumnType("datetime2(3)");
+            e.Property(x => x.ActualStartAt).HasColumnType("datetime2(3)");
+            e.Property(x => x.ActualEndAt).HasColumnType("datetime2(3)");
+            e.Property(x => x.AssignedTo).HasMaxLength(50);
+            e.Property(x => x.EstimatedCost).HasColumnType("DECIMAL(14,2)");
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Ignore(x => x.ActualTotalCost);
+            e.HasMany(x => x.Lines).WithOne()
+                .HasForeignKey(x => x.MaintOrderID).OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines).HasField("_lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<MaintCostLine>(e =>
+        {
+            e.ToTable("MaintCostLines", "maint");
+            e.HasKey(x => x.LineID);
+            e.Property(x => x.LineID).UseIdentityColumn();
+            e.Property(x => x.CostCategory).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50);
+            e.Property(x => x.LotNumber).HasMaxLength(50);
+            e.Property(x => x.QtyUsed).HasColumnType("DECIMAL(10,4)");
+            e.Property(x => x.UnitCost).HasColumnType("DECIMAL(14,6)");
+            e.Property(x => x.OperatorID).HasMaxLength(50);
+            e.Property(x => x.LaborHours).HasColumnType("DECIMAL(8,4)");
+            e.Property(x => x.LaborRateSnapshot).HasColumnType("DECIMAL(12,4)");
+            e.Property(x => x.InvoiceRef).HasMaxLength(100);
+            e.Property(x => x.InvoiceAmount).HasColumnType("DECIMAL(14,2)");
+            e.Property(x => x.LineTotal).HasColumnType("DECIMAL(14,4)");
+            e.Property(x => x.PostedBy).HasMaxLength(100).IsRequired();
+            e.Property(x => x.PostedAt).HasColumnType("datetime2(3)")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.HasIndex(x => x.MaintOrderID);
+        });
+
+        b.Entity<MachineTcoSummary>(e =>
+        {
+            e.ToTable("MachineTCO", "maint");
+            e.HasKey(x => x.TcoID);
+            e.Property(x => x.TcoID).UseIdentityColumn();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.PlannedMaintCost).HasColumnType("DECIMAL(14,2)");
+            e.Property(x => x.ActualMaintCost).HasColumnType("DECIMAL(14,2)");
+            e.Property(x => x.MtbfHours).HasColumnType("DECIMAL(10,2)");
+            e.Property(x => x.MttrHours).HasColumnType("DECIMAL(8,2)");
+            e.Property(x => x.LastRefreshedAt).HasColumnType("datetime2(3)");
+            e.HasIndex(x => new { x.MachineCode, x.PeriodYear, x.PeriodMonth }).IsUnique();
         });
     }
 

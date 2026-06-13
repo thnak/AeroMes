@@ -9,6 +9,7 @@ using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production.Repositories;
 using AeroMes.Domain.Quality.Repositories;
 using AeroMes.Domain.Cost.Repositories;
+using AeroMes.Domain.Maintenance.Repositories;
 using AeroMes.Domain.Lab.Repositories;
 using AeroMes.Domain.Labels.Repositories;
 using AeroMes.Domain.Reminders.Repositories;
@@ -147,6 +148,8 @@ public static class DependencyInjection
         services.AddScoped<IScrapTransactionRepository, ScrapTransactionRepository>();
         services.AddScoped<IReworkOrderRepository, ReworkOrderRepository>();
         services.AddScoped<IQualityCostSummaryRepository, QualityCostSummaryRepository>();
+        services.AddScoped<IMaintenanceOrderRepository, MaintenanceOrderRepository>();
+        services.AddScoped<IMachineTcoRepository, MachineTcoRepository>();
 
         // ERP client + background sync
         services.AddHttpClient("erp").ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler

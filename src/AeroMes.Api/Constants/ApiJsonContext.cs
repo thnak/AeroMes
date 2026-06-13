@@ -30,6 +30,7 @@ using AeroMes.Application.Production.Commands.CreateMaterialPurchaseRequest;
 using AeroMes.Application.Quality.InspectionVouchers.Commands.CreateInspectionVoucher;
 using AeroMes.Domain.Cost;
 using AeroMes.Domain.Cost.Repositories;
+using AeroMes.Domain.Maintenance.Repositories;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrders;
 using AeroMes.Application.Integration.Commands.SyncSalesOrders;
@@ -1094,6 +1095,18 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(SamplingVolumeRangeDto))]
 [JsonSerializable(typeof(IReadOnlyList<SamplingVolumeRangeDto>))]
 [JsonSerializable(typeof(List<SamplingVolumeRangeDto>))]
+// maintenance & repair cost — #90
+[JsonSerializable(typeof(CreateMaintOrderRequest))]
+[JsonSerializable(typeof(AddCostLineRequest))]
+[JsonSerializable(typeof(UpdateMaintStatusRequest))]
+[JsonSerializable(typeof(MaintenanceOrderDto))]
+[JsonSerializable(typeof(PagedResult<MaintenanceOrderDto>))]
+[JsonSerializable(typeof(MaintCostLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<MaintCostLineDto>))]
+[JsonSerializable(typeof(List<MaintCostLineDto>))]
+[JsonSerializable(typeof(MachineTcoDto))]
+[JsonSerializable(typeof(IReadOnlyList<MachineTcoDto>))]
+[JsonSerializable(typeof(List<MachineTcoDto>))]
 // scrap & rework cost management — #104
 [JsonSerializable(typeof(PostScrapRequest))]
 [JsonSerializable(typeof(CreateReworkOrderRequest))]

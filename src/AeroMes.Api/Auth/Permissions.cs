@@ -160,6 +160,7 @@ public static class Permissions
 
     // Maintenance
     public const string MaintenanceRead = "Maintenance:Read";
+    public const string MaintenanceWrite = "Maintenance:Write";
     public const string MaintenanceExecute = "Maintenance:Execute";
     public const string MaintenanceCreate = "Maintenance:Create";
     public const string MaintenanceApprove = "Maintenance:Approve";
@@ -204,6 +205,7 @@ public static class Permissions
         QualityRead, QualityWrite, QualityCreate, QualityUpdate, QualityApprove,
         NcrRead, NcrCreate, NcrClose,
         CostRead, CostWrite,
+        MaintenanceRead, MaintenanceWrite,
         WarehouseRead, WarehouseReceive, WarehousePutAway, WarehousePick, WarehouseDispatch,
         StockPolicyRead, StockPolicyWrite,
         ReplenishmentAlertRead, ReplenishmentAlertAcknowledge,
