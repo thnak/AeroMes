@@ -159,6 +159,7 @@ export const MODULES: ModuleConfig[] = [
     tabs: [
       { label: 'Machines & Adapters', path: '/master/machines' },
       { label: 'Signal Tag Catalog',  path: '/iot/tags' },
+      { label: 'Adapter Health',      path: '/iot/adapter-health' },
     ],
   },
   {

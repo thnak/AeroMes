@@ -50,6 +50,7 @@ public class IotController(
     IQueryMediator queryMediator,
     ISignalIngestionPipeline pipeline,
     IAdapterRepository adapterRepository,
+    IAdapterHealthRepository healthRepository,
     AppDbContext db) : ControllerBase
 {
     // ── Signal Tags ───────────────────────────────────────────────────────
@@ -1064,6 +1065,146 @@ public class IotController(
 
         return Ok(pipeline.GetStats());
     }
+
+    // ── Time-Series Query API ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns raw signal values for a given machine/tag in [from, to].
+    /// </summary>
+    [HttpGet("signals/history")]
+    [RequirePermission(Permissions.IotRead)]
+    [ProducesResponseType<IReadOnlyList<SignalHistoryPoint>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSignalHistory(
+        [FromQuery] string machineCode,
+        [FromQuery] string tagKey,
+        [FromQuery] DateTimeOffset from,
+        [FromQuery] DateTimeOffset to,
+        [FromQuery] int limit = 500,
+        CancellationToken ct = default)
+    {
+        var rows = await db.MachineSignalLogs
+            .AsNoTracking()
+            .Where(l => l.MachineCode == machineCode && l.TagKey == tagKey
+                     && l.Timestamp >= from && l.Timestamp <= to)
+            .OrderBy(l => l.Timestamp)
+            .Take(limit)
+            .Select(l => new SignalHistoryPoint(l.Value, l.Unit, l.Timestamp, false))
+            .ToListAsync(ct);
+
+        return Ok((IReadOnlyList<SignalHistoryPoint>)rows);
+    }
+
+    /// <summary>
+    /// Returns aggregated signal values (1min or 1hr buckets) for charts/reports.
+    /// </summary>
+    [HttpGet("signals/aggregates")]
+    [RequirePermission(Permissions.IotRead)]
+    [ProducesResponseType<IReadOnlyList<SignalAggPoint>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSignalAggregates(
+        [FromQuery] string machineCode,
+        [FromQuery] string tagKey,
+        [FromQuery] DateTimeOffset from,
+        [FromQuery] DateTimeOffset to,
+        [FromQuery] string resolution = "1min",
+        CancellationToken ct = default)
+    {
+        if (resolution == "1hr")
+        {
+            var rows = await db.SignalAgg1hrs
+                .AsNoTracking()
+                .Where(a => a.MachineCode == machineCode && a.TagKey == tagKey
+                         && a.BucketAt >= from && a.BucketAt <= to)
+                .OrderBy(a => a.BucketAt)
+                .Select(a => new SignalAggPoint(a.BucketAt, a.SampleCount, a.MinValue, a.MaxValue,
+                    a.SampleCount > 0 ? a.SumValue / a.SampleCount : 0m, a.LastValue))
+                .ToListAsync(ct);
+            return Ok((IReadOnlyList<SignalAggPoint>)rows);
+        }
+        else
+        {
+            var rows = await db.SignalAgg1mins
+                .AsNoTracking()
+                .Where(a => a.MachineCode == machineCode && a.TagKey == tagKey
+                         && a.BucketAt >= from && a.BucketAt <= to)
+                .OrderBy(a => a.BucketAt)
+                .Select(a => new SignalAggPoint(a.BucketAt, a.SampleCount, a.MinValue, a.MaxValue,
+                    a.SampleCount > 0 ? a.SumValue / a.SampleCount : 0m, a.LastValue))
+                .ToListAsync(ct);
+            return Ok((IReadOnlyList<SignalAggPoint>)rows);
+        }
+    }
+
+    /// <summary>
+    /// Returns the global retention policy.
+    /// </summary>
+    [HttpGet("signals/retention")]
+    [RequirePermission(Permissions.IotRead)]
+    [ProducesResponseType<RetentionPolicyDto>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetRetentionPolicy(CancellationToken ct)
+    {
+        var policy = await db.RetentionPolicies.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Scope == "GLOBAL", ct)
+            ?? AeroMes.Domain.Iot.RetentionPolicy.CreateGlobal(30, 90, 730);
+
+        return Ok(new RetentionPolicyDto(policy.RawRetentionDays, policy.Agg1minRetentionDays, policy.Agg1hrRetentionDays));
+    }
+
+    /// <summary>
+    /// Updates the global retention policy.
+    /// </summary>
+    [HttpPut("signals/retention")]
+    [RequirePermission(Permissions.IotWrite)]
+    [ProducesResponseType<RetentionPolicyDto>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateRetentionPolicy(
+        [FromBody] UpdateRetentionRequest request,
+        CancellationToken ct)
+    {
+        var policy = await db.RetentionPolicies.FirstOrDefaultAsync(p => p.Scope == "GLOBAL", ct);
+        if (policy is null)
+        {
+            policy = AeroMes.Domain.Iot.RetentionPolicy.CreateGlobal(request.RawRetentionDays, request.Agg1minRetentionDays, request.Agg1hrRetentionDays);
+            db.RetentionPolicies.Add(policy);
+        }
+        else
+        {
+            policy.Update(request.RawRetentionDays, request.Agg1minRetentionDays, request.Agg1hrRetentionDays);
+        }
+
+        await db.SaveChangesAsync(ct);
+        return Ok(new RetentionPolicyDto(policy.RawRetentionDays, policy.Agg1minRetentionDays, policy.Agg1hrRetentionDays));
+    }
+
+    // ── Adapter Health ────────────────────────────────────────────────────
+
+    [HttpGet("adapters/health")]
+    [RequirePermission(Permissions.IotRead)]
+    [ProducesResponseType<IReadOnlyList<AdapterHealthDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAdaptersHealth(CancellationToken ct)
+    {
+        var healths = await healthRepository.GetAllAsync(ct);
+        var result = healths.Select(ToDto).ToList();
+        return Ok((IReadOnlyList<AdapterHealthDto>)result);
+    }
+
+    [HttpGet("adapters/{id:int}/health")]
+    [RequirePermission(Permissions.IotRead)]
+    [ProducesResponseType<AdapterHealthDetailDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAdapterHealth(int id, [FromQuery] int logLimit = 50, CancellationToken ct = default)
+    {
+        var health = await healthRepository.GetByAdapterIdAsync(id, ct);
+        if (health is null) return NotFound();
+
+        var logs = await healthRepository.GetRecentLogsAsync(id, logLimit, ct);
+        var logDtos = logs.Select(l => new AdapterHealthLogDto(l.EventId, l.EventType, l.EventAt, l.Details)).ToList();
+
+        return Ok(new AdapterHealthDetailDto(ToDto(health), logDtos));
+    }
+
+    private static AdapterHealthDto ToDto(AdapterHealth h) =>
+        new(h.AdapterId, h.MachineCode, h.AdapterType, h.Status.ToString(),
+            h.LastConnectedAt, h.LastSignalAt, h.SignalRate1min,
+            h.ErrorCount1hr, h.ReconnectAttempts, h.LastError, h.UpdatedAt);
 }
 
 public record CreateSignalTagRequest(string Key, string DisplayName, string Category, string DataType,
@@ -1107,3 +1248,15 @@ public record MachineStateSnapshotDto(string MachineCode, string CurrentState, s
 public record MachineStateHistoryDto(long HistoryId, string MachineCode, string FromState, string ToState,
     DateTimeOffset TransitionAt, long DurationMs, string? TriggerTagKey, bool IsAutomatic);
 public record StateOverrideRequest(string TargetState);
+// time-series query DTOs
+public record SignalHistoryPoint(decimal Value, string? Unit, DateTimeOffset Timestamp, bool IsBadQuality);
+public record SignalAggPoint(DateTimeOffset BucketAt, int Count, decimal Min, decimal Max, decimal Avg, decimal Last);
+public record RetentionPolicyDto(int RawRetentionDays, int Agg1minRetentionDays, int Agg1hrRetentionDays);
+public record UpdateRetentionRequest(int RawRetentionDays, int Agg1minRetentionDays, int Agg1hrRetentionDays);
+// adapter health
+public record AdapterHealthDto(
+    int AdapterId, string MachineCode, string AdapterType, string Status,
+    DateTime? LastConnectedAt, DateTime? LastSignalAt, double SignalRate1min,
+    int ErrorCount1hr, int ReconnectAttempts, string? LastError, DateTime UpdatedAt);
+public record AdapterHealthLogDto(long EventId, string EventType, DateTime EventAt, string? Details);
+public record AdapterHealthDetailDto(AdapterHealthDto Health, List<AdapterHealthLogDto> Logs);

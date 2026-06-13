@@ -131,6 +131,7 @@ public static class DependencyInjection
         services.AddScoped<ISignalMappingRepository, SignalMappingRepository>();
         services.AddScoped<IMachineStateRuleRepository, MachineStateRuleRepository>();
         services.AddScoped<ISignalTagRepository, SignalTagRepository>();
+        services.AddScoped<IAdapterHealthRepository, AdapterHealthRepository>();
 
         // cross-cutting
         services.AddScoped<IModuleStatusRepository, ModuleStatusRepository>();
@@ -231,6 +232,12 @@ public static class DependencyInjection
         services.AddScoped<IEventHandler<MachineSignalIngestedEvent>>(
             sp => sp.GetRequiredService<MachineSignalStateHandler>());
         services.AddHostedService<StaleSignalWatchdog>();
+
+        // Time-Series Rollup & Retention
+        services.AddHostedService<SignalRollupService>();
+
+        // Adapter Health Monitoring
+        services.AddHostedService<AdapterWatchdogService>();
 
         return services;
     }

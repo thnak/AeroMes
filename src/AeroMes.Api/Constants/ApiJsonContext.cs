@@ -651,6 +651,19 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(MachineStateHistoryDto))]
 [JsonSerializable(typeof(IReadOnlyList<MachineStateHistoryDto>))]
 [JsonSerializable(typeof(StateOverrideRequest))]
+// iot time-series storage & aggregation
+[JsonSerializable(typeof(SignalHistoryPoint))]
+[JsonSerializable(typeof(IReadOnlyList<SignalHistoryPoint>))]
+[JsonSerializable(typeof(SignalAggPoint))]
+[JsonSerializable(typeof(IReadOnlyList<SignalAggPoint>))]
+[JsonSerializable(typeof(RetentionPolicyDto))]
+[JsonSerializable(typeof(UpdateRetentionRequest))]
+// adapter health
+[JsonSerializable(typeof(AdapterHealthDto))]
+[JsonSerializable(typeof(IReadOnlyList<AdapterHealthDto>))]
+[JsonSerializable(typeof(AdapterHealthLogDto))]
+[JsonSerializable(typeof(List<AdapterHealthLogDto>))]
+[JsonSerializable(typeof(AdapterHealthDetailDto))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

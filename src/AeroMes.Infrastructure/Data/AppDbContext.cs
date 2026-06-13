@@ -148,6 +148,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<MachineSignalLog> MachineSignalLogs => Set<MachineSignalLog>();
     public DbSet<MachineStateSnapshot> MachineStateSnapshots => Set<MachineStateSnapshot>();
     public DbSet<MachineStateHistory> MachineStateHistories => Set<MachineStateHistory>();
+    public DbSet<SignalAgg1min> SignalAgg1mins => Set<SignalAgg1min>();
+    public DbSet<SignalAgg1hr> SignalAgg1hrs => Set<SignalAgg1hr>();
+    public DbSet<RetentionPolicy> RetentionPolicies => Set<RetentionPolicy>();
+    public DbSet<AdapterHealth> AdapterHealths => Set<AdapterHealth>();
+    public DbSet<AdapterHealthLog> AdapterHealthLogs => Set<AdapterHealthLog>();
 
     // settings
     public DbSet<SystemOptions> SystemOptions => Set<SystemOptions>();
@@ -2608,6 +2613,68 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.TriggerTagKey).HasMaxLength(100);
             e.Property(x => x.TriggerValue).HasColumnType("decimal(18,4)");
             e.HasIndex(x => new { x.MachineCode, x.TransitionAt });
+        });
+
+        b.Entity<SignalAgg1min>(e =>
+        {
+            e.ToTable("SignalAgg_1min", "iot");
+            e.HasKey(x => x.BucketId);
+            e.Property(x => x.BucketId).UseIdentityColumn();
+            // Unique index on (MachineCode, TagKey, BucketAt) — also serves as the lookup index
+            e.HasIndex(x => new { x.MachineCode, x.TagKey, x.BucketAt }).IsUnique();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.TagKey).HasMaxLength(100).IsRequired();
+            e.Property(x => x.SumValue).HasColumnType("decimal(18,4)");
+            e.Property(x => x.MinValue).HasColumnType("decimal(18,4)");
+            e.Property(x => x.MaxValue).HasColumnType("decimal(18,4)");
+            e.Property(x => x.LastValue).HasColumnType("decimal(18,4)");
+            e.Property(x => x.FirstValue).HasColumnType("decimal(18,4)");
+        });
+
+        b.Entity<SignalAgg1hr>(e =>
+        {
+            e.ToTable("SignalAgg_1hr", "iot");
+            e.HasKey(x => x.BucketId);
+            e.Property(x => x.BucketId).UseIdentityColumn();
+            // Unique index on (MachineCode, TagKey, BucketAt) — also serves as the lookup index
+            e.HasIndex(x => new { x.MachineCode, x.TagKey, x.BucketAt }).IsUnique();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.TagKey).HasMaxLength(100).IsRequired();
+            e.Property(x => x.SumValue).HasColumnType("decimal(18,4)");
+            e.Property(x => x.MinValue).HasColumnType("decimal(18,4)");
+            e.Property(x => x.MaxValue).HasColumnType("decimal(18,4)");
+            e.Property(x => x.LastValue).HasColumnType("decimal(18,4)");
+            e.Property(x => x.FirstValue).HasColumnType("decimal(18,4)");
+        });
+
+        b.Entity<RetentionPolicy>(e =>
+        {
+            e.ToTable("RetentionPolicies", "iot");
+            e.HasKey(x => x.PolicyId);
+            e.Property(x => x.Scope).HasMaxLength(20).IsRequired();
+            e.Property(x => x.ScopeValue).HasMaxLength(100);
+        });
+
+        b.Entity<AdapterHealth>(e =>
+        {
+            e.ToTable("AdapterHealths", "iot");
+            e.HasKey(x => x.AdapterId);
+            e.Property(x => x.AdapterId).ValueGeneratedNever();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.AdapterType).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.LastError).HasMaxLength(500);
+            e.HasIndex(x => x.MachineCode);
+        });
+
+        b.Entity<AdapterHealthLog>(e =>
+        {
+            e.ToTable("AdapterHealthLogs", "iot");
+            e.HasKey(x => x.EventId);
+            e.Property(x => x.EventId).UseIdentityColumn();
+            e.Property(x => x.EventType).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Details).HasMaxLength(500);
+            e.HasIndex(x => new { x.AdapterId, x.EventAt });
         });
     }
 
