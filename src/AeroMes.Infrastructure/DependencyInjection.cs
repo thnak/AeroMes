@@ -1,4 +1,5 @@
 using AeroMes.Application.Interfaces;
+using AeroMes.Application.Traceability.Services;
 using AeroMes.Application.Wms.Services;
 using AeroMes.Domain.Integration.Repositories;
 using AeroMes.Domain.Traceability.Repositories;
@@ -123,7 +124,10 @@ public static class DependencyInjection
         services.AddScoped<IProductionOrderProgressRepository, ProductionOrderProgressRepository>();
         services.AddScoped<IProductionStatisticsSheetRepository, ProductionStatisticsSheetRepository>();
         services.AddScoped<ILotTraceabilityRepository, LotTraceabilityRepository>();
+        services.AddScoped<ILotHoldRepository, LotHoldRepository>();
         services.AddScoped<IProcessRecordRepository, ProcessRecordRepository>();
+        services.AddScoped<ILotHoldEnforcementService, LotHoldEnforcementService>();
+        services.AddScoped<IESignatureService, ESignatureService>();
 
         // ERP client + background sync
         services.AddHttpClient("erp").ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler

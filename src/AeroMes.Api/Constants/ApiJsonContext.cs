@@ -205,6 +205,7 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(ProblemDetails))]
 [JsonSerializable(typeof(AeroMes.Domain.Settings.SystemOptions))]
 [JsonSerializable(typeof(SimpleProblemResponse))]
+[JsonSerializable(typeof(LotHoldProblemResponse))]
 [JsonSerializable(typeof(ValidationProblemResponse))]
 // auth
 [JsonSerializable(typeof(ForgotPasswordRequest))]
@@ -345,6 +346,16 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<LotEventDto>))]
 [JsonSerializable(typeof(RecordLineageRequest))]
 [JsonSerializable(typeof(AppendLotEventRequest))]
+// lot holds
+[JsonSerializable(typeof(LotHoldDto))]
+[JsonSerializable(typeof(IReadOnlyList<LotHoldDto>))]
+[JsonSerializable(typeof(LotHoldStatusDto))]
+[JsonSerializable(typeof(BulkHoldResultDto))]
+[JsonSerializable(typeof(PagedResult<LotHoldDto>))]
+[JsonSerializable(typeof(PlaceHoldRequest))]
+[JsonSerializable(typeof(ReleaseHoldRequest))]
+[JsonSerializable(typeof(RejectDispositionRequest))]
+[JsonSerializable(typeof(BulkHoldFromForwardTraceRequest))]
 // process records (as-built & mid-session WIP)
 [JsonSerializable(typeof(ProcessRecordDto))]
 [JsonSerializable(typeof(IReadOnlyList<ProcessRecordDto>))]

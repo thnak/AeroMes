@@ -30,6 +30,15 @@ public class ExceptionMiddleware
                     errors),
                 ApiJsonContext.Default.ValidationProblemResponse);
         }
+        catch (LotUnderActiveHoldException ex)
+        {
+            ctx.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
+            ctx.Response.ContentType = "application/problem+json";
+            await ctx.Response.WriteAsJsonAsync(
+                new LotHoldProblemResponse(
+                    "LOT_ON_HOLD", ex.LotNumber, ex.HoldID, ex.HoldReason, ex.HoldReference, ex.Message),
+                ApiJsonContext.Default.LotHoldProblemResponse);
+        }
         catch (DomainException ex)
         {
             await WriteSimpleProblemAsync(ctx, StatusCodes.Status422UnprocessableEntity, ex.Message);
@@ -53,6 +62,9 @@ public class ExceptionMiddleware
 }
 
 public record SimpleProblemResponse(string Type, string Title, int Status);
+
+public record LotHoldProblemResponse(
+    string Code, string LotNumber, Guid HoldID, string HoldReason, string? HoldReference, string Message);
 
 public record ValidationProblemResponse(
     string Type,

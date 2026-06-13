@@ -114,6 +114,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<ByProductLine> ByProductLines => Set<ByProductLine>();
     public DbSet<LotLineage> LotLineages => Set<LotLineage>();
     public DbSet<LotEvent> LotEvents => Set<LotEvent>();
+    public DbSet<LotHold> LotHolds => Set<LotHold>();
     public DbSet<ProcessRecord> ProcessRecords => Set<ProcessRecord>();
     public DbSet<ProcessParameter> ProcessParameters => Set<ProcessParameter>();
 
@@ -255,6 +256,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureRemindersSchema(b);
         ConfigureStorageSchema(b);
         ConfigureTraceabilitySchema(b);
+        ConfigureLotHoldSchema(b);
         ConfigureProcessRecordSchema(b);
     }
 
@@ -3316,6 +3318,38 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.UploadedBy).HasMaxLength(256).IsRequired();
             e.HasIndex(x => new { x.OwnerType, x.OwnerId });
             e.HasQueryFilter(x => !x.IsDeleted);
+        });
+    }
+
+    // ── lot holds ─────────────────────────────────────────────────────────
+    private static void ConfigureLotHoldSchema(ModelBuilder b)
+    {
+        b.Entity<LotHold>(e =>
+        {
+            e.ToTable("LotHolds", "trace");
+            e.HasKey(x => x.HoldID);
+            e.Property(x => x.HoldID).HasColumnType("uniqueidentifier").ValueGeneratedNever();
+            e.Property(x => x.LotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50);
+            e.Property(x => x.HoldStatus).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.HoldReason).HasConversion<string>().HasMaxLength(30).IsRequired();
+            e.Property(x => x.HoldDescription).HasMaxLength(500);
+            e.Property(x => x.HoldReference).HasMaxLength(100);
+            e.Property(x => x.HoldInitiatedBy).HasMaxLength(50).IsRequired();
+            e.Property(x => x.HoldInitiatedAt).HasColumnType("datetime2(3)").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.Property(x => x.DispositionCode).HasConversion<string>().HasMaxLength(30);
+            e.Property(x => x.DispositionNotes).HasMaxLength(500);
+            e.Property(x => x.ReleasedBy).HasMaxLength(50);
+            e.Property(x => x.ReleasedAt).HasColumnType("datetime2(3)");
+            e.Property(x => x.ESignatureRef).HasMaxLength(100);
+            // Filtered indexes for fast active-hold lookups
+            e.HasIndex(x => x.LotNumber).HasFilter("[HoldStatus] = 'Active'")
+                .HasDatabaseName("IX_LH_Lot_Active");
+            e.HasIndex(x => x.WorkOrderID).HasFilter("[HoldStatus] = 'Active'")
+                .HasDatabaseName("IX_LH_WO_Active");
+            e.HasIndex(x => new { x.HoldStatus, x.HoldReason, x.HoldInitiatedAt })
+                .HasDatabaseName("IX_LH_Status_Reason");
         });
     }
 
