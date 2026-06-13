@@ -21,6 +21,7 @@ using AeroMes.Domain.Cost;
 using AeroMes.Domain.Maintenance;
 using AeroMes.Domain.Energy;
 using AeroMes.Domain.Templates;
+using AeroMes.Domain.Import;
 using AeroMes.Infrastructure.Identity;
 using LiteBus.Events.Abstractions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -296,6 +297,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<DocumentTemplate> DocumentTemplates => Set<DocumentTemplate>();
     public DbSet<PrintAuditLog> PrintAuditLogs => Set<PrintAuditLog>();
 
+    // import schema
+    public DbSet<ImportJob> ImportJobs => Set<ImportJob>();
+
     public override async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
         var result = await base.SaveChangesAsync(ct);
@@ -343,6 +347,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureMaintenanceSchema(b);
         ConfigureCostSchema(b);
         ConfigureTemplatesSchema(b);
+        ConfigureImportSchema(b);
     }
 
     // ── auth ──────────────────────────────────────────────────────────────
@@ -4638,6 +4643,24 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.TotalRateSnapshot).HasColumnType("DECIMAL(14,4)").IsRequired();
             e.Ignore(x => x.LineTotal);
             e.HasIndex(x => x.WOID);
+        });
+    }
+
+    // ── import ────────────────────────────────────────────────────────────
+    private static void ConfigureImportSchema(ModelBuilder b)
+    {
+        b.Entity<ImportJob>(e =>
+        {
+            e.ToTable("ImportJobs", "import");
+            e.HasKey(x => x.ImportJobId);
+            e.Property(x => x.ImportJobId).UseIdentityColumn();
+            e.Property(x => x.Category).HasMaxLength(60).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.FileName).HasMaxLength(260).IsRequired();
+            e.Property(x => x.ValidRowsJson).HasColumnType("nvarchar(MAX)");
+            e.Property(x => x.ErrorRowsJson).HasColumnType("nvarchar(MAX)");
+            e.Property(x => x.ErrorMessage).HasMaxLength(1000);
+            e.HasIndex(x => x.CreatedAt);
         });
     }
 

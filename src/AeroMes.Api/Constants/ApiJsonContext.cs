@@ -198,6 +198,8 @@ using AeroMes.Domain.Energy.Repositories;
 using AeroMes.Application.Templates;
 using AeroMes.Application.Documents.Queries.GetDocumentPrintTemplates;
 using AeroMes.Domain.Templates;
+using AeroMes.Application.Import;
+using AeroMes.Application.Import.Commands.ValidateImport;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AeroMes.Api.Constants;
@@ -1373,6 +1375,21 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(AvailableTemplateItem))]
 [JsonSerializable(typeof(IReadOnlyList<AvailableTemplateItem>))]
 [JsonSerializable(typeof(List<AvailableTemplateItem>))]
+// excel import (#105)
+[JsonSerializable(typeof(ImportCategoryInfo))]
+[JsonSerializable(typeof(IReadOnlyList<ImportCategoryInfo>))]
+[JsonSerializable(typeof(List<ImportCategoryInfo>))]
+[JsonSerializable(typeof(ImportColumnDef))]
+[JsonSerializable(typeof(IReadOnlyList<ImportColumnDef>))]
+[JsonSerializable(typeof(List<ImportColumnDef>))]
+[JsonSerializable(typeof(ImportRowError))]
+[JsonSerializable(typeof(IReadOnlyList<ImportRowError>))]
+[JsonSerializable(typeof(List<ImportRowError>))]
+[JsonSerializable(typeof(ValidateImportResult))]
+[JsonSerializable(typeof(ImportJobSummaryDto))]
+[JsonSerializable(typeof(IReadOnlyList<ImportJobSummaryDto>))]
+[JsonSerializable(typeof(List<ImportJobSummaryDto>))]
+[JsonSerializable(typeof(PagedResult<ImportJobSummaryDto>))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

@@ -360,6 +360,10 @@ public static class DependencyInjection
         services.AddScoped<AeroMes.Application.Templates.IDocumentTemplateRepository, DocumentTemplateRepository>();
         services.AddScoped<AeroMes.Application.Documents.IDocumentPrintService, Documents.DocumentPrintService>();
 
+        // Excel import
+        services.AddScoped<AeroMes.Application.Import.IImportService, Import.ImportService>();
+        services.AddScoped<AeroMes.Application.Import.IImportRepository, Import.ImportRepository>();
+
         return services;
     }
 }
