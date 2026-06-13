@@ -75,6 +75,8 @@ using AeroMes.Application.Master.WorkCalendars.Queries.GetWorkCalendars;
 using AeroMes.Application.Master.WorkShifts.Queries.GetWorkShiftById;
 using AeroMes.Application.Master.WorkShifts.Queries.GetWorkShifts;
 using AeroMes.Application.Master.Machines.Queries.GetMachines;
+using AeroMes.Application.Master.Machines.Queries.GetMachinesByType;
+using AeroMes.Application.Master.Machines.Queries.GetCompatibleMachinesForMold;
 using AeroMes.Application.Master.MachineProductConfigs.Queries.GetMachineProductConfigs;
 using AeroMes.Application.Master.MachineProductParams.Queries.GetMachineSetupSheet;
 using AeroMes.Application.Master.OperatorCertifications.Queries.CheckOperatorEligibility;
@@ -207,6 +209,10 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(CreateMachineRequest))]
 [JsonSerializable(typeof(UpdateMachineRequest))]
 [JsonSerializable(typeof(UpdateMachineCapacityRequest))]
+[JsonSerializable(typeof(UpdateMachineTypeRequest))]
+[JsonSerializable(typeof(UpdateMachineAttributesRequest))]
+[JsonSerializable(typeof(IReadOnlyList<MachinesByTypeDto>))]
+[JsonSerializable(typeof(IReadOnlyList<CompatibleMachineDto>))]
 // machine product configs
 [JsonSerializable(typeof(IReadOnlyList<MachineProductConfigDto>))]
 [JsonSerializable(typeof(UpsertMachineProductConfigRequest))]

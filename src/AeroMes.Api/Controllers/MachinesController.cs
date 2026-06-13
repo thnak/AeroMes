@@ -5,7 +5,11 @@ using AeroMes.Application.Master.Machines.Commands.DeleteMachine;
 using AeroMes.Application.Master.Machines.Commands.DuplicateMachine;
 using AeroMes.Application.Master.Machines.Commands.UpdateMachine;
 using AeroMes.Application.Master.Machines.Commands.UpdateMachineCapacity;
+using AeroMes.Application.Master.Machines.Commands.UpdateMachineType;
+using AeroMes.Application.Master.Machines.Commands.UpdateMachineAttributes;
 using AeroMes.Application.Master.Machines.Queries.GetMachines;
+using AeroMes.Application.Master.Machines.Queries.GetMachinesByType;
+using AeroMes.Application.Master.Machines.Queries.GetCompatibleMachinesForMold;
 using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
@@ -144,6 +148,44 @@ public class MachinesController(ICommandMediator commandMediator,
         if (!result.IsSuccess) return result.ToErrorResult();
         return CreatedAtAction(nameof(GetAll), null, new MachineCreatedResult(result.Value!));
     }
+
+    [HttpPut("{code}/type")]
+    [RequirePermission(Permissions.MasterDataWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateType(string code, [FromBody] UpdateMachineTypeRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new UpdateMachineTypeCommand(code, req.MachineType, User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpPut("{code}/attributes")]
+    [RequirePermission(Permissions.MasterDataWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateAttributes(string code, [FromBody] UpdateMachineAttributesRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new UpdateMachineAttributesCommand(code, req.CustomAttributesJson, User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpGet("by-type/{machineType}")]
+    [RequirePermission(Permissions.MasterDataRead)]
+    [ProducesResponseType<IReadOnlyList<MachinesByTypeDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetByType(string machineType, [FromQuery] bool activeOnly = true, CancellationToken ct = default)
+        => Ok(await queryMediator.QueryAsync(new GetMachinesByTypeQuery(machineType, activeOnly), null, ct));
+
+    [HttpGet("compatible-for-mold")]
+    [RequirePermission(Permissions.MasterDataRead)]
+    [ProducesResponseType<IReadOnlyList<CompatibleMachineDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetCompatibleForMold([FromQuery] int minClampingForceTons, CancellationToken ct = default)
+        => Ok(await queryMediator.QueryAsync(new GetCompatibleMachinesForMoldQuery(minClampingForceTons), null, ct));
 }
 
 public record CreateMachineRequest(string Code, string Name, int WorkCenterId, string? Brand, string? Model);
@@ -160,3 +202,5 @@ public record UpdateMachineCapacityRequest(
     bool RequiresCertification,
     string? CertificationCode,
     byte MaxOperators);
+public record UpdateMachineTypeRequest(string MachineType);
+public record UpdateMachineAttributesRequest(string? CustomAttributesJson);

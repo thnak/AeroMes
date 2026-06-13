@@ -21,4 +21,8 @@ public record MachineDto(
     string? OpcUaNodeId,
     bool RequiresCertification,
     string? CertificationCode,
-    byte MaxOperators);
+    byte MaxOperators,
+    string MachineType,
+    string? CustomAttributes,
+    int? ClampingForceTons,
+    string? SewingMachineClass);

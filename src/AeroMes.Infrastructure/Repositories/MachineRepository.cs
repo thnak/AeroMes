@@ -18,6 +18,23 @@ public class MachineRepository(AppDbContext db) : IMachineRepository
         return await q.OrderBy(x => x.MachineCode).ToListAsync(ct);
     }
 
+    public async Task<IReadOnlyList<Machine>> GetByTypeAsync(string machineType, bool activeOnly = true, CancellationToken ct = default)
+    {
+        var q = db.Machines.Include(m => m.WorkCenter)
+                           .Where(x => x.MachineType == machineType);
+        if (activeOnly) q = q.Where(x => x.IsActive);
+        return await q.OrderBy(x => x.MachineCode).ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<Machine>> GetCompatibleForMoldAsync(int minClampingForceTons, CancellationToken ct = default) =>
+        await db.Machines
+                .Include(m => m.WorkCenter)
+                .Where(x => x.MachineType == AeroMes.Domain.Master.MachineTypes.InjectionMold
+                         && x.ClampingForceTons >= minClampingForceTons
+                         && x.IsActive)
+                .OrderBy(x => x.ClampingForceTons)
+                .ToListAsync(ct);
+
     public Task<bool> ExistsAsync(string code, CancellationToken ct) =>
         db.Machines.AnyAsync(x => x.MachineCode == code.ToUpperInvariant(), ct);
 

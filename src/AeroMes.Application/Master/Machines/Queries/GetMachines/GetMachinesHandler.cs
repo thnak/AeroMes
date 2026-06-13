@@ -26,6 +26,10 @@ public class GetMachinesHandler(IMachineRepository repo)
             x.OpcUaNodeId,
             x.RequiresCertification,
             x.CertificationCode,
-            x.MaxOperators)).ToList();
+            x.MaxOperators,
+            x.MachineType,
+            x.CustomAttributes,
+            x.ClampingForceTons,
+            x.SewingMachineClass)).ToList();
     }
 }

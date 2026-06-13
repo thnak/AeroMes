@@ -401,6 +401,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.HourlyCostRate).HasColumnType("DECIMAL(18,2)");
             e.Property(x => x.OpcUaNodeId).HasMaxLength(200);
             e.Property(x => x.CertificationCode).HasMaxLength(30);
+            e.Property(x => x.MachineType).HasMaxLength(30).HasDefaultValue("GENERAL").IsRequired();
+            e.Property(x => x.CustomAttributes).HasColumnType("NVARCHAR(MAX)");
+            // Computed columns — read-only in EF, populated by SQL Server
+            e.Property(x => x.ClampingForceTons)
+                .HasComputedColumnSql("CAST(JSON_VALUE(CustomAttributes, '$.clamping_force_tons') AS INT)", stored: false);
+            e.Property(x => x.SewingMachineClass)
+                .HasComputedColumnSql("JSON_VALUE(CustomAttributes, '$.machine_class')", stored: false);
 
             e.HasOne(x => x.WorkCenter)
                 .WithMany()

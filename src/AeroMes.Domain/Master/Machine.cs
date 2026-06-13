@@ -21,6 +21,14 @@ public class Machine : AuditableEntity
     // Cost
     public decimal? HourlyCostRate { get; private set; }
 
+    // Industry type + technical spec
+    public string MachineType { get; private set; } = MachineTypes.General;
+    public string? CustomAttributes { get; private set; }
+
+    // Computed from CustomAttributes (populated by EF Core, not set directly)
+    public int? ClampingForceTons { get; private set; }
+    public string? SewingMachineClass { get; private set; }
+
     // IoT integration hook
     public string? OpcUaNodeId { get; private set; }
 
@@ -89,6 +97,18 @@ public class Machine : AuditableEntity
         Touch(updatedBy);
     }
 
+    public void SetMachineType(string machineType, string updatedBy)
+    {
+        MachineType = machineType;
+        Touch(updatedBy);
+    }
+
+    public void SetCustomAttributes(string? customAttributesJson, string updatedBy)
+    {
+        CustomAttributes = customAttributesJson;
+        Touch(updatedBy);
+    }
+
     public void SetStatus(MachineStatus status) => Status = status;
 
     public void Activate(string updatedBy)
@@ -105,3 +125,26 @@ public class Machine : AuditableEntity
 }
 
 public enum MachineStatus { Running, Down, Idle, Offline }
+
+public static class MachineTypes
+{
+    public const string General         = "GENERAL";
+    public const string InjectionMold   = "INJECTION_MOLD";
+    public const string BlowMold        = "BLOW_MOLD";
+    public const string Extrusion       = "EXTRUSION";
+    public const string Thermoform      = "THERMOFORM";
+    public const string OvenDryer       = "OVEN_DRYER";
+    public const string Sewing          = "SEWING";
+    public const string CuttingMachine  = "CUTTING_MACHINE";
+    public const string Embroidery      = "EMBROIDERY";
+    public const string Pressing        = "PRESSING";
+    public const string Cnc             = "CNC";
+    public const string Assembly        = "ASSEMBLY";
+    public const string Packaging       = "PACKAGING";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        General, InjectionMold, BlowMold, Extrusion, Thermoform, OvenDryer,
+        Sewing, CuttingMachine, Embroidery, Pressing, Cnc, Assembly, Packaging,
+    ];
+}
