@@ -79,6 +79,7 @@ const AuditLogPage = lazy(() => import('./pages/admin/AuditLogPage'));
 const ReleasePage = lazy(() => import('./pages/admin/ReleasePage'));
 
 // Tablet (separate layout — M5)
+const TabletLaunchpad = lazy(() => import('./pages/tablet/TabletLaunchpad'));
 const TabletLoginPage = lazy(() => import('./pages/tablet/TabletLoginPage'));
 const StationPage = lazy(() => import('./pages/tablet/StationPage'));
 const StartJobPage = lazy(() => import('./pages/tablet/StartJobPage'));
@@ -109,6 +110,7 @@ export default function App() {
 
         {/* ── Tablet OI (M5) ──────────────────────────────────── */}
         <Route path="/tablet">
+          <Route index element={<TabletLaunchpad />} />
           <Route path="login" element={<TabletLoginPage />} />
           <Route path="station">
             <Route index element={<StationPage />} />
