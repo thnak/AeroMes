@@ -121,10 +121,11 @@ export const MODULES: ModuleConfig[] = [
     available: true,
     roles: ['Admin'],
     tabs: [
-      { label: 'Users',     path: '/admin/users' },
-      { label: 'Roles',     path: '/admin/roles', roles: ['Admin'] },
-      { label: 'Audit Log', path: '/admin/audit-log', roles: ['Admin', 'Manager'] },
-      { label: 'Settings',  path: '/admin/settings', roles: ['Admin'] },
+      { label: 'Users',         path: '/admin/users' },
+      { label: 'Roles',         path: '/admin/roles', roles: ['Admin'] },
+      { label: 'Audit Log',     path: '/admin/audit-log', roles: ['Admin', 'Manager'] },
+      { label: 'Settings',      path: '/admin/settings', roles: ['Admin'] },
+      { label: 'Release Notes', path: '/admin/release-notes' },
     ],
   },
   {
@@ -154,8 +155,10 @@ export const MODULES: ModuleConfig[] = [
     icon: 'machineOn',
     color: '#0891B2',
     path: '/iot',
-    available: false,
-    tabs: [],
+    available: true,
+    tabs: [
+      { label: 'Machines & Adapters', path: '/master/machines' },
+    ],
   },
   {
     id: 'lab',
