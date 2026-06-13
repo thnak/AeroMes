@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -7,4 +8,4 @@ public record CreateStorageLocationCommand(
     string Code,
     string Name,
     LocationType LocationType,
-    int? WorkCenterId) : ICommand<int>;
+    int? WorkCenterId) : ICommand<ValidationResult<int>>;

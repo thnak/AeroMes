@@ -10,6 +10,7 @@ public class UpdateProductValidator : AbstractValidator<UpdateProductCommand>
         IUnitOfMeasureRepository uomRepo,
         IProductCategoryRepository categoryRepo)
     {
+        RuleLevelCascadeMode = CascadeMode.Stop;
         RuleFor(x => x.Code)
             .NotEmpty()
             .MustAsync(async (code, ct) => await repo.ExistsAsync(code, ct))

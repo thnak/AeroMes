@@ -24,6 +24,7 @@ public class RegisterToolValidator : AbstractValidator<RegisterToolCommand>
         RuleFor(x => x.PurchaseCost).GreaterThanOrEqualTo(0).When(x => x.PurchaseCost != null);
         RuleFor(x => x.Notes).MaximumLength(500).When(x => x.Notes != null);
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (code, ct) => !await repo.CodeExistsAsync(code, ct))
             .WithMessage(x => $"Mã dụng cụ '{x.Code}' đã tồn tại.");
     }

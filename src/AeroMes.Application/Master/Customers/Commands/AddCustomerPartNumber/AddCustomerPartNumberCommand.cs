@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Customers.Commands.AddCustomerPartNumber;
@@ -9,4 +10,4 @@ public record AddCustomerPartNumberCommand(
     string? Description,
     string? DrawingReference,
     string? Revision,
-    string? CreatedBy) : ICommand<int>;
+    string? CreatedBy) : ICommand<ValidationResult<int>>;

@@ -10,7 +10,7 @@ public class CreateWorkCalendarValidator : AbstractValidator<CreateWorkCalendarC
         RuleFor(x => x.Code).NotEmpty().MaximumLength(20);
         RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Description).MaximumLength(500).When(x => x.Description is not null);
-        RuleFor(x => x).MustAsync(async (cmd, ct) =>
+        RuleFor(x => x).Cascade(CascadeMode.Stop).MustAsync(async (cmd, ct) =>
                 !await repo.CodeExistsAsync(cmd.Code, ct))
             .WithName("Code")
             .WithMessage("Calendar code already exists.")

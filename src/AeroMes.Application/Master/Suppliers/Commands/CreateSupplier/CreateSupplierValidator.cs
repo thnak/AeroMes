@@ -16,6 +16,7 @@ public class CreateSupplierValidator : AbstractValidator<CreateSupplierCommand>
         RuleFor(x => x.Email).MaximumLength(100).EmailAddress().When(x => x.Email != null);
         RuleFor(x => x.TaxCode).MaximumLength(20).When(x => x.TaxCode != null);
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (code, ct) => !await repo.CodeExistsAsync(code, ct))
             .WithMessage("Supplier code already exists.");
     }

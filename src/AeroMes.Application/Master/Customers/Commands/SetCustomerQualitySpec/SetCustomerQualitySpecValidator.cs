@@ -16,6 +16,7 @@ public class SetCustomerQualitySpecValidator : AbstractValidator<SetCustomerQual
             .Must(x => x.EffectiveTo is null || x.EffectiveFrom is null || x.EffectiveTo >= x.EffectiveFrom)
             .WithMessage("EffectiveTo must be on or after EffectiveFrom.");
         RuleFor(x => x.ProductCode)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (code, ct) => await productRepo.ExistsAsync(code, ct))
             .WithMessage("Product does not exist.");
     }

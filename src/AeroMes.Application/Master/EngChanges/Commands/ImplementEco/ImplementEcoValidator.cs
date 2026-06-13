@@ -10,10 +10,12 @@ public class ImplementEcoValidator : AbstractValidator<ImplementEcoCommand>
         RuleFor(x => x.EcNumber).NotEmpty();
         RuleFor(x => x.NewVersion).NotEmpty().MaximumLength(20);
         RuleFor(x => x.ProductCode)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty()
             .MustAsync(productRepo.IsActiveAsync)
             .WithMessage(x => $"Sản phẩm '{x.ProductCode}' không tồn tại hoặc đã ngừng hoạt động.");
         RuleFor(x => x)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (cmd, ct) => !await bomRepo.VersionExistsAsync(cmd.ProductCode, cmd.NewVersion, ct))
             .WithMessage(x => $"BOM phiên bản '{x.NewVersion}' đã tồn tại cho sản phẩm '{x.ProductCode}'.");
     }

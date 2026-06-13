@@ -10,6 +10,7 @@ public class UpdateUoMValidator : AbstractValidator<UpdateUoMCommand>
     public UpdateUoMValidator(IUnitOfMeasureRepository repo)
     {
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty()
             .MustAsync(async (code, ct) => await repo.CodeExistsAsync(code, ct))
             .WithMessage(x => $"UoM '{x.Code}' does not exist.");

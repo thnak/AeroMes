@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -34,4 +35,4 @@ public record UpdateProductCommand(
     decimal? FixedPurchasePrice,
     string? TechnicalStandard,
     string? QuantityFormula,
-    string UpdatedBy) : ICommand;
+    string UpdatedBy) : ICommand<ValidationResult<Unit>>;

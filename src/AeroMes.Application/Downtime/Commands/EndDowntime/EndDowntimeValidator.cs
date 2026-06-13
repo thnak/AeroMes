@@ -8,6 +8,7 @@ public class EndDowntimeValidator : AbstractValidator<EndDowntimeCommand>
     public EndDowntimeValidator(IDowntimeLogRepository repo)
     {
         RuleFor(x => x.DowntimeLogId)
+            .Cascade(CascadeMode.Stop)
             .GreaterThan(0).WithMessage("DowntimeLog id is required.")
             .MustAsync(async (id, ct) => await repo.GetByIdAsync(id, ct) is not null)
             .WithMessage(x => $"DowntimeLog {x.DowntimeLogId} does not exist.");

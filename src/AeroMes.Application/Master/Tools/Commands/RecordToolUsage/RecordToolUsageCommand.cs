@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Tools.Commands.RecordToolUsage;
@@ -5,7 +6,7 @@ namespace AeroMes.Application.Master.Tools.Commands.RecordToolUsage;
 public record RecordToolUsageCommand(
     string ToolCode,
     int Count,
-    string? UpdatedBy) : ICommand<RecordToolUsageResult>;
+    string? UpdatedBy) : ICommand<ValidationResult<RecordToolUsageResult>>;
 
 public record RecordToolUsageResult(
     int CurrentUsageCount,

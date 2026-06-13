@@ -1,19 +1,38 @@
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
+using FluentValidation;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.WorkCenters.Commands.UpdateWorkCenter;
 
 public class UpdateWorkCenterHandler(
     IWorkCenterRepository repo,
-    IUnitOfWork uow) : ICommandHandler<UpdateWorkCenterCommand>
+    IUnitOfWork uow,
+    IValidator<UpdateWorkCenterCommand> validator) : ICommandHandler<UpdateWorkCenterCommand, ValidationResult<Unit>>
 {
-    public async Task HandleAsync(UpdateWorkCenterCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<Unit>> HandleAsync(UpdateWorkCenterCommand cmd, CancellationToken ct)
     {
-        var entity = await repo.GetByIdAsync(cmd.Id, ct)
-            ?? throw new EntityNotFoundException("WorkCenter", cmd.Id);
-        entity.UpdateDetails(cmd.Name, cmd.Description, cmd.UpdatedBy);
-        await uow.SaveChangesAsync(ct);
+        var validation = await validator.ValidateAsync(cmd, ct);
+        if (!validation.IsValid)
+            return ValidationResult<Unit>.Invalid(validation.ToErrorDictionary());
+
+        try
+        {
+            var entity = await repo.GetByIdAsync(cmd.Id, ct)
+                ?? throw new EntityNotFoundException("WorkCenter", cmd.Id);
+            entity.UpdateDetails(cmd.Name, cmd.Description, cmd.UpdatedBy);
+            await uow.SaveChangesAsync(ct);
+            return ValidationResult<Unit>.Ok(Unit.Value);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return ValidationResult<Unit>.NotFound(ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ValidationResult<Unit>.Failure(ex.Message);
+        }
     }
 }

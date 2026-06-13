@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -11,4 +12,4 @@ public record CreateShiftTemplateCommand(
     bool IsNightShift,
     WeekDays ValidDays,
     int? WorkCenterId,
-    string? CreatedBy) : ICommand<string>;
+    string? CreatedBy) : ICommand<ValidationResult<string>>;

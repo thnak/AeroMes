@@ -8,6 +8,7 @@ public class UpdateProductCategoryValidator : AbstractValidator<UpdateProductCat
     public UpdateProductCategoryValidator(IProductCategoryRepository repo)
     {
         RuleFor(x => x.Id)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (id, ct) => await repo.GetByIdAsync(id, ct) != null)
             .WithMessage(x => $"ProductCategory '{x.Id}' does not exist.");
 

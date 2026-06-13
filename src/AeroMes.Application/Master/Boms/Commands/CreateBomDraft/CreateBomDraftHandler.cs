@@ -1,29 +1,48 @@
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
+using FluentValidation;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Boms.Commands.CreateBomDraft;
 
 public class CreateBomDraftHandler(
     IBomHeaderRepository repo,
-    IUnitOfWork uow) : ICommandHandler<CreateBomDraftCommand, int>
+    IUnitOfWork uow,
+    IValidator<CreateBomDraftCommand> validator) : ICommandHandler<CreateBomDraftCommand, ValidationResult<int>>
 {
-    public async Task<int> HandleAsync(CreateBomDraftCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<int>> HandleAsync(CreateBomDraftCommand cmd, CancellationToken ct)
     {
-        var header = BomHeader.Create(
-            cmd.ProductCode, cmd.Version, cmd.BaseQuantity, null, cmd.Notes, cmd.CreatedBy);
+        var validation = await validator.ValidateAsync(cmd, ct);
+        if (!validation.IsValid)
+            return ValidationResult<int>.Invalid(validation.ToErrorDictionary());
 
-        if (cmd.CloneFromVersion is not null)
+        try
         {
-            var source = await repo.GetByProductAndVersionAsync(cmd.ProductCode, cmd.CloneFromVersion, ct)
-                ?? throw new EntityNotFoundException(nameof(BomHeader), $"{cmd.ProductCode}/{cmd.CloneFromVersion}");
-            header.CloneLinesFrom(source);
-        }
+            var header = BomHeader.Create(
+                cmd.ProductCode, cmd.Version, cmd.BaseQuantity, null, cmd.Notes, cmd.CreatedBy);
 
-        await repo.AddAsync(header, ct);
-        await uow.SaveChangesAsync(ct);
-        return header.BomHeaderId;
+            if (cmd.CloneFromVersion is not null)
+            {
+                var source = await repo.GetByProductAndVersionAsync(cmd.ProductCode, cmd.CloneFromVersion, ct);
+                if (source is null)
+                    return ValidationResult<int>.NotFound($"{nameof(BomHeader)} '{cmd.ProductCode}/{cmd.CloneFromVersion}' không tìm thấy.");
+                header.CloneLinesFrom(source);
+            }
+
+            await repo.AddAsync(header, ct);
+            await uow.SaveChangesAsync(ct);
+            return ValidationResult<int>.Ok(header.BomHeaderId);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return ValidationResult<int>.NotFound(ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ValidationResult<int>.Failure(ex.Message);
+        }
     }
 }

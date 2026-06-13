@@ -8,6 +8,7 @@ public class FinishJobValidator : AbstractValidator<FinishJobCommand>
     public FinishJobValidator(IJobRepository repo)
     {
         RuleFor(x => x.JobId)
+            .Cascade(CascadeMode.Stop)
             .GreaterThan(0).WithMessage("Job id is required.")
             .MustAsync(async (id, ct) => await repo.GetByIdAsync(id, ct) is not null)
             .WithMessage(x => $"Job {x.JobId} does not exist.");

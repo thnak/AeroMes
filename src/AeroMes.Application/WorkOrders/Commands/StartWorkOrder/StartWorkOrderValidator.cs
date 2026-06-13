@@ -8,6 +8,7 @@ public class StartWorkOrderValidator : AbstractValidator<StartWorkOrderCommand>
     public StartWorkOrderValidator(IWorkOrderRepository repo)
     {
         RuleFor(x => x.WorkOrderId)
+            .Cascade(CascadeMode.Stop)
             .GreaterThan(0).WithMessage("WorkOrder id is required.")
             .MustAsync(async (id, ct) => await repo.GetByIdAsync(id, ct) is not null)
             .WithMessage(x => $"WorkOrder {x.WorkOrderId} does not exist.");

@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Production.Commands.SubmitOutput;
@@ -10,7 +11,7 @@ public record SubmitOutputCommand(
     string? Notes,
     string? IdempotencyKey,
     DateTime? Timestamp,
-    List<DefectEntry> Defects) : ICommand<SubmitOutputResult>;
+    List<DefectEntry> Defects) : ICommand<ValidationResult<SubmitOutputResult>>;
 
 public record DefectEntry(string DefectCode, int Qty);
 

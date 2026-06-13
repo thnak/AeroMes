@@ -8,6 +8,7 @@ public class CreateDowntimeReasonCodeValidator : AbstractValidator<CreateDowntim
     public CreateDowntimeReasonCodeValidator(IDowntimeReasonCodeRepository repo)
     {
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty()
             .MaximumLength(30)
             .Matches(@"^[A-Za-z0-9\-_]+$").WithMessage("Code may only contain letters, digits, hyphens, and underscores.")

@@ -1,22 +1,41 @@
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
+using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
+using FluentValidation;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Products.Commands.CreateProduct;
 
 public class CreateProductHandler(
     IProductRepository repo,
-    IUnitOfWork uow) : ICommandHandler<CreateProductCommand, string>
+    IUnitOfWork uow,
+    IValidator<CreateProductCommand> validator) : ICommandHandler<CreateProductCommand, ValidationResult<string>>
 {
-    public async Task<string> HandleAsync(CreateProductCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<string>> HandleAsync(CreateProductCommand cmd, CancellationToken ct)
     {
-        var entity = Product.Create(
-            cmd.Code, cmd.Name, cmd.BaseUoMCode, cmd.ItemType, cmd.CategoryId,
-            cmd.BarcodePattern, cmd.LotControlled, cmd.SerialControlled, cmd.ShelfLifeDays,
-            cmd.ProcurementType, cmd.CustomerPartNo, cmd.DrawingNo, cmd.Revision, cmd.CreatedBy);
-        await repo.AddAsync(entity, ct);
-        await uow.SaveChangesAsync(ct);
-        return entity.ProductCode;
+        var validation = await validator.ValidateAsync(cmd, ct);
+        if (!validation.IsValid)
+            return ValidationResult<string>.Invalid(validation.ToErrorDictionary());
+
+        try
+        {
+            var entity = Product.Create(
+                cmd.Code, cmd.Name, cmd.BaseUoMCode, cmd.ItemType, cmd.CategoryId,
+                cmd.BarcodePattern, cmd.LotControlled, cmd.SerialControlled, cmd.ShelfLifeDays,
+                cmd.ProcurementType, cmd.CustomerPartNo, cmd.DrawingNo, cmd.Revision, cmd.CreatedBy);
+            await repo.AddAsync(entity, ct);
+            await uow.SaveChangesAsync(ct);
+            return ValidationResult<string>.Ok(entity.ProductCode);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return ValidationResult<string>.NotFound(ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ValidationResult<string>.Failure(ex.Message);
+        }
     }
 }

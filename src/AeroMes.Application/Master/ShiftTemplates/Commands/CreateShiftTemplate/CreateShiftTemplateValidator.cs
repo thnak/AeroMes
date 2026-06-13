@@ -8,6 +8,7 @@ public class CreateShiftTemplateValidator : AbstractValidator<CreateShiftTemplat
     public CreateShiftTemplateValidator(IShiftTemplateRepository repo)
     {
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty()
             .MaximumLength(20)
             .Matches(@"^[A-Za-z0-9\-_]+$").WithMessage("Code may only contain letters, digits, hyphens, and underscores.")

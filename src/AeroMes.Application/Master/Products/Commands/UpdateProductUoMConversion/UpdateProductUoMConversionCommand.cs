@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Products.Commands.UpdateProductUoMConversion;
@@ -7,4 +8,4 @@ public record UpdateProductUoMConversionCommand(
     int ConversionId,
     decimal ToBaseFactor,
     string? Notes,
-    string? UpdatedBy) : ICommand;
+    string? UpdatedBy) : ICommand<ValidationResult<Unit>>;

@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Boms.Commands.UpdateBomLines;
@@ -6,7 +7,7 @@ public record UpdateBomLinesCommand(
     string ProductCode,
     string Version,
     IReadOnlyList<BomLineInput> Lines,
-    string? UpdatedBy) : ICommand;
+    string? UpdatedBy) : ICommand<ValidationResult<Unit>>;
 
 public record BomLineInput(
     int LineNo,

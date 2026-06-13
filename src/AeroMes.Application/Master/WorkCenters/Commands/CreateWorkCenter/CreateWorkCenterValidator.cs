@@ -8,6 +8,7 @@ public class CreateWorkCenterValidator : AbstractValidator<CreateWorkCenterComma
     public CreateWorkCenterValidator(IWorkCenterRepository repo)
     {
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty().WithMessage("Code is required.")
             .MaximumLength(20).WithMessage("Code must be at most 20 characters.")
             .Matches(@"^[A-Za-z0-9\-_]+$").WithMessage("Code may only contain letters, digits, hyphens, and underscores.")

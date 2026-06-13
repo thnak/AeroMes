@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Machines.Commands.CreateMachine;
@@ -8,4 +9,4 @@ public record CreateMachineCommand(
     int WorkCenterId,
     string? Brand,
     string? Model,
-    string? CreatedBy) : ICommand<string>;
+    string? CreatedBy) : ICommand<ValidationResult<string>>;

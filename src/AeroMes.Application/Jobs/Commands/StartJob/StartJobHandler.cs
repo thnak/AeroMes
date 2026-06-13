@@ -1,8 +1,10 @@
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
+using FluentValidation;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Jobs.Commands.StartJob;
@@ -13,29 +15,45 @@ public class StartJobHandler(
     IEmployeeRepository employeeRepo,
     IWorkOrderAutoRulesRepository autoRulesRepo,
     IJobRepository jobRepo,
-    IUnitOfWork uow)
-    : ICommandHandler<StartJobCommand, StartJobResult>
+    IUnitOfWork uow,
+    IValidator<StartJobCommand> validator)
+    : ICommandHandler<StartJobCommand, ValidationResult<StartJobResult>>
 {
-    public async Task<StartJobResult> HandleAsync(StartJobCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<StartJobResult>> HandleAsync(StartJobCommand cmd, CancellationToken ct)
     {
-        var workOrder = await workOrderRepo.GetByIdWithRoutingStepAsync(cmd.WorkOrderId, ct)
-            ?? throw new EntityNotFoundException(nameof(WorkOrder), cmd.WorkOrderId);
+        var validation = await validator.ValidateAsync(cmd, ct);
+        if (!validation.IsValid)
+            return ValidationResult<StartJobResult>.Invalid(validation.ToErrorDictionary());
 
-        if (workOrder.Status != WorkOrderStatus.Running)
-            throw new DomainException(
-                $"WorkOrder '{workOrder.WOCode}' must be Running before starting a Job. Current: {workOrder.Status}.");
+        try
+        {
+            var workOrder = await workOrderRepo.GetByIdWithRoutingStepAsync(cmd.WorkOrderId, ct)
+                ?? throw new EntityNotFoundException(nameof(WorkOrder), cmd.WorkOrderId);
 
-        if (!await machineRepo.ExistsAsync(cmd.MachineCode, ct))
-            throw new EntityNotFoundException("Machine", cmd.MachineCode);
+            if (workOrder.Status != WorkOrderStatus.Running)
+                throw new DomainException(
+                    $"WorkOrder '{workOrder.WOCode}' must be Running before starting a Job. Current: {workOrder.Status}.");
 
-        await EnsureCertifiedAsync(workOrder, cmd.OperatorId, ct);
+            if (!await machineRepo.ExistsAsync(cmd.MachineCode, ct))
+                throw new EntityNotFoundException("Machine", cmd.MachineCode);
 
-        var job = Job.Create(cmd.WorkOrderId, cmd.MachineCode, cmd.ShiftCode, cmd.OperatorId, cmd.StartTime);
-        await jobRepo.AddAsync(job, ct);
-        await uow.SaveChangesAsync(ct);
+            await EnsureCertifiedAsync(workOrder, cmd.OperatorId, ct);
 
-        return new StartJobResult(job.JobID, job.WOID, job.MachineCode,
-            job.Status.ToString().ToUpperInvariant());
+            var job = Job.Create(cmd.WorkOrderId, cmd.MachineCode, cmd.ShiftCode, cmd.OperatorId, cmd.StartTime);
+            await jobRepo.AddAsync(job, ct);
+            await uow.SaveChangesAsync(ct);
+
+            return ValidationResult<StartJobResult>.Ok(new StartJobResult(job.JobID, job.WOID, job.MachineCode,
+                job.Status.ToString().ToUpperInvariant()));
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return ValidationResult<StartJobResult>.NotFound(ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ValidationResult<StartJobResult>.Failure(ex.Message);
+        }
     }
 
     private async Task EnsureCertifiedAsync(WorkOrder workOrder, string operatorId, CancellationToken ct)

@@ -8,6 +8,7 @@ public class CreateProductCategoryValidator : AbstractValidator<CreateProductCat
     public CreateProductCategoryValidator(IProductCategoryRepository repo)
     {
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty()
             .MaximumLength(30)
             .MustAsync(async (code, ct) => !await repo.CodeExistsAsync(code, ct))
@@ -18,6 +19,7 @@ public class CreateProductCategoryValidator : AbstractValidator<CreateProductCat
             .MaximumLength(100);
 
         RuleFor(x => x.ParentId)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (id, ct) => id == null || await repo.GetByIdAsync(id.Value, ct) != null)
             .WithMessage("Parent category not found.")
             .When(x => x.ParentId.HasValue);

@@ -1,22 +1,42 @@
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
+using FluentValidation;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Suppliers.Commands.UpdateSupplier;
 
 public class UpdateSupplierHandler(
     ISupplierRepository repo,
-    IUnitOfWork uow) : ICommandHandler<UpdateSupplierCommand>
+    IUnitOfWork uow,
+    IValidator<UpdateSupplierCommand> validator) : ICommandHandler<UpdateSupplierCommand, ValidationResult<Unit>>
 {
-    public async Task HandleAsync(UpdateSupplierCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<Unit>> HandleAsync(UpdateSupplierCommand cmd, CancellationToken ct)
     {
-        var supplier = await repo.GetByIdAsync(cmd.Code, ct)
-            ?? throw new EntityNotFoundException(nameof(cmd.Code), cmd.Code);
-        supplier.UpdateDetails(
-            cmd.Name, cmd.Country, cmd.City, cmd.Address,
-            cmd.Phone, cmd.Email, cmd.ContactName, cmd.TaxCode,
-            cmd.IsActive, cmd.UpdatedBy);
-        await uow.SaveChangesAsync(ct);
+        var validation = await validator.ValidateAsync(cmd, ct);
+        if (!validation.IsValid)
+            return ValidationResult<Unit>.Invalid(validation.ToErrorDictionary());
+
+        try
+        {
+            var supplier = await repo.GetByIdAsync(cmd.Code, ct);
+            if (supplier is null)
+                return ValidationResult<Unit>.NotFound($"{nameof(cmd.Code)}: {cmd.Code}");
+            supplier.UpdateDetails(
+                cmd.Name, cmd.Country, cmd.City, cmd.Address,
+                cmd.Phone, cmd.Email, cmd.ContactName, cmd.TaxCode,
+                cmd.IsActive, cmd.UpdatedBy);
+            await uow.SaveChangesAsync(ct);
+            return ValidationResult<Unit>.Ok(Unit.Value);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return ValidationResult<Unit>.NotFound(ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ValidationResult<Unit>.Failure(ex.Message);
+        }
     }
 }

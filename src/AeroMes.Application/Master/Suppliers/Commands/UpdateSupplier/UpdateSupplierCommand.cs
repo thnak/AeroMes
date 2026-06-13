@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Suppliers.Commands.UpdateSupplier;
@@ -13,4 +14,4 @@ public record UpdateSupplierCommand(
     string? ContactName,
     string? TaxCode,
     bool IsActive,
-    string? UpdatedBy) : ICommand;
+    string? UpdatedBy) : ICommand<ValidationResult<Unit>>;

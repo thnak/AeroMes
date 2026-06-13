@@ -9,6 +9,7 @@ public class SubmitOutputValidator : AbstractValidator<SubmitOutputCommand>
     public SubmitOutputValidator(IJobRepository jobRepo, IDefectCodeRepository defectRepo)
     {
         RuleFor(x => x.JobId)
+            .Cascade(CascadeMode.Stop)
             .GreaterThan(0).WithMessage("Job id is required.")
             .MustAsync(async (id, ct) => await jobRepo.GetByIdAsync(id, ct) is not null)
             .WithMessage(x => $"Job {x.JobId} does not exist.");

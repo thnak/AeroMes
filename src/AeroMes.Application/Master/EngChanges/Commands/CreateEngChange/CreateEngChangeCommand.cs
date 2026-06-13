@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -12,4 +13,4 @@ public record CreateEngChangeCommand(
     EcPriority Priority,
     DateOnly? TargetDate,
     string? AffectedProducts,
-    string? RequestedBy) : ICommand<string>;
+    string? RequestedBy) : ICommand<ValidationResult<string>>;

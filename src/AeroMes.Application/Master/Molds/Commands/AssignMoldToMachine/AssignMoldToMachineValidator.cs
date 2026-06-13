@@ -7,6 +7,7 @@ public class AssignMoldToMachineValidator : AbstractValidator<AssignMoldToMachin
 {
     public AssignMoldToMachineValidator(IMachineRepository machineRepo)
     {
+        RuleLevelCascadeMode = CascadeMode.Stop;
         RuleFor(x => x.MoldCode).NotEmpty();
         RuleFor(x => x.MachineCode)
             .NotEmpty()

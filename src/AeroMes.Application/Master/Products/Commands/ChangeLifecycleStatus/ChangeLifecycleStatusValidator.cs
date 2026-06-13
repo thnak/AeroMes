@@ -7,6 +7,7 @@ public class ChangeLifecycleStatusValidator : AbstractValidator<ChangeLifecycleS
 {
     public ChangeLifecycleStatusValidator(IProductRepository repo)
     {
+        RuleLevelCascadeMode = CascadeMode.Stop;
         RuleFor(x => x.Code)
             .NotEmpty()
             .MustAsync(async (code, ct) => await repo.ExistsAsync(code, ct))

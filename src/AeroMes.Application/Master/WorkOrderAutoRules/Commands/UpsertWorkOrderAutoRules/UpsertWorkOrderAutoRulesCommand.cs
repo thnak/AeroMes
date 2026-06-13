@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.WorkOrderAutoRules.Commands.UpsertWorkOrderAutoRules;
@@ -9,4 +10,4 @@ public record UpsertWorkOrderAutoRulesCommand(
     bool RequireDeleteConfirmToken,
     int MaxConcurrentJobs,
     bool RequireCertification,
-    string? UpdatedBy) : ICommand<int>;
+    string? UpdatedBy) : ICommand<ValidationResult<int>>;

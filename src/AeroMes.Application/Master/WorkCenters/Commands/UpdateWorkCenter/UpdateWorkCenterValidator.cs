@@ -7,6 +7,7 @@ public class UpdateWorkCenterValidator : AbstractValidator<UpdateWorkCenterComma
 {
     public UpdateWorkCenterValidator(IWorkCenterRepository repo)
     {
+        RuleLevelCascadeMode = CascadeMode.Stop;
         RuleFor(x => x.Id)
             .GreaterThan(0).WithMessage("WorkCenter id is required.")
             .MustAsync(async (id, ct) => await repo.ExistsAsync(id, ct))

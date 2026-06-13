@@ -1,30 +1,48 @@
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
-using AeroMes.Domain.Master;
+using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
+using AeroMes.Domain.Master;
+using FluentValidation;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.MachineProductConfigs.Commands.UpsertMachineProductConfig;
-
 public class UpsertMachineProductConfigHandler(
     IMachineProductConfigRepository repo,
-    IUnitOfWork uow) : ICommandHandler<UpsertMachineProductConfigCommand>
+    IUnitOfWork uow,
+    IValidator<UpsertMachineProductConfigCommand> validator) : ICommandHandler<UpsertMachineProductConfigCommand, ValidationResult<Unit>>
 {
-    public async Task HandleAsync(UpsertMachineProductConfigCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<Unit>> HandleAsync(UpsertMachineProductConfigCommand cmd, CancellationToken ct)
     {
-        var existing = await repo.GetAsync(cmd.MachineCode, cmd.ProductCode, ct);
-        if (existing is not null)
+        var validation = await validator.ValidateAsync(cmd, ct);
+        if (!validation.IsValid)
+            return ValidationResult<Unit>.Invalid(validation.ToErrorDictionary());
+        try
         {
-            existing.Update(cmd.IdealCycleTimeSeconds, cmd.TargetThroughputPerHour,
-                cmd.SetupTimeSeconds, cmd.EffectiveFrom);
+            var existing = await repo.GetAsync(cmd.MachineCode, cmd.ProductCode, ct);
+            if (existing is not null)
+            {
+                existing.Update(cmd.IdealCycleTimeSeconds, cmd.TargetThroughputPerHour,
+                    cmd.SetupTimeSeconds, cmd.EffectiveFrom);
+            }
+            else
+            {
+                var entity = MachineProductConfig.Create(
+                    cmd.MachineCode, cmd.ProductCode,
+                    cmd.IdealCycleTimeSeconds, cmd.TargetThroughputPerHour,
+                    cmd.SetupTimeSeconds, cmd.EffectiveFrom, cmd.RoutingStepId);
+                await repo.AddAsync(entity, ct);
+            }
+            await uow.SaveChangesAsync(ct);
+            return ValidationResult<Unit>.Ok(Unit.Value);
         }
-        else
+        catch (EntityNotFoundException ex)
         {
-            var entity = MachineProductConfig.Create(
-                cmd.MachineCode, cmd.ProductCode,
-                cmd.IdealCycleTimeSeconds, cmd.TargetThroughputPerHour,
-                cmd.SetupTimeSeconds, cmd.EffectiveFrom, cmd.RoutingStepId);
-            await repo.AddAsync(entity, ct);
+            return ValidationResult<Unit>.NotFound(ex.Message);
         }
-        await uow.SaveChangesAsync(ct);
+        catch (DomainException ex)
+        {
+            return ValidationResult<Unit>.Failure(ex.Message);
+        }
     }
 }

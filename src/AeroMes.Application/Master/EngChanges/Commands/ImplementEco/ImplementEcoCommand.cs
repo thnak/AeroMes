@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.EngChanges.Commands.ImplementEco;
@@ -7,6 +8,6 @@ public record ImplementEcoCommand(
     string ProductCode,
     string NewVersion,
     bool CloneFromActive,
-    string? UpdatedBy) : ICommand<ImplementEcoResult>;
+    string? UpdatedBy) : ICommand<ValidationResult<ImplementEcoResult>>;
 
 public record ImplementEcoResult(int BomHeaderId, string ProductCode, string Version);

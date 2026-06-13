@@ -8,6 +8,7 @@ public class UpdateCapabilityGroupValidator : AbstractValidator<UpdateCapability
     public UpdateCapabilityGroupValidator(ICapabilityGroupRepository repo)
     {
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty().WithMessage("Capability group code is required.")
             .MustAsync(async (code, ct) => await repo.ExistsAsync(code, ct))
             .WithMessage(x => $"Capability group '{x.Code}' does not exist.");

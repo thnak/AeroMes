@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.BomItems.Commands.UpdateBomItem;
@@ -6,4 +7,4 @@ public record UpdateBomItemCommand(
     int BomId,
     decimal RequiredQty,
     decimal ScrapFactor,
-    string UpdatedBy) : ICommand;
+    string UpdatedBy) : ICommand<ValidationResult<Unit>>;

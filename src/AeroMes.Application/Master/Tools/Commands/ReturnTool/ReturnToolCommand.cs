@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -8,4 +9,4 @@ public record ReturnToolCommand(
     string ReturnedBy,
     ToolReturnCondition Condition,
     string? Notes,
-    string? UpdatedBy) : ICommand;
+    string? UpdatedBy) : ICommand<ValidationResult<Unit>>;

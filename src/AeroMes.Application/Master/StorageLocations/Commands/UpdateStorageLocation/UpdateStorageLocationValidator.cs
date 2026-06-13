@@ -9,6 +9,7 @@ public class UpdateStorageLocationValidator : AbstractValidator<UpdateStorageLoc
     public UpdateStorageLocationValidator(IStorageLocationRepository locationRepo, IWorkCenterRepository wcRepo)
     {
         RuleFor(x => x.Id)
+            .Cascade(CascadeMode.Stop)
             .GreaterThan(0).WithMessage("StorageLocation id is required.")
             .MustAsync(async (id, ct) => await locationRepo.ExistsAsync(id, ct))
             .WithMessage(x => $"StorageLocation {x.Id} does not exist.");
@@ -21,6 +22,7 @@ public class UpdateStorageLocationValidator : AbstractValidator<UpdateStorageLoc
             .IsInEnum().WithMessage("Invalid location type.");
 
         RuleFor(x => x.WorkCenterId)
+            .Cascade(CascadeMode.Stop)
             .NotNull().WithMessage("WIP location must specify a WorkCenter.")
             .GreaterThan(0).WithMessage("WorkCenter id must be positive.")
             .MustAsync(async (id, ct) => await wcRepo.ExistsAsync(id!.Value, ct))

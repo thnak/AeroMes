@@ -10,7 +10,7 @@ public class UpdateWorkShiftValidator : AbstractValidator<UpdateWorkShiftCommand
         RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
         RuleFor(x => x.StartTime).NotEqual(x => x.EndTime)
             .WithMessage("Start time and end time must differ.");
-        RuleFor(x => x.WorkShiftId).MustAsync(async (id, ct) =>
+        RuleFor(x => x.WorkShiftId).Cascade(CascadeMode.Stop).MustAsync(async (id, ct) =>
                 await repo.GetByIdAsync(id, ct) is not null)
             .WithMessage("Work shift not found.");
         RuleForEach(x => x.Breaks).ChildRules(b =>

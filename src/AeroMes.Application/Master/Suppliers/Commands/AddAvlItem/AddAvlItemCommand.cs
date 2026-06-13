@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -16,4 +17,4 @@ public record AddAvlItemCommand(
     DateOnly? ApprovedFrom,
     DateOnly? ApprovedTo,
     string? Notes,
-    string? CreatedBy) : ICommand<int>;
+    string? CreatedBy) : ICommand<ValidationResult<int>>;

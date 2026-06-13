@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.ProductionTeams.Commands.CreateProductionTeam;
@@ -10,4 +11,4 @@ public record CreateProductionTeamCommand(
     decimal? ProductionRate,
     bool IsOrderBasedPlanningEnabled,
     IReadOnlyList<int> ProductGroupCategoryIds,
-    string? CreatedBy) : ICommand<string>;
+    string? CreatedBy) : ICommand<ValidationResult<string>>;

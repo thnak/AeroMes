@@ -1,30 +1,45 @@
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
+using FluentValidation;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Routings.Commands.AddRoutingStep;
 
 public class AddRoutingStepHandler(
     IRoutingRepository repo,
-    IUnitOfWork uow) : ICommandHandler<AddRoutingStepCommand, int>
+    IUnitOfWork uow,
+    IValidator<AddRoutingStepCommand> validator) : ICommandHandler<AddRoutingStepCommand, ValidationResult<int>>
 {
-    public async Task<int> HandleAsync(AddRoutingStepCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<int>> HandleAsync(AddRoutingStepCommand cmd, CancellationToken ct)
     {
-        if (!await repo.ExistsAsync(cmd.RoutingId, ct))
-            throw new EntityNotFoundException("Routing", cmd.RoutingId);
+        var validation = await validator.ValidateAsync(cmd, ct);
+        if (!validation.IsValid)
+            return ValidationResult<int>.Invalid(validation.ToErrorDictionary());
 
-        var step = RoutingStep.Create(
-            cmd.RoutingId,
-            cmd.StepNumber,
-            cmd.OperationCode,
-            cmd.DefaultWorkCenterId,
-            cmd.StandardCycleTime,
-            cmd.IsQcRequired);
+        try
+        {
+            var step = RoutingStep.Create(
+                cmd.RoutingId,
+                cmd.StepNumber,
+                cmd.OperationCode,
+                cmd.DefaultWorkCenterId,
+                cmd.StandardCycleTime,
+                cmd.IsQcRequired);
 
-        repo.AddStep(step);
-        await uow.SaveChangesAsync(ct);
-        return step.RoutingStepID;
+            repo.AddStep(step);
+            await uow.SaveChangesAsync(ct);
+            return ValidationResult<int>.Ok(step.RoutingStepID);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return ValidationResult<int>.NotFound(ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ValidationResult<int>.Failure(ex.Message);
+        }
     }
 }

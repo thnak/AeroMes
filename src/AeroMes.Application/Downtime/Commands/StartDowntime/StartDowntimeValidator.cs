@@ -8,6 +8,7 @@ public class StartDowntimeValidator : AbstractValidator<StartDowntimeCommand>
     public StartDowntimeValidator(IMachineRepository machineRepo)
     {
         RuleFor(x => x.MachineCode)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty().WithMessage("Machine code is required.")
             .MustAsync(async (code, ct) => await machineRepo.ExistsAsync(code, ct))
             .WithMessage(x => $"Machine '{x.MachineCode}' does not exist.");

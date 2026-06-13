@@ -14,11 +14,13 @@ public class UpdateProductionTeamValidator : AbstractValidator<UpdateProductionT
         RuleFor(x => x.ProductionRate).GreaterThan(0).When(x => x.ProductionRate is not null);
 
         RuleFor(x => x.OrgUnitId!.Value)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(orgUnitRepo.IsActiveAsync)
             .When(x => x.OrgUnitId is not null)
             .WithMessage(x => $"Đơn vị tổ chức #{x.OrgUnitId} không tồn tại hoặc đã ngưng hoạt động.");
 
         RuleForEach(x => x.ProductGroupCategoryIds)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(categoryRepo.IsActiveAsync)
             .WithMessage((_, id) => $"Nhóm sản phẩm #{id} không tồn tại hoặc đã ngưng hoạt động.");
     }

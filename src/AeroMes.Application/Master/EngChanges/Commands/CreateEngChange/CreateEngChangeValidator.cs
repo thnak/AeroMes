@@ -15,6 +15,7 @@ public class CreateEngChangeValidator : AbstractValidator<CreateEngChangeCommand
         RuleFor(x => x.Priority).IsInEnum();
         RuleFor(x => x.AffectedProducts).MaximumLength(500).When(x => x.AffectedProducts != null);
         RuleFor(x => x.EcNumber)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (number, ct) => !await repo.NumberExistsAsync(number, ct))
             .WithMessage(x => $"Số phiếu '{x.EcNumber}' đã tồn tại.");
     }

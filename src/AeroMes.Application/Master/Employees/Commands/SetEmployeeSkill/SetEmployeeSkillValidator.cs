@@ -13,6 +13,7 @@ public class SetEmployeeSkillValidator : AbstractValidator<SetEmployeeSkillComma
             .Must(x => x.ExpiresAt is null || x.ExpiresAt > x.CertifiedAt)
             .WithMessage("ExpiresAt must be after CertifiedAt.");
         RuleFor(x => x.OperationCode)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (code, ct) => await operationRepo.ExistsAsync(code, ct))
             .WithMessage("Operation does not exist.");
     }

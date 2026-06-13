@@ -7,6 +7,7 @@ public class CreateBomDraftValidator : AbstractValidator<CreateBomDraftCommand>
 {
     public CreateBomDraftValidator(IBomHeaderRepository repo, IProductRepository productRepo)
     {
+        RuleLevelCascadeMode = CascadeMode.Stop;
         RuleFor(x => x.Version).NotEmpty().MaximumLength(20);
         RuleFor(x => x.BaseQuantity).GreaterThan(0);
         RuleFor(x => x.Notes).MaximumLength(500).When(x => x.Notes != null);

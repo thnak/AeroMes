@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Molds.Commands.AssignMoldToMachine;
@@ -5,4 +6,4 @@ namespace AeroMes.Application.Master.Molds.Commands.AssignMoldToMachine;
 public record AssignMoldToMachineCommand(
     string MoldCode,
     string MachineCode,
-    string? UpdatedBy) : ICommand;
+    string? UpdatedBy) : ICommand<ValidationResult<Unit>>;

@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Routings.Commands.CreateRouting;
@@ -7,4 +8,4 @@ public record CreateRoutingCommand(
     string Name,
     string ProductCode,
     bool IsDefault,
-    string? CreatedBy) : ICommand<int>;
+    string? CreatedBy) : ICommand<ValidationResult<int>>;

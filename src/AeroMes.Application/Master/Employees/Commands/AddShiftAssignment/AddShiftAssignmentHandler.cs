@@ -1,22 +1,40 @@
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
+using FluentValidation;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Employees.Commands.AddShiftAssignment;
 
 public class AddShiftAssignmentHandler(
     IEmployeeRepository repo,
-    IUnitOfWork uow) : ICommandHandler<AddShiftAssignmentCommand, int>
+    IUnitOfWork uow,
+    IValidator<AddShiftAssignmentCommand> validator) : ICommandHandler<AddShiftAssignmentCommand, ValidationResult<int>>
 {
-    public async Task<int> HandleAsync(AddShiftAssignmentCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<int>> HandleAsync(AddShiftAssignmentCommand cmd, CancellationToken ct)
     {
-        var employee = await repo.GetByIdWithDetailsAsync(cmd.EmployeeCode, ct)
-            ?? throw new EntityNotFoundException(nameof(cmd.EmployeeCode), cmd.EmployeeCode);
-        var assignment = employee.AddShiftAssignment(
-            cmd.WorkCenterId, cmd.ShiftCode,
-            cmd.ValidFrom, cmd.ValidTo);
-        await uow.SaveChangesAsync(ct);
-        return assignment.ShiftAssignmentId;
+        var validation = await validator.ValidateAsync(cmd, ct);
+        if (!validation.IsValid)
+            return ValidationResult<int>.Invalid(validation.ToErrorDictionary());
+
+        try
+        {
+            var employee = await repo.GetByIdWithDetailsAsync(cmd.EmployeeCode, ct)
+                ?? throw new EntityNotFoundException(nameof(cmd.EmployeeCode), cmd.EmployeeCode);
+            var assignment = employee.AddShiftAssignment(
+                cmd.WorkCenterId, cmd.ShiftCode,
+                cmd.ValidFrom, cmd.ValidTo);
+            await uow.SaveChangesAsync(ct);
+            return ValidationResult<int>.Ok(assignment.ShiftAssignmentId);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return ValidationResult<int>.NotFound(ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ValidationResult<int>.Failure(ex.Message);
+        }
     }
 }

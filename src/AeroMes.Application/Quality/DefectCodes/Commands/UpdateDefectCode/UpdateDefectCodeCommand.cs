@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Quality.DefectCodes.Commands.UpdateDefectCode;
@@ -7,4 +8,4 @@ public record UpdateDefectCodeCommand(
     string DefectName,
     string? DefectCategory,
     bool IsActive,
-    string? UpdatedBy) : ICommand;
+    string? UpdatedBy) : ICommand<ValidationResult<Unit>>;

@@ -8,11 +8,13 @@ public class CreateBomItemValidator : AbstractValidator<CreateBomItemCommand>
     public CreateBomItemValidator(IProductRepository productRepo, IBomItemRepository bomRepo)
     {
         RuleFor(x => x.ParentProductCode)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty().WithMessage("Parent product code is required.")
             .MustAsync(async (code, ct) => await productRepo.IsActiveAsync(code, ct))
             .WithMessage(x => $"Parent product '{x.ParentProductCode}' does not exist or is inactive.");
 
         RuleFor(x => x.ChildProductCode)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty().WithMessage("Child product code is required.")
             .MustAsync(async (code, ct) => await productRepo.IsActiveAsync(code, ct))
             .WithMessage(x => $"Child product '{x.ChildProductCode}' does not exist or is inactive.")
@@ -20,6 +22,7 @@ public class CreateBomItemValidator : AbstractValidator<CreateBomItemCommand>
             .WithMessage("Parent and child product cannot be the same.");
 
         RuleFor(x => x)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (cmd, ct) => !await bomRepo.PairExistsAsync(cmd.ParentProductCode, cmd.ChildProductCode, ct))
             .WithMessage(x => $"BOM entry '{x.ParentProductCode}' → '{x.ChildProductCode}' already exists.")
             .When(x => !string.IsNullOrWhiteSpace(x.ParentProductCode) && !string.IsNullOrWhiteSpace(x.ChildProductCode));

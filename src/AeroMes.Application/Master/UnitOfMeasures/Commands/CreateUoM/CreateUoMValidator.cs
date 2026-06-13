@@ -10,6 +10,7 @@ public class CreateUoMValidator : AbstractValidator<CreateUoMCommand>
     public CreateUoMValidator(IUnitOfMeasureRepository repo)
     {
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty()
             .MaximumLength(20)
             .MustAsync(async (code, ct) => !await repo.CodeExistsAsync(code, ct))

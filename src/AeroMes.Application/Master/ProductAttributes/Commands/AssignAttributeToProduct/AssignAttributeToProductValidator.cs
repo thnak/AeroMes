@@ -8,6 +8,7 @@ public class AssignAttributeToProductValidator : AbstractValidator<AssignAttribu
     public AssignAttributeToProductValidator(IProductRepository productRepo)
     {
         RuleFor(x => x.ProductCode)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty()
             .MaximumLength(50)
             .MustAsync(async (code, ct) => await productRepo.ExistsAsync(code, ct))

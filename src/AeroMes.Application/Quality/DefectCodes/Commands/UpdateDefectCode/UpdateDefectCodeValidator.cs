@@ -8,6 +8,7 @@ public class UpdateDefectCodeValidator : AbstractValidator<UpdateDefectCodeComma
     public UpdateDefectCodeValidator(IDefectCodeRepository repo)
     {
         RuleFor(x => x.Id)
+            .Cascade(CascadeMode.Stop)
             .GreaterThan(0)
             .MustAsync(async (id, ct) => await repo.GetByIdAsync(id, ct) is not null)
             .WithMessage(x => $"DefectCode {x.Id} does not exist.");

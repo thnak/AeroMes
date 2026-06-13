@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Employees.Commands.SetEmployeeSkill;
@@ -8,4 +9,4 @@ public record SetEmployeeSkillCommand(
     int CertificationLevel,
     DateOnly CertifiedAt,
     DateOnly? ExpiresAt,
-    string? UpdatedBy) : ICommand<int>;
+    string? UpdatedBy) : ICommand<ValidationResult<int>>;

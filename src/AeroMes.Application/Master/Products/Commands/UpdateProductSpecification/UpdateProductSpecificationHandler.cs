@@ -1,6 +1,8 @@
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
+using FluentValidation;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Products.Commands.UpdateProductSpecification;
@@ -8,16 +10,34 @@ namespace AeroMes.Application.Master.Products.Commands.UpdateProductSpecificatio
 public class UpdateProductSpecificationHandler(
     IProductRepository repo,
     ISystemOptionsRepository optionsRepo,
-    IUnitOfWork uow) : ICommandHandler<UpdateProductSpecificationCommand>
+    IUnitOfWork uow,
+    IValidator<UpdateProductSpecificationCommand> validator) : ICommandHandler<UpdateProductSpecificationCommand, ValidationResult<Unit>>
 {
-    public async Task HandleAsync(UpdateProductSpecificationCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<Unit>> HandleAsync(UpdateProductSpecificationCommand cmd, CancellationToken ct)
     {
-        await optionsRepo.EnsureModeAsync(MaterialManagementModes.SpecificationCode, ct);
+        var validation = await validator.ValidateAsync(cmd, ct);
+        if (!validation.IsValid)
+            return ValidationResult<Unit>.Invalid(validation.ToErrorDictionary());
 
-        var product = await repo.GetByCodeWithSpecificationsAsync(cmd.ProductCode, ct)
-            ?? throw new EntityNotFoundException("Product", cmd.ProductCode);
+        try
+        {
+            await optionsRepo.EnsureModeAsync(MaterialManagementModes.SpecificationCode, ct);
 
-        product.UpdateSpecification(cmd.SpecificationId, cmd.Description, cmd.IsActive, cmd.UpdatedBy);
-        await uow.SaveChangesAsync(ct);
+            var product = await repo.GetByCodeWithSpecificationsAsync(cmd.ProductCode, ct)
+                ?? throw new EntityNotFoundException("Product", cmd.ProductCode);
+
+            product.UpdateSpecification(cmd.SpecificationId, cmd.Description, cmd.IsActive, cmd.UpdatedBy);
+            await uow.SaveChangesAsync(ct);
+
+            return ValidationResult<Unit>.Ok(Unit.Value);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return ValidationResult<Unit>.NotFound(ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ValidationResult<Unit>.Failure(ex.Message);
+        }
     }
 }

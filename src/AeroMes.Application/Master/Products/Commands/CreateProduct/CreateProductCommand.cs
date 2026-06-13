@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -17,4 +18,4 @@ public record CreateProductCommand(
     string? CustomerPartNo,
     string? DrawingNo,
     string? Revision,
-    string? CreatedBy) : ICommand<string>;
+    string? CreatedBy) : ICommand<ValidationResult<string>>;

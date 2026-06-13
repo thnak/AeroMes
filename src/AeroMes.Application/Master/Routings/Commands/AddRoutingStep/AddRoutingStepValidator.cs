@@ -7,6 +7,7 @@ public class AddRoutingStepValidator : AbstractValidator<AddRoutingStepCommand>
 {
     public AddRoutingStepValidator(IRoutingRepository routingRepo, IOperationRepository opRepo, IWorkCenterRepository wcRepo)
     {
+        RuleLevelCascadeMode = CascadeMode.Stop;
         RuleFor(x => x.RoutingId)
             .GreaterThan(0).WithMessage("Routing id is required.")
             .MustAsync(async (id, ct) => await routingRepo.ExistsAsync(id, ct))

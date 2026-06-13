@@ -8,6 +8,7 @@ public class AddProductUoMConversionValidator : AbstractValidator<AddProductUoMC
     public AddProductUoMConversionValidator(IUnitOfMeasureRepository uomRepo)
     {
         RuleFor(x => x.UoMCode)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty()
             .MaximumLength(20)
             .MustAsync(async (code, ct) => await uomRepo.CodeExistsAsync(code, ct))

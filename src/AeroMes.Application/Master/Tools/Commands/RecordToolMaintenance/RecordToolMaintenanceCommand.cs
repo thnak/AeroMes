@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -12,4 +13,4 @@ public record RecordToolMaintenanceCommand(
     int? NextDueCount,
     DateOnly? NextDueDate,
     string? Notes,
-    string? UpdatedBy) : ICommand<long>;
+    string? UpdatedBy) : ICommand<ValidationResult<long>>;

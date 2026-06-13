@@ -1,22 +1,42 @@
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
+using FluentValidation;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.WorkShifts.Commands.UpdateWorkShift;
 
 public class UpdateWorkShiftHandler(
     IWorkShiftRepository repo,
-    IUnitOfWork uow) : ICommandHandler<UpdateWorkShiftCommand>
+    IUnitOfWork uow,
+    IValidator<UpdateWorkShiftCommand> validator) : ICommandHandler<UpdateWorkShiftCommand, ValidationResult<Unit>>
 {
-    public async Task HandleAsync(UpdateWorkShiftCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<Unit>> HandleAsync(UpdateWorkShiftCommand cmd, CancellationToken ct)
     {
-        var entity = await repo.GetByIdWithBreaksAsync(cmd.WorkShiftId, ct)
-            ?? throw new EntityNotFoundException(nameof(cmd.WorkShiftId), cmd.WorkShiftId);
-        entity.UpdateDetails(
-            cmd.Name, cmd.StartTime, cmd.EndTime,
-            cmd.Breaks.Select(b => (b.BreakStart, b.BreakEnd)),
-            cmd.IsActive, cmd.UpdatedBy);
-        await uow.SaveChangesAsync(ct);
+        var validation = await validator.ValidateAsync(cmd, ct);
+        if (!validation.IsValid)
+            return ValidationResult<Unit>.Invalid(validation.ToErrorDictionary());
+
+        try
+        {
+            var entity = await repo.GetByIdWithBreaksAsync(cmd.WorkShiftId, ct);
+            if (entity is null)
+                return ValidationResult<Unit>.NotFound($"Work shift {cmd.WorkShiftId} not found.");
+            entity.UpdateDetails(
+                cmd.Name, cmd.StartTime, cmd.EndTime,
+                cmd.Breaks.Select(b => (b.BreakStart, b.BreakEnd)),
+                cmd.IsActive, cmd.UpdatedBy);
+            await uow.SaveChangesAsync(ct);
+            return ValidationResult<Unit>.Ok(Unit.Value);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return ValidationResult<Unit>.NotFound(ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ValidationResult<Unit>.Failure(ex.Message);
+        }
     }
 }

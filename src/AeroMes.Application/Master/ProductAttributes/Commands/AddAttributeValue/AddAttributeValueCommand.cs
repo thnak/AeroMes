@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.ProductAttributes.Commands.AddAttributeValue;
@@ -7,4 +8,4 @@ public record AddAttributeValueCommand(
     string Value,
     string? GroupName,
     int SortOrder,
-    string? UpdatedBy) : ICommand<int>;
+    string? UpdatedBy) : ICommand<ValidationResult<int>>;

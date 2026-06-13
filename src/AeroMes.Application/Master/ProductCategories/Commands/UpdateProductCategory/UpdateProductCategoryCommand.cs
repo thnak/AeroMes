@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.ProductCategories.Commands.UpdateProductCategory;
@@ -10,4 +11,4 @@ public record UpdateProductCategoryCommand(
     decimal? StandardProductionTime,
     string? Color,
     bool IsActive,
-    string UpdatedBy) : ICommand;
+    string UpdatedBy) : ICommand<ValidationResult<Unit>>;

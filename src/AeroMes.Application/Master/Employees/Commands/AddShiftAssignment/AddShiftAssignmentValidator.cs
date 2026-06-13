@@ -9,9 +9,11 @@ public class AddShiftAssignmentValidator : AbstractValidator<AddShiftAssignmentC
     {
         RuleFor(x => x.ShiftCode).NotEmpty().MaximumLength(20);
         RuleFor(x => x.WorkCenterId)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (id, ct) => await workCenterRepo.ExistsAsync(id, ct))
             .WithMessage("Work center does not exist.");
         RuleFor(x => x.ShiftCode)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (code, ct) => await shiftRepo.CodeExistsAsync(code, ct))
             .WithMessage("Shift template does not exist.");
     }

@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -13,4 +14,4 @@ public record CompleteMoldMaintenanceCommand(
     string? PartReplaced,
     decimal? Cost,
     long? NextDueShots,
-    string? UpdatedBy) : ICommand<long>;
+    string? UpdatedBy) : ICommand<ValidationResult<long>>;

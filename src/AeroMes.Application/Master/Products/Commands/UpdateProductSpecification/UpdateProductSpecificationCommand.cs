@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Products.Commands.UpdateProductSpecification;
@@ -7,4 +8,4 @@ public record UpdateProductSpecificationCommand(
     int SpecificationId,
     string? Description,
     bool IsActive,
-    string? UpdatedBy) : ICommand;
+    string? UpdatedBy) : ICommand<ValidationResult<Unit>>;

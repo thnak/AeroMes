@@ -11,6 +11,7 @@ public class CreateProductionTeamValidator : AbstractValidator<CreateProductionT
         IProductCategoryRepository categoryRepo)
     {
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty().MaximumLength(50)
             .MustAsync(async (code, ct) => !await teamRepo.CodeExistsAsync(code, ct))
             .WithMessage(x => $"Mã tổ sản xuất '{x.Code}' đã tồn tại.");

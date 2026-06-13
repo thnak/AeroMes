@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.CapabilityGroups.Commands.CreateCapabilityGroup;
@@ -5,4 +6,4 @@ namespace AeroMes.Application.Master.CapabilityGroups.Commands.CreateCapabilityG
 public record CreateCapabilityGroupCommand(
     string Code,
     string Name,
-    string? Description) : ICommand<string>;
+    string? Description) : ICommand<ValidationResult<string>>;

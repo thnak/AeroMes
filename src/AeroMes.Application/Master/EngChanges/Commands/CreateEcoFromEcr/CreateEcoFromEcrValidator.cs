@@ -10,6 +10,7 @@ public class CreateEcoFromEcrValidator : AbstractValidator<CreateEcoFromEcrComma
         RuleFor(x => x.EcrNumber).NotEmpty();
         RuleFor(x => x.NewEcNumber).NotEmpty().MaximumLength(30);
         RuleFor(x => x.NewEcNumber)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (number, ct) => !await repo.NumberExistsAsync(number, ct))
             .WithMessage(x => $"Số phiếu '{x.NewEcNumber}' đã tồn tại.");
     }

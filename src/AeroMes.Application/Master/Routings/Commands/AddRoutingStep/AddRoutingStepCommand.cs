@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Routings.Commands.AddRoutingStep;
@@ -8,4 +9,4 @@ public record AddRoutingStepCommand(
     string OperationCode,
     int DefaultWorkCenterId,
     double StandardCycleTime,
-    bool IsQcRequired) : ICommand<int>;
+    bool IsQcRequired) : ICommand<ValidationResult<int>>;

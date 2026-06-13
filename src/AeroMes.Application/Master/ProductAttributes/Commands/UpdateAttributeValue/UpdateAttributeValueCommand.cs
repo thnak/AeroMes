@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.ProductAttributes.Commands.UpdateAttributeValue;
@@ -8,4 +9,4 @@ public record UpdateAttributeValueCommand(
     string Value,
     string? GroupName,
     int SortOrder,
-    string? UpdatedBy) : ICommand;
+    string? UpdatedBy) : ICommand<ValidationResult<Unit>>;

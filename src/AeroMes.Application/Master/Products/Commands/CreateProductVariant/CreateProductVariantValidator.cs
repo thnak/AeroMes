@@ -7,6 +7,7 @@ public class CreateProductVariantValidator : AbstractValidator<CreateProductVari
 {
     public CreateProductVariantValidator(IProductRepository repo)
     {
+        RuleLevelCascadeMode = CascadeMode.Stop;
         RuleFor(x => x.Code)
             .NotEmpty()
             .MaximumLength(50)

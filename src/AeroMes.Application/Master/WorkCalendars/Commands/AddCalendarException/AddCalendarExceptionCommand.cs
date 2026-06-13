@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -8,4 +9,4 @@ public record AddCalendarExceptionCommand(
     DateOnly Date,
     CalendarExceptionType ExceptionType,
     int? WorkShiftId,
-    string? CreatedBy) : ICommand<int>;
+    string? CreatedBy) : ICommand<ValidationResult<int>>;

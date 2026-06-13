@@ -8,6 +8,7 @@ public class CreateProductAttributeValidator : AbstractValidator<CreateProductAt
     public CreateProductAttributeValidator(IProductAttributeRepository repo)
     {
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty()
             .MaximumLength(30)
             .MustAsync(async (code, ct) => !await repo.CodeExistsAsync(code, ct))

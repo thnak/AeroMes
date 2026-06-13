@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.MachineProductConfigs.Commands.UpsertMachineProductConfig;
@@ -9,4 +10,4 @@ public record UpsertMachineProductConfigCommand(
     int TargetThroughputPerHour,
     double SetupTimeSeconds,
     DateOnly EffectiveFrom,
-    int? RoutingStepId = null) : ICommand;
+    int? RoutingStepId = null) : ICommand<ValidationResult<Unit>>;

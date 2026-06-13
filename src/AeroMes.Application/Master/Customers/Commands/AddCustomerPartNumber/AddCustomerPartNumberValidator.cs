@@ -13,6 +13,7 @@ public class AddCustomerPartNumberValidator : AbstractValidator<AddCustomerPartN
         RuleFor(x => x.DrawingReference).MaximumLength(100).When(x => x.DrawingReference != null);
         RuleFor(x => x.Revision).MaximumLength(20).When(x => x.Revision != null);
         RuleFor(x => x.ProductCode)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (code, ct) => await productRepo.ExistsAsync(code, ct))
             .WithMessage("Product does not exist.");
     }

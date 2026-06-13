@@ -10,6 +10,7 @@ public class CheckoutToolValidator : AbstractValidator<CheckoutToolCommand>
         RuleFor(x => x.ToolCode).NotEmpty();
         RuleFor(x => x.CheckedOutBy).NotEmpty().MaximumLength(100);
         RuleFor(x => x.WorkCenterId)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(workCenterRepo.ExistsAsync)
             .WithMessage(x => $"Khu vực sản xuất '{x.WorkCenterId}' không tồn tại.");
     }

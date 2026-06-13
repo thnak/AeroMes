@@ -10,7 +10,7 @@ public class UpdateWorkCalendarValidator : AbstractValidator<UpdateWorkCalendarC
     {
         RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Description).MaximumLength(500).When(x => x.Description is not null);
-        RuleFor(x => x.WorkCalendarId).MustAsync(async (id, ct) =>
+        RuleFor(x => x.WorkCalendarId).Cascade(CascadeMode.Stop).MustAsync(async (id, ct) =>
                 await repo.GetByIdAsync(id, ct) is not null)
             .WithMessage("Work calendar not found.");
         RuleFor(x => x.Days).NotEmpty()

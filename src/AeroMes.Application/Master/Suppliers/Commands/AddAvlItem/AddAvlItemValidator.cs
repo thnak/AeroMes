@@ -15,6 +15,7 @@ public class AddAvlItemValidator : AbstractValidator<AddAvlItemCommand>
         RuleFor(x => x.LeadTimeDays).GreaterThan(0).When(x => x.LeadTimeDays.HasValue);
         RuleFor(x => x.MinOrderQty).GreaterThan(0).When(x => x.MinOrderQty.HasValue);
         RuleFor(x => x.ProductCode)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (code, ct) => await productRepo.ExistsAsync(code, ct))
             .WithMessage("Product does not exist.");
     }

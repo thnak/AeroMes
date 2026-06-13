@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.ProductCategories.Commands.CreateProductCategory;
@@ -9,4 +10,4 @@ public record CreateProductCategoryCommand(
     string? Description,
     decimal? StandardProductionTime,
     string? Color,
-    string? CreatedBy) : ICommand<int>;
+    string? CreatedBy) : ICommand<ValidationResult<int>>;

@@ -10,6 +10,7 @@ public class CreateProductValidator : AbstractValidator<CreateProductCommand>
         IUnitOfMeasureRepository uomRepo,
         IProductCategoryRepository categoryRepo)
     {
+        RuleLevelCascadeMode = CascadeMode.Stop;
         RuleFor(x => x.Code)
             .NotEmpty()
             .MaximumLength(50)

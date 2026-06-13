@@ -1,27 +1,46 @@
+using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Master.Repositories;
+using FluentValidation;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Tools.Commands.UpdateTool;
 
 public class UpdateToolHandler(
     IToolRepository repo,
-    IUnitOfWork uow) : ICommandHandler<UpdateToolCommand>
+    IUnitOfWork uow,
+    IValidator<UpdateToolCommand> validator) : ICommandHandler<UpdateToolCommand, ValidationResult<Unit>>
 {
-    public async Task HandleAsync(UpdateToolCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<Unit>> HandleAsync(UpdateToolCommand cmd, CancellationToken ct)
     {
-        var tool = await repo.GetByCodeAsync(cmd.Code, ct)
-            ?? throw new EntityNotFoundException(nameof(Tool), cmd.Code);
+        var validation = await validator.ValidateAsync(cmd, ct);
+        if (!validation.IsValid)
+            return ValidationResult<Unit>.Invalid(validation.ToErrorDictionary());
 
-        tool.UpdateDetails(
-            cmd.Name, cmd.ToolType,
-            cmd.Brand, cmd.Model, cmd.Specification,
-            cmd.MaxUsageCount, cmd.PmIntervalCount,
-            cmd.RequiresCalibration, cmd.CalibrationIntervalDays,
-            cmd.StorageLocation, cmd.PurchaseDate, cmd.PurchaseCost,
-            cmd.Notes, cmd.IsActive, cmd.UpdatedBy);
-        await uow.SaveChangesAsync(ct);
+        try
+        {
+            var tool = await repo.GetByCodeAsync(cmd.Code, ct)
+                ?? throw new EntityNotFoundException(nameof(Tool), cmd.Code);
+
+            tool.UpdateDetails(
+                cmd.Name, cmd.ToolType,
+                cmd.Brand, cmd.Model, cmd.Specification,
+                cmd.MaxUsageCount, cmd.PmIntervalCount,
+                cmd.RequiresCalibration, cmd.CalibrationIntervalDays,
+                cmd.StorageLocation, cmd.PurchaseDate, cmd.PurchaseCost,
+                cmd.Notes, cmd.IsActive, cmd.UpdatedBy);
+            await uow.SaveChangesAsync(ct);
+            return ValidationResult<Unit>.Ok(Unit.Value);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return ValidationResult<Unit>.NotFound(ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ValidationResult<Unit>.Failure(ex.Message);
+        }
     }
 }

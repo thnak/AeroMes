@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -18,4 +19,4 @@ public record RegisterToolCommand(
     DateOnly? PurchaseDate,
     decimal? PurchaseCost,
     string? Notes,
-    string? CreatedBy) : ICommand<string>;
+    string? CreatedBy) : ICommand<ValidationResult<string>>;

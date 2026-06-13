@@ -8,6 +8,7 @@ public class UpdateRoutingValidator : AbstractValidator<UpdateRoutingCommand>
     public UpdateRoutingValidator(IRoutingRepository repo)
     {
         RuleFor(x => x.Id)
+            .Cascade(CascadeMode.Stop)
             .GreaterThan(0).WithMessage("Routing id is required.")
             .MustAsync(async (id, ct) => await repo.ExistsAsync(id, ct))
             .WithMessage(x => $"Routing {x.Id} does not exist.");

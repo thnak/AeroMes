@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Application.Master.WorkCalendars.Commands.CreateWorkCalendar;
 using LiteBus.Commands.Abstractions;
 
@@ -9,4 +10,4 @@ public record UpdateWorkCalendarCommand(
     string? Description,
     bool IsActive,
     IReadOnlyList<CalendarDayInput> Days,
-    string? UpdatedBy) : ICommand;
+    string? UpdatedBy) : ICommand<ValidationResult<Unit>>;

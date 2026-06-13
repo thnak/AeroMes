@@ -8,6 +8,7 @@ public class DuplicateProductionTeamValidator : AbstractValidator<DuplicateProdu
     public DuplicateProductionTeamValidator(IProductionTeamRepository repo)
     {
         RuleFor(x => x.NewCode)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty().MaximumLength(50)
             .MustAsync(async (code, ct) => !await repo.CodeExistsAsync(code, ct))
             .WithMessage(x => $"Mã tổ sản xuất '{x.NewCode}' đã tồn tại.");

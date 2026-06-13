@@ -20,6 +20,7 @@ public class CreateCustomerValidator : AbstractValidator<CreateCustomerCommand>
         RuleFor(x => x.Currency).Length(3).When(x => !string.IsNullOrWhiteSpace(x.Currency));
         RuleFor(x => x.Notes).MaximumLength(500).When(x => x.Notes != null);
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (code, ct) => !await repo.CodeExistsAsync(code, ct))
             .WithMessage("Customer code already exists.");
     }

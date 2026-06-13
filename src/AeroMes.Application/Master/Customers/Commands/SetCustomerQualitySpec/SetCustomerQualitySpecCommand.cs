@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -13,4 +14,4 @@ public record SetCustomerQualitySpecCommand(
     string? SpecialRequirements,
     DateOnly? EffectiveFrom,
     DateOnly? EffectiveTo,
-    string? UpdatedBy) : ICommand<int>;
+    string? UpdatedBy) : ICommand<ValidationResult<int>>;

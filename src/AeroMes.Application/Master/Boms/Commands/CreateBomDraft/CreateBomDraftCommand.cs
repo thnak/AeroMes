@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Boms.Commands.CreateBomDraft;
@@ -8,4 +9,4 @@ public record CreateBomDraftCommand(
     decimal BaseQuantity,
     string? Notes,
     string? CloneFromVersion,
-    string? CreatedBy) : ICommand<int>;
+    string? CreatedBy) : ICommand<ValidationResult<int>>;

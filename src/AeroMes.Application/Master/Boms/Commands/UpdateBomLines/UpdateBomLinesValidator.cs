@@ -20,10 +20,12 @@ public class UpdateBomLinesValidator : AbstractValidator<UpdateBomLinesCommand>
             line.RuleFor(l => l.ScrapFactor).InclusiveBetween(0, 100);
             line.RuleFor(l => l.Notes).MaximumLength(200).When(l => l.Notes != null);
             line.RuleFor(l => l.ComponentCode)
+                .Cascade(CascadeMode.Stop)
                 .NotEmpty()
                 .MustAsync(productRepo.ExistsAsync)
                 .WithMessage(l => $"Nguyên liệu '{l.ComponentCode}' không tồn tại.");
             line.RuleFor(l => l.UoMCode)
+                .Cascade(CascadeMode.Stop)
                 .NotEmpty()
                 .MustAsync(uomRepo.CodeExistsAsync)
                 .WithMessage(l => $"Đơn vị tính '{l.UoMCode}' không tồn tại.");

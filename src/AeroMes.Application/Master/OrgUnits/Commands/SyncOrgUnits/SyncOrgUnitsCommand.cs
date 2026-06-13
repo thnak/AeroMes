@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -9,7 +10,7 @@ namespace AeroMes.Application.Master.OrgUnits.Commands.SyncOrgUnits;
 /// </summary>
 public record SyncOrgUnitsCommand(
     IReadOnlyList<OrgUnitSyncEntry> Units,
-    string? SyncedBy) : ICommand<SyncOrgUnitsResult>;
+    string? SyncedBy) : ICommand<ValidationResult<SyncOrgUnitsResult>>;
 
 public record OrgUnitSyncEntry(
     string UnitCode,

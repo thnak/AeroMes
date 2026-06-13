@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -10,4 +11,4 @@ public record UpdateDowntimeReasonCodeCommand(
     int? SlaMinutes,
     bool RequiresApproval,
     bool IsActive,
-    string? UpdatedBy) : ICommand;
+    string? UpdatedBy) : ICommand<ValidationResult<Unit>>;

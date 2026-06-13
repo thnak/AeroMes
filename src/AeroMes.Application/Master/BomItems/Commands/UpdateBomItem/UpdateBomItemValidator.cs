@@ -8,6 +8,7 @@ public class UpdateBomItemValidator : AbstractValidator<UpdateBomItemCommand>
     public UpdateBomItemValidator(IBomItemRepository repo)
     {
         RuleFor(x => x.BomId)
+            .Cascade(CascadeMode.Stop)
             .GreaterThan(0).WithMessage("BomItem id is required.")
             .MustAsync(async (id, ct) => await repo.GetByIdAsync(id, ct) is not null)
             .WithMessage(x => $"BomItem {x.BomId} does not exist.");

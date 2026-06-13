@@ -8,6 +8,7 @@ public class UpdateOperationValidator : AbstractValidator<UpdateOperationCommand
     public UpdateOperationValidator(IOperationRepository repo)
     {
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty().WithMessage("Operation code is required.")
             .MustAsync(async (code, ct) => await repo.ExistsAsync(code, ct))
             .WithMessage(x => $"Operation '{x.Code}' does not exist.");

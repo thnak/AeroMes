@@ -20,6 +20,7 @@ public class RegisterMoldValidator : AbstractValidator<RegisterMoldCommand>
         RuleFor(x => x.StorageLocation).MaximumLength(100).When(x => x.StorageLocation != null);
         RuleFor(x => x.Notes).MaximumLength(500).When(x => x.Notes != null);
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .MustAsync(async (code, ct) => !await repo.CodeExistsAsync(code, ct))
             .WithMessage(x => $"Mã khuôn '{x.Code}' đã tồn tại.");
     }

@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Master.Employees.Commands.AddShiftAssignment;
@@ -8,4 +9,4 @@ public record AddShiftAssignmentCommand(
     string ShiftCode,
     DateOnly ValidFrom,
     DateOnly? ValidTo,
-    string? CreatedBy) : ICommand<int>;
+    string? CreatedBy) : ICommand<ValidationResult<int>>;

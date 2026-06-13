@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -9,4 +10,4 @@ public record CreateAlertThresholdCommand(
     string? ScopeId,
     decimal WarningLevel,
     decimal CriticalLevel,
-    string? CreatedBy) : ICommand<int>;
+    string? CreatedBy) : ICommand<ValidationResult<int>>;

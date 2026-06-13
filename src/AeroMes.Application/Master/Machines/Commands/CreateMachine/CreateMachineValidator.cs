@@ -8,6 +8,7 @@ public class CreateMachineValidator : AbstractValidator<CreateMachineCommand>
     public CreateMachineValidator(IMachineRepository machineRepo, IWorkCenterRepository wcRepo)
     {
         RuleFor(x => x.Code)
+            .Cascade(CascadeMode.Stop)
             .NotEmpty().WithMessage("Code is required.")
             .MaximumLength(30).WithMessage("Code must be at most 30 characters.")
             .Matches(@"^[A-Za-z0-9\-_]+$").WithMessage("Code may only contain letters, digits, hyphens, and underscores.")
@@ -19,6 +20,7 @@ public class CreateMachineValidator : AbstractValidator<CreateMachineCommand>
             .MaximumLength(100).WithMessage("Name must be at most 100 characters.");
 
         RuleFor(x => x.WorkCenterId)
+            .Cascade(CascadeMode.Stop)
             .GreaterThan(0).WithMessage("WorkCenter is required.")
             .MustAsync(async (id, ct) => await wcRepo.ExistsAsync(id, ct))
             .WithMessage(x => $"WorkCenter with id {x.WorkCenterId} does not exist.");

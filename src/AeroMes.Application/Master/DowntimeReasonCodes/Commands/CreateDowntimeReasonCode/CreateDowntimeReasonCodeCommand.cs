@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -9,4 +10,4 @@ public record CreateDowntimeReasonCodeCommand(
     DowntimeCategory Category,
     int? SlaMinutes,
     bool RequiresApproval,
-    string? CreatedBy) : ICommand<string>;
+    string? CreatedBy) : ICommand<ValidationResult<string>>;

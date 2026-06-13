@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 
@@ -9,4 +10,4 @@ public record CreateEmployeeCommand(
     string? Department,
     EmployeeRoleType RoleType,
     int? DefaultWorkCenterId,
-    string? CreatedBy) : ICommand<string>;
+    string? CreatedBy) : ICommand<ValidationResult<string>>;

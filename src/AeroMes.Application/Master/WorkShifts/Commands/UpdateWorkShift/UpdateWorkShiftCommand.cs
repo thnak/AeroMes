@@ -1,3 +1,4 @@
+using AeroMes.Application.Common;
 using AeroMes.Application.Master.WorkShifts.Commands.CreateWorkShift;
 using LiteBus.Commands.Abstractions;
 
@@ -10,4 +11,4 @@ public record UpdateWorkShiftCommand(
     TimeOnly EndTime,
     IReadOnlyList<BreakPeriodInput> Breaks,
     bool IsActive,
-    string? UpdatedBy) : ICommand;
+    string? UpdatedBy) : ICommand<ValidationResult<Unit>>;
