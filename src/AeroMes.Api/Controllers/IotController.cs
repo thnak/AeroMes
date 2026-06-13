@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Text.Json;
 using AeroMes.Api.Auth;
 using AeroMes.Api.Extensions;
 using AeroMes.Application.Iot.Adapters.Commands.CreateAdapter;
@@ -22,11 +24,15 @@ using AeroMes.Application.Iot.StateRules.Commands.ReorderStateRules;
 using AeroMes.Application.Iot.StateRules.Commands.UpdateStateRule;
 using AeroMes.Application.Iot.StateRules.Queries.GetStateRules;
 using AeroMes.Domain.Iot;
+using AeroMes.Domain.Iot.Repositories;
 using AeroMes.Infrastructure.Iot;
+using AeroMes.Infrastructure.Iot.Mqtt;
 using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MQTTnet;
+using MQTTnet.Client;
 
 namespace AeroMes.Api.Controllers;
 
@@ -36,7 +42,8 @@ namespace AeroMes.Api.Controllers;
 public class IotController(
     ICommandMediator commandMediator,
     IQueryMediator queryMediator,
-    ISignalIngestionPipeline pipeline) : ControllerBase
+    ISignalIngestionPipeline pipeline,
+    IAdapterRepository adapterRepository) : ControllerBase
 {
     // ── Signal Tags ───────────────────────────────────────────────────────
 
@@ -301,6 +308,92 @@ public class IotController(
         return NoContent();
     }
 
+    // ── MQTT Test Connection ──────────────────────────────────────────────
+
+    [HttpPost("adapters/{id:int}/test-connection")]
+    [RequirePermission(Permissions.IotWrite)]
+    [ProducesResponseType<MqttConnectionTestResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> TestMqttConnection(int id, CancellationToken ct)
+    {
+        var adapter = await adapterRepository.GetByIdAsync(id, ct);
+        if (adapter is null) return NotFound();
+
+        if (adapter.AdapterType != AdapterType.Mqtt)
+            return UnprocessableEntity(new { error = "Adapter is not of type MQTT" });
+
+        MqttAdapterConfig config;
+        try
+        {
+            config = JsonSerializer.Deserialize<MqttAdapterConfig>(adapter.ConfigJson)
+                     ?? new MqttAdapterConfig();
+        }
+        catch (Exception ex)
+        {
+            return UnprocessableEntity(new { error = $"Invalid ConfigJson: {ex.Message}" });
+        }
+
+        var factory = new MqttFactory();
+        using var mqttClient = factory.CreateMqttClient();
+
+        var clientId = $"aeromes-test-{id}-{Guid.NewGuid():N}";
+        var optionsBuilder = new MqttClientOptionsBuilder()
+            .WithTcpServer(config.BrokerHost, config.BrokerPort)
+            .WithClientId(clientId)
+            .WithCleanSession(true)
+            .WithKeepAlivePeriod(TimeSpan.FromSeconds(config.KeepAliveSeconds));
+
+        if (config.UseTls)
+            optionsBuilder = optionsBuilder.WithTlsOptions(o => o.UseTls());
+
+        if (!string.IsNullOrEmpty(config.Username))
+            optionsBuilder = optionsBuilder.WithCredentials(config.Username, config.Password);
+
+        var options = optionsBuilder.Build();
+
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
+
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            await mqttClient.ConnectAsync(options, timeoutCts.Token);
+            sw.Stop();
+
+            await mqttClient.DisconnectAsync(
+                new MqttClientDisconnectOptionsBuilder()
+                    .WithReason(MqttClientDisconnectOptionsReason.NormalDisconnection)
+                    .Build(),
+                CancellationToken.None);
+
+            return Ok(new MqttConnectionTestResult(
+                Success: true,
+                LatencyMs: (int)sw.ElapsedMilliseconds,
+                BrokerHost: config.BrokerHost,
+                BrokerPort: config.BrokerPort,
+                Error: null));
+        }
+        catch (OperationCanceledException)
+        {
+            return UnprocessableEntity(new MqttConnectionTestResult(
+                Success: false,
+                LatencyMs: 5000,
+                BrokerHost: config.BrokerHost,
+                BrokerPort: config.BrokerPort,
+                Error: "Connection timed out after 5 seconds"));
+        }
+        catch (Exception ex)
+        {
+            return UnprocessableEntity(new MqttConnectionTestResult(
+                Success: false,
+                LatencyMs: (int)sw.ElapsedMilliseconds,
+                BrokerHost: config.BrokerHost,
+                BrokerPort: config.BrokerPort,
+                Error: ex.Message));
+        }
+    }
+
     // ── Pipeline ──────────────────────────────────────────────────────────
 
     [HttpGet("pipeline/stats")]
@@ -334,3 +427,4 @@ public record ReorderStateRulesRequest(string MachineCode, List<int> OrderedRule
 public record AdapterCreatedResult(int AdapterId);
 public record SignalCreatedResult(int SignalId);
 public record StateRuleCreatedResult(int RuleId);
+public record MqttConnectionTestResult(bool Success, int LatencyMs, string BrokerHost, int BrokerPort, string? Error);

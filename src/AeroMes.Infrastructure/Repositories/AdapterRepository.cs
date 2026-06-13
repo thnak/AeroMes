@@ -20,6 +20,12 @@ public class AdapterRepository(AppDbContext db) : IAdapterRepository
             .OrderBy(x => x.AdapterID)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<AdapterInstance>> GetEnabledByTypeAsync(AdapterType type, CancellationToken ct) =>
+        await db.AdapterInstances
+            .Where(x => x.IsEnabled && x.AdapterType == type)
+            .OrderBy(x => x.AdapterID)
+            .ToListAsync(ct);
+
     public Task<bool> ExistsAsync(int id, CancellationToken ct) =>
         db.AdapterInstances.AnyAsync(x => x.AdapterID == id, ct);
 

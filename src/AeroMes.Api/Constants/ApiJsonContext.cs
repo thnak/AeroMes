@@ -624,6 +624,8 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(UpdateSignalTagRequest))]
 // iot pipeline
 [JsonSerializable(typeof(PipelineStats))]
+// iot mqtt
+[JsonSerializable(typeof(MqttConnectionTestResult))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

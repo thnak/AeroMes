@@ -9,6 +9,7 @@ using AeroMes.Domain.Wms.Repositories;
 using AeroMes.Infrastructure.Data;
 using AeroMes.Infrastructure.Identity;
 using AeroMes.Infrastructure.Iot;
+using AeroMes.Infrastructure.Iot.Mqtt;
 using AeroMes.Infrastructure.Repositories;
 using AeroMes.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
@@ -193,6 +194,14 @@ public static class DependencyInjection
                 sp.GetRequiredService<IServiceScopeFactory>(),
                 sp.GetRequiredService<IOptions<IotPipelineOptions>>().Value,
                 sp.GetRequiredService<ILogger<PipelineConsumerService>>()));
+
+        // MQTT adapter manager — starts one MqttAdapterService per enabled MQTT adapter
+        services.AddHostedService(sp =>
+            new MqttAdapterManager(
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                sp.GetRequiredService<ISignalIngestionPipeline>(),
+                sp.GetRequiredService<ILogger<MqttAdapterManager>>(),
+                sp.GetRequiredService<ILoggerFactory>()));
 
         return services;
     }
