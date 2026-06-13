@@ -46,6 +46,8 @@ public class GetModuleStatusHandler(IModuleStatusRepository statusRepo, IMemoryC
         moduleId switch
         {
             "production" => await BuildProductionBadgesAsync(ct),
+            "warehouse"  => await BuildWarehouseBadgesAsync(ct),
+            "iot"        => await BuildIotBadgesAsync(ct),
             _ => [],
         };
 
@@ -62,6 +64,32 @@ public class GetModuleStatusHandler(IModuleStatusRepository statusRepo, IMemoryC
         if (openDowntime > 0)
             badges.Add(new BadgeDto("activeDowntime", openDowntime,
                 openDowntime >= 3 ? "error" : "warning", "active downtime"));
+
+        return badges;
+    }
+
+    private async Task<IReadOnlyList<BadgeDto>> BuildWarehouseBadgesAsync(CancellationToken ct)
+    {
+        var pendingGrn = await statusRepo.CountPendingGrnAsync(ct);
+
+        List<BadgeDto> badges = [];
+
+        if (pendingGrn > 0)
+            badges.Add(new BadgeDto("pendingGrn", pendingGrn,
+                pendingGrn >= 5 ? "error" : "warning", "pending GRN"));
+
+        return badges;
+    }
+
+    private async Task<IReadOnlyList<BadgeDto>> BuildIotBadgesAsync(CancellationToken ct)
+    {
+        var adaptersDown = await statusRepo.CountAdaptersDownAsync(ct);
+
+        List<BadgeDto> badges = [];
+
+        if (adaptersDown > 0)
+            badges.Add(new BadgeDto("adaptersDown", adaptersDown,
+                adaptersDown >= 3 ? "error" : "warning", "adapters down"));
 
         return badges;
     }

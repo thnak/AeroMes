@@ -23,6 +23,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { MODULES, type ModuleConfig } from '../modules';
 import { moduleCardImages, moduleCardImagesLight } from '../assets/illustrations';
 import { APPBAR_HEIGHT } from '../theme/tokens';
+import { useGetApiModulesStatus } from '../api/modules/modules';
+import type { BadgeDto } from '../api/model';
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
 
@@ -68,6 +70,14 @@ export default function LaunchpadPage() {
   const [selectedCategory, setCategory]  = useState<string | null>(null);
   const [pinned, setPinned]              = useState<Set<string>>(loadPinned);
   const [visits]                         = useState<Record<string, number>>(loadVisits);
+
+  const { data: moduleStatus } = useGetApiModulesStatus({ query: { refetchInterval: 30_000 } });
+  const statusData = moduleStatus?.data;
+  const badgesByModule = useMemo(() => {
+    const map = new Map<string, BadgeDto[]>();
+    for (const m of statusData?.modules ?? []) map.set(m.id, m.badges);
+    return map;
+  }, [statusData]);
 
   function togglePin(id: string) {
     setPinned((prev) => {
@@ -274,12 +284,28 @@ export default function LaunchpadPage() {
               <Typography variant="overline" color="text.disabled" sx={{ fontSize: '0.6875rem', letterSpacing: '0.08em' }}>
                 System Status
               </Typography>
-              <Stack direction="row" sx={{ alignItems: 'center', gap: 1, mt: 0.75 }}>
-                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'success.main', boxShadow: '0 0 0 3px rgba(21,128,61,0.2)' }} />
-                <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'success.main', fontWeight: 500 }}>
-                  All systems operational
-                </Typography>
-              </Stack>
+              {statusData?.alerts && statusData.alerts.length > 0 ? (
+                <Stack sx={{ mt: 0.75, gap: 0.5 }}>
+                  {statusData.alerts.slice(0, 3).map((alert, i) => {
+                    const color = alert.severity === 'error' ? '#DC2626' : alert.severity === 'warning' ? '#D97706' : '#0D9488';
+                    return (
+                      <Stack key={i} direction="row" sx={{ alignItems: 'flex-start', gap: 0.75 }}>
+                        <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: color, flexShrink: 0, mt: 0.5 }} />
+                        <Typography variant="body2" sx={{ fontSize: '0.75rem', color, lineHeight: 1.4 }}>
+                          {alert.message}
+                        </Typography>
+                      </Stack>
+                    );
+                  })}
+                </Stack>
+              ) : (
+                <Stack direction="row" sx={{ alignItems: 'center', gap: 1, mt: 0.75 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'success.main', boxShadow: '0 0 0 3px rgba(21,128,61,0.2)' }} />
+                  <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'success.main', fontWeight: 500 }}>
+                    All systems operational
+                  </Typography>
+                </Stack>
+              )}
             </Box>
           </Box>
         </Box>
@@ -337,6 +363,7 @@ export default function LaunchpadPage() {
                         mod={mod}
                         index={i}
                         pinned={pinned.has(mod.id)}
+                        badges={badgesByModule.get(mod.id) ?? []}
                         onOpen={() => handleOpen(mod)}
                         onPin={() => togglePin(mod.id)}
                       />
@@ -346,7 +373,12 @@ export default function LaunchpadPage() {
               ) : (
                 <Stack sx={{ gap: 1 }}>
                   {availableMods.map((mod) => (
-                    <ModuleListRow key={mod.id} mod={mod} onOpen={() => handleOpen(mod)} />
+                    <ModuleListRow
+                      key={mod.id}
+                      mod={mod}
+                      badges={badgesByModule.get(mod.id) ?? []}
+                      onOpen={() => handleOpen(mod)}
+                    />
                   ))}
                 </Stack>
               )
@@ -397,11 +429,12 @@ export default function LaunchpadPage() {
 // ─── Module card (dark, gradient) ─────────────────────────────────────────────
 
 function ModuleCard({
-  mod, index, pinned, onOpen, onPin, disabled,
+  mod, index, pinned, badges = [], onOpen, onPin, disabled,
 }: {
   mod: ModuleConfig;
   index: number;
   pinned: boolean;
+  badges?: BadgeDto[];
   onOpen: () => void;
   onPin: () => void;
   disabled?: boolean;
@@ -502,11 +535,30 @@ function ModuleCard({
             {mod.description}
           </Typography>
           {!disabled && (
-            <Stack direction="row" sx={{ alignItems: 'center', gap: 0.5 }}>
-              <Typography variant="caption" sx={{ color: mod.color, fontWeight: 600, fontSize: '0.75rem' }}>
-                Open module
-              </Typography>
-              <SolarIcon name="forward" size={12} sx={{ color: mod.color }} />
+            <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+              <Stack direction="row" sx={{ alignItems: 'center', gap: 0.5 }}>
+                <Typography variant="caption" sx={{ color: mod.color, fontWeight: 600, fontSize: '0.75rem' }}>
+                  Open module
+                </Typography>
+                <SolarIcon name="forward" size={12} sx={{ color: mod.color }} />
+              </Stack>
+              {badges.length > 0 && (
+                <Stack direction="row" spacing={0.5}>
+                  {badges.slice(0, 2).map((b) => (
+                    <Chip
+                      key={b.key}
+                      label={Number(b.count) > 99 ? '99+' : b.count}
+                      size="small"
+                      sx={{
+                        height: 18, fontSize: '0.65rem', fontWeight: 700,
+                        bgcolor: b.severity === 'error' ? alpha('#DC2626', 0.85) : b.severity === 'warning' ? alpha('#D97706', 0.85) : alpha('#0D9488', 0.85),
+                        color: '#fff', border: 'none',
+                        '& .MuiChip-label': { px: 0.75 },
+                      }}
+                    />
+                  ))}
+                </Stack>
+              )}
             </Stack>
           )}
         </Box>
@@ -535,7 +587,7 @@ function ModuleCard({
 
 // ─── Module list row (light, compact) ─────────────────────────────────────────
 
-function ModuleListRow({ mod, onOpen }: { mod: ModuleConfig; onOpen: () => void }) {
+function ModuleListRow({ mod, badges = [], onOpen }: { mod: ModuleConfig; badges?: BadgeDto[]; onOpen: () => void }) {
   return (
     <ButtonBase
       onClick={onOpen}
@@ -565,6 +617,23 @@ function ModuleListRow({ mod, onOpen }: { mod: ModuleConfig; onOpen: () => void 
         <Typography variant="body2" sx={{ fontWeight: 600 }}>{mod.label}</Typography>
         <Typography variant="caption" color="text.secondary">{mod.description}</Typography>
       </Box>
+      {badges.length > 0 && (
+        <Stack direction="row" spacing={0.5} sx={{ mr: 1 }}>
+          {badges.slice(0, 2).map((b) => (
+            <Chip
+              key={b.key}
+              label={Number(b.count) > 99 ? '99+' : b.count}
+              size="small"
+              sx={{
+                height: 18, fontSize: '0.65rem', fontWeight: 700,
+                bgcolor: b.severity === 'error' ? '#DC2626' : b.severity === 'warning' ? '#D97706' : '#0D9488',
+                color: '#fff', border: 'none',
+                '& .MuiChip-label': { px: 0.75 },
+              }}
+            />
+          ))}
+        </Stack>
+      )}
       <SolarIcon name="chevronRight" size={16} sx={{ color: 'text.disabled', flexShrink: 0 }} />
     </ButtonBase>
   );
