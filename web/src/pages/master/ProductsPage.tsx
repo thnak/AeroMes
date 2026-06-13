@@ -1,7 +1,9 @@
 import {
+  Alert,
   Box,
   Button,
   Chip,
+  CircularProgress,
   FormControlLabel,
   Grid,
   IconButton,
@@ -16,9 +18,11 @@ import { alpha } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
 import type { GridColDef, GridRenderCellParams, GridRowSelectionModel } from '@mui/x-data-grid';
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ConfirmDialog,
   EmptyState,
@@ -28,67 +32,77 @@ import {
   PageRoot,
   RefreshButton,
   SolarIcon,
+  TablePageSkeleton,
   TableToolbar,
 } from '../../components';
+import {
+  useGetApiV1Products,
+  getGetApiV1ProductsQueryKey,
+  postApiV1Products,
+  putApiV1ProductsCode,
+  deleteApiV1ProductsCode,
+  useGetApiV1ProductsCode,
+} from '../../api/products/products';
+import type { ProductDto } from '../../api/model';
+import { ItemType, ProcurementType } from '../../api/model';
+import { getErrorMessage } from '../../lib/apiClient';
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-interface Product {
-  id: string;
-  code: string;
-  name: string;
-  category: string;
-  unitOfMeasure: string;
-  hasBom: boolean;
-  hasRouting: boolean;
-  isActive: boolean;
-  description?: string;
-}
+const ITEM_TYPE_LABELS: Record<string, string> = {
+  FG: 'Finished Good', SEMI: 'Semi-finished', RM: 'Raw Material',
+  CONS: 'Consumable', PKG: 'Packaging', SPARE: 'Spare Part', TOOL: 'Tooling',
+};
 
-const MOCK_PRODUCTS: Product[] = [
-  { id: '1',  code: 'FRM-A001', name: 'Frame Assembly A',        category: 'Assembly',   unitOfMeasure: 'EA', hasBom: true,  hasRouting: true,  isActive: true  },
-  { id: '2',  code: 'PNL-B002', name: 'Panel Sub-assembly B',    category: 'Sub-assy',  unitOfMeasure: 'EA', hasBom: true,  hasRouting: true,  isActive: true  },
-  { id: '3',  code: 'SHT-C003', name: 'Shaft Housing C',         category: 'Machined',  unitOfMeasure: 'EA', hasBom: true,  hasRouting: true,  isActive: true  },
-  { id: '4',  code: 'BRK-D004', name: 'Bracket Set D',           category: 'Stamped',   unitOfMeasure: 'SET',hasBom: false, hasRouting: false, isActive: true  },
-  { id: '5',  code: 'MTR-E005', name: 'Motor Mount E',            category: 'Machined',  unitOfMeasure: 'EA', hasBom: true,  hasRouting: false, isActive: true  },
-  { id: '6',  code: 'COV-F006', name: 'Cover Plate F',            category: 'Stamped',   unitOfMeasure: 'EA', hasBom: false, hasRouting: true,  isActive: true  },
-  { id: '7',  code: 'GRD-G007', name: 'Guard Assembly G',         category: 'Assembly',  unitOfMeasure: 'EA', hasBom: true,  hasRouting: true,  isActive: false },
-  { id: '8',  code: 'SPR-H008', name: 'Sprocket Set H',           category: 'Purchased', unitOfMeasure: 'SET',hasBom: false, hasRouting: false, isActive: true  },
-  { id: '9',  code: 'BSH-I009', name: 'Bushing I',                category: 'Purchased', unitOfMeasure: 'EA', hasBom: false, hasRouting: false, isActive: true  },
-  { id: '10', code: 'HNG-J010', name: 'Hinge Assembly J',         category: 'Assembly',  unitOfMeasure: 'EA', hasBom: true,  hasRouting: true,  isActive: true  },
-  { id: '11', code: 'CAP-K011', name: 'Capacitor Bank K',         category: 'Electrical',unitOfMeasure: 'EA', hasBom: true,  hasRouting: false, isActive: true  },
-  { id: '12', code: 'WHL-L012', name: 'Wheel & Hub Assembly L',   category: 'Assembly',  unitOfMeasure: 'EA', hasBom: true,  hasRouting: true,  isActive: false },
-];
+const ITEM_TYPE_COLORS: Record<string, string> = {
+  FG: '#1D4ED8', SEMI: '#0369A1', RM: '#15803D',
+  CONS: '#D97706', PKG: '#7C3AED', SPARE: '#0D9488', TOOL: '#64748B',
+};
 
-const CATEGORIES = [...new Set(MOCK_PRODUCTS.map((p) => p.category))].sort();
+const LIFECYCLE_LABELS: Record<string, string> = {
+  Development: 'Dev', Active: 'Active', PhasingOut: 'Phasing Out',
+  Discontinued: 'Discont.', Obsolete: 'Obsolete',
+};
+
+const LIFECYCLE_COLORS: Record<string, string> = {
+  Development: '#0369A1', Active: '#15803D', PhasingOut: '#D97706',
+  Discontinued: '#DC2626', Obsolete: '#64748B',
+};
+
+const UOM_OPTIONS = ['EA', 'PCS', 'SET', 'KG', 'G', 'M', 'M2', 'M3', 'L', 'BOX', 'ROLL'];
 
 // ─── Form schema ──────────────────────────────────────────────────────────────
 
 const ProductSchema = z.object({
-  code:           z.string().min(1, 'Code is required').max(50),
-  name:           z.string().min(1, 'Name is required').max(200),
-  category:       z.string().min(1, 'Category is required'),
-  unitOfMeasure:  z.string().min(1, 'Unit is required'),
-  description:    z.string().optional(),
-  isActive:       z.boolean(),
+  code:             z.string().min(1, 'Code is required').max(50)
+    .regex(/^[A-Za-z0-9\-_.]+$/, 'Letters, digits, hyphens, underscores, and dots only'),
+  name:             z.string().min(1, 'Name is required').max(200),
+  baseUoMCode:      z.string().min(1, 'Unit of measure is required').max(20),
+  itemType:         z.string().min(1, 'Item type is required'),
+  procurementType:  z.string().optional(),
+  lotControlled:    z.boolean(),
+  serialControlled: z.boolean(),
+  customerPartNo:   z.string().max(100).optional(),
+  drawingNo:        z.string().max(100).optional(),
+  revision:         z.string().max(50).optional(),
 });
 
 type ProductFormValues = z.infer<typeof ProductSchema>;
 
-// ─── Product form ─────────────────────────────────────────────────────────────
+// ─── Form component ───────────────────────────────────────────────────────────
 
 function ProductForm({
   defaultValues,
+  isEdit,
   onSubmit,
-  loading: _loading,
 }: {
   defaultValues: Partial<ProductFormValues>;
+  isEdit: boolean;
   onSubmit: (data: ProductFormValues) => void;
-  loading: boolean;
 }) {
   const { register, control, handleSubmit, formState: { errors } } = useForm<ProductFormValues>({
     resolver: zodResolver(ProductSchema),
-    defaultValues: { isActive: true, ...defaultValues },
+    defaultValues: { lotControlled: false, serialControlled: false, ...defaultValues },
   });
 
   return (
@@ -100,6 +114,7 @@ function ProductForm({
             label="Product Code"
             fullWidth
             required
+            disabled={isEdit}
             error={!!errors.code}
             helperText={errors.code?.message}
             slotProps={{ htmlInput: { style: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } } }}
@@ -107,22 +122,22 @@ function ProductForm({
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
-            name="category"
+            name="itemType"
             control={control}
             render={({ field }) => (
               <TextField
                 {...field}
+                value={field.value ?? ''}
                 select
-                label="Category"
+                label="Item Type"
                 fullWidth
                 required
-                error={!!errors.category}
-                helperText={errors.category?.message}
+                error={!!errors.itemType}
+                helperText={errors.itemType?.message}
               >
-                {CATEGORIES.map((c) => (
-                  <MenuItem key={c} value={c}>{c}</MenuItem>
+                {Object.values(ItemType).map((t) => (
+                  <MenuItem key={t} value={t}>{ITEM_TYPE_LABELS[t] ?? t}</MenuItem>
                 ))}
-                <MenuItem value="Other">Other</MenuItem>
               </TextField>
             )}
           />
@@ -139,19 +154,20 @@ function ProductForm({
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
-            name="unitOfMeasure"
+            name="baseUoMCode"
             control={control}
             render={({ field }) => (
               <TextField
                 {...field}
+                value={field.value ?? ''}
                 select
-                label="Unit of Measure"
+                label="Base Unit of Measure"
                 fullWidth
                 required
-                error={!!errors.unitOfMeasure}
-                helperText={errors.unitOfMeasure?.message}
+                error={!!errors.baseUoMCode}
+                helperText={errors.baseUoMCode?.message}
               >
-                {['EA', 'SET', 'KG', 'M', 'M2', 'L', 'BOX'].map((u) => (
+                {UOM_OPTIONS.map((u) => (
                   <MenuItem key={u} value={u}>{u}</MenuItem>
                 ))}
               </TextField>
@@ -160,32 +176,78 @@ function ProductForm({
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
-            name="isActive"
+            name="procurementType"
             control={control}
             render={({ field }) => (
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={field.value}
-                    onChange={field.onChange}
-                    color="primary"
-                  />
-                }
-                label="Active"
-                sx={{ mt: 0.5, ml: 0 }}
-              />
+              <TextField
+                {...field}
+                value={field.value ?? ''}
+                select
+                label="Procurement Type"
+                fullWidth
+                error={!!errors.procurementType}
+                helperText={errors.procurementType?.message}
+              >
+                <MenuItem value=""><em>None</em></MenuItem>
+                {Object.values(ProcurementType).map((p) => (
+                  <MenuItem key={p} value={p}>{p}</MenuItem>
+                ))}
+              </TextField>
             )}
           />
         </Grid>
-        <Grid size={{ xs: 12 }}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
-            {...register('description')}
-            label="Description"
+            {...register('customerPartNo')}
+            label="Customer Part No."
             fullWidth
-            multiline
-            rows={3}
-            placeholder="Optional product description…"
+            error={!!errors.customerPartNo}
+            helperText={errors.customerPartNo?.message}
           />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            {...register('drawingNo')}
+            label="Drawing No."
+            fullWidth
+            error={!!errors.drawingNo}
+            helperText={errors.drawingNo?.message}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            {...register('revision')}
+            label="Revision"
+            fullWidth
+            error={!!errors.revision}
+            helperText={errors.revision?.message}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
+            <Controller
+              name="lotControlled"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={<Switch checked={field.value} onChange={field.onChange} color="primary" size="small" />}
+                  label="Lot Controlled"
+                  sx={{ ml: 0 }}
+                />
+              )}
+            />
+            <Controller
+              name="serialControlled"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={<Switch checked={field.value} onChange={field.onChange} color="primary" size="small" />}
+                  label="Serial"
+                  sx={{ ml: 0 }}
+                />
+              )}
+            />
+          </Stack>
         </Grid>
       </Grid>
     </Box>
@@ -197,120 +259,172 @@ function ProductForm({
 type DrawerMode = 'create' | 'edit';
 
 export default function ProductsPage() {
-  const [rows, setRows]                   = useState<Product[]>(MOCK_PRODUCTS);
-  const [search, setSearch]               = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [statusFilter, setStatusFilter]   = useState('');
-  const [selection, setSelection]         = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
-  const [drawerOpen, setDrawerOpen]       = useState(false);
-  const [drawerMode, setDrawerMode]       = useState<DrawerMode>('create');
-  const [editTarget, setEditTarget]       = useState<Product | null>(null);
-  const [deleteTarget, setDeleteTarget]   = useState<Product | null>(null);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [saving, setSaving]               = useState(false);
+  const navigate    = useNavigate();
+  const queryClient = useQueryClient();
 
-  // Filtered rows
+  const [search, setSearch]                   = useState('');
+  const [itemTypeFilter, setItemTypeFilter]   = useState('');
+  const [statusFilter, setStatusFilter]       = useState('');
+  const [selection, setSelection]             = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
+  const [drawerOpen, setDrawerOpen]           = useState(false);
+  const [drawerMode, setDrawerMode]           = useState<DrawerMode>('create');
+  const [editTarget, setEditTarget]           = useState<ProductDto | null>(null);
+  const [deleteTarget, setDeleteTarget]       = useState<ProductDto | null>(null);
+  const [saveError, setSaveError]             = useState('');
+
+  const { data: products = [], isLoading, error, refetch } =
+    useGetApiV1Products({ activeOnly: false });
+
+  // Fetch full detail when editing (to preserve fields not shown in the form)
+  const { data: editDetail, isLoading: editDetailLoading } = useGetApiV1ProductsCode(
+    editTarget?.productCode ?? '',
+    { query: { enabled: drawerMode === 'edit' && !!editTarget?.productCode } },
+  );
+
   const filtered = useMemo(() => {
-    let r = rows;
-    if (search)         r = r.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()) || p.code.toLowerCase().includes(search.toLowerCase()));
-    if (categoryFilter) r = r.filter((p) => p.category === categoryFilter);
-    if (statusFilter)   r = r.filter((p) => statusFilter === 'active' ? p.isActive : !p.isActive);
+    let r = products;
+    if (search)        r = r.filter((p) => p.productName.toLowerCase().includes(search.toLowerCase()) || p.productCode.toLowerCase().includes(search.toLowerCase()));
+    if (itemTypeFilter) r = r.filter((p) => p.itemType === itemTypeFilter);
+    if (statusFilter)  r = r.filter((p) => statusFilter === 'active' ? p.isActive : !p.isActive);
     return r;
-  }, [rows, search, categoryFilter, statusFilter]);
+  }, [products, search, itemTypeFilter, statusFilter]);
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getGetApiV1ProductsQueryKey({ activeOnly: false }) });
+
+  const createMutation = useMutation({
+    mutationFn: (data: ProductFormValues) =>
+      postApiV1Products({
+        code: data.code,
+        name: data.name,
+        baseUoMCode: data.baseUoMCode,
+        itemType: data.itemType as typeof ItemType[keyof typeof ItemType],
+        procurementType: (data.procurementType || null) as typeof ProcurementType[keyof typeof ProcurementType] | null,
+        lotControlled: data.lotControlled,
+        serialControlled: data.serialControlled,
+        customerPartNo: data.customerPartNo ?? null,
+        drawingNo: data.drawingNo ?? null,
+        revision: data.revision ?? null,
+      }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: ProductFormValues) =>
+      putApiV1ProductsCode(editTarget!.productCode, {
+        name: data.name,
+        baseUoMCode: data.baseUoMCode,
+        purchaseUoMCode: editDetail?.purchaseUoMCode ?? null,
+        purchaseToBaseQty: editDetail?.purchaseToBaseQty ?? 1,
+        itemType: data.itemType as typeof ItemType[keyof typeof ItemType],
+        categoryId: editDetail?.categoryId ?? null,
+        barcodePattern: editDetail?.barcodePattern ?? null,
+        lotControlled: data.lotControlled,
+        serialControlled: data.serialControlled,
+        shelfLifeDays: editDetail?.shelfLifeDays ?? null,
+        reorderPoint: editDetail?.reorderPoint ?? null,
+        safetyStock: editDetail?.safetyStock ?? null,
+        leadTimeDays: editDetail?.leadTimeDays ?? null,
+        procurementType: (data.procurementType || null) as typeof ProcurementType[keyof typeof ProcurementType] | null,
+        effectiveFrom: editDetail?.effectiveFrom ?? null,
+        effectiveTo: editDetail?.effectiveTo ?? null,
+        customerPartNo: data.customerPartNo ?? null,
+        drawingNo: data.drawingNo ?? null,
+        revision: data.revision ?? null,
+        netWeight: editDetail?.netWeight ?? null,
+        grossWeight: editDetail?.grossWeight ?? null,
+        length: editDetail?.length ?? null,
+        width: editDetail?.width ?? null,
+        height: editDetail?.height ?? null,
+        imageUrl: editDetail?.imageUrl ?? null,
+        thumbnailUrl: editDetail?.thumbnailUrl ?? null,
+        fixedPurchasePrice: editDetail?.fixedPurchasePrice ?? null,
+        technicalStandard: editDetail?.technicalStandard ?? null,
+        quantityFormula: editDetail?.quantityFormula ?? null,
+      }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (code: string) => deleteApiV1ProductsCode(code),
+    onSuccess: () => { invalidate(); setDeleteTarget(null); },
+  });
+
+  const saving = createMutation.isPending || updateMutation.isPending;
+
+  function openCreate() { setSaveError(''); setDrawerMode('create'); setEditTarget(null); setDrawerOpen(true); }
+  function openEdit(p: ProductDto) { setSaveError(''); setDrawerMode('edit'); setEditTarget(p); setDrawerOpen(true); }
+
+  function handleSave(data: ProductFormValues) {
+    setSaveError('');
+    if (drawerMode === 'create') createMutation.mutate(data);
+    else updateMutation.mutate(data);
+  }
 
   const selectedIds = selection.type === 'include' ? selection.ids : new Set<string | number>();
 
-  // CRUD handlers
-  function openCreate() { setDrawerMode('create'); setEditTarget(null); setDrawerOpen(true); }
-  function openEdit(p: Product) { setDrawerMode('edit'); setEditTarget(p); setDrawerOpen(true); }
-
-  function handleSave(data: ProductFormValues) {
-    setSaving(true);
-    setTimeout(() => {
-      if (drawerMode === 'create') {
-        setRows((prev) => [...prev, { id: String(Date.now()), hasBom: false, hasRouting: false, ...data }]);
-      } else if (editTarget) {
-        setRows((prev) => prev.map((p) => p.id === editTarget.id ? { ...p, ...data } : p));
-      }
-      setSaving(false);
-      setDrawerOpen(false);
-    }, 800);
-  }
-
-  function handleDelete() {
-    if (deleteTarget) {
-      setRows((prev) => prev.filter((p) => p.id !== deleteTarget.id));
-      setDeleteTarget(null);
-    }
-  }
-
-  function handleBulkDelete() {
-    setRows((prev) => prev.filter((p) => !selectedIds.has(p.id)));
-    setSelection({ type: 'include', ids: new Set() });
-    setBulkDeleteOpen(false);
-  }
-
-  // Columns
-  const columns: GridColDef<Product>[] = [
+  const columns: GridColDef<ProductDto>[] = [
     {
-      field: 'code',
+      field: 'productCode',
       headerName: 'Code',
-      width: 130,
-      renderCell: (params: GridRenderCellParams<Product>) => (
+      width: 140,
+      renderCell: (params: GridRenderCellParams<ProductDto>) => (
         <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 600, color: 'primary.main' }}>
           {params.value}
         </Typography>
       ),
     },
-    { field: 'name', headerName: 'Name', flex: 1, minWidth: 180 },
+    { field: 'productName', headerName: 'Name', flex: 1, minWidth: 180 },
     {
-      field: 'category',
-      headerName: 'Category',
-      width: 120,
-      renderCell: (params: GridRenderCellParams<Product>) => (
-        <Chip
-          label={params.value}
-          size="small"
-          sx={(theme) => ({
-            height: 20,
-            fontSize: '0.6875rem',
-            fontWeight: 600,
-            bgcolor: alpha(theme.palette.primary.main, 0.08),
-            color: 'primary.main',
-            border: 'none',
-            '& .MuiChip-label': { px: 0.75 },
-          })}
-        />
-      ),
+      field: 'itemType',
+      headerName: 'Type',
+      width: 110,
+      renderCell: (params: GridRenderCellParams<ProductDto>) => {
+        const color = ITEM_TYPE_COLORS[params.value as string] ?? '#64748B';
+        return (
+          <Chip
+            label={params.value}
+            size="small"
+            sx={{
+              height: 20, fontSize: '0.6875rem', fontWeight: 600,
+              bgcolor: alpha(color, 0.1), color, border: 'none',
+              '& .MuiChip-label': { px: 0.75 },
+            }}
+          />
+        );
+      },
     },
-    { field: 'unitOfMeasure', headerName: 'Unit', width: 70, align: 'center', headerAlign: 'center' },
     {
-      field: 'hasBom',
-      headerName: 'BOM',
-      width: 70,
+      field: 'baseUoMCode',
+      headerName: 'Unit',
+      width: 65,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (params: GridRenderCellParams<Product>) => (
-        <SolarIcon
-          name={params.value ? 'success' : 'close'}
-          size={16}
-          color={params.value ? '#15803D' : '#94A3B8'}
-        />
+      renderCell: (params: GridRenderCellParams<ProductDto>) => (
+        <Typography variant="body2" sx={{ fontSize: 11, fontWeight: 600, color: 'text.secondary', fontFamily: 'ui-monospace, monospace' }}>
+          {params.value}
+        </Typography>
       ),
     },
     {
-      field: 'hasRouting',
-      headerName: 'Routing',
-      width: 80,
-      align: 'center',
-      headerAlign: 'center',
-      renderCell: (params: GridRenderCellParams<Product>) => (
-        <SolarIcon
-          name={params.value ? 'success' : 'close'}
-          size={16}
-          color={params.value ? '#15803D' : '#94A3B8'}
-        />
-      ),
+      field: 'lifecycleStatus',
+      headerName: 'Lifecycle',
+      width: 110,
+      renderCell: (params: GridRenderCellParams<ProductDto>) => {
+        const color = LIFECYCLE_COLORS[params.value as string] ?? '#64748B';
+        return (
+          <Chip
+            label={LIFECYCLE_LABELS[params.value as string] ?? params.value}
+            size="small"
+            sx={{
+              height: 20, fontSize: '0.6875rem', fontWeight: 600,
+              bgcolor: alpha(color, 0.1), color, border: 'none',
+              '& .MuiChip-label': { px: 0.75 },
+            }}
+          />
+        );
+      },
     },
     {
       field: 'isActive',
@@ -318,18 +432,15 @@ export default function ProductsPage() {
       width: 90,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (params: GridRenderCellParams<Product>) => (
+      renderCell: (params: GridRenderCellParams<ProductDto>) => (
         <Chip
           label={params.value ? 'Active' : 'Inactive'}
           size="small"
           sx={{
-            height: 20,
-            fontSize: '0.6875rem',
-            fontWeight: 600,
+            height: 20, fontSize: '0.6875rem', fontWeight: 600,
             bgcolor: params.value ? alpha('#15803D', 0.1) : alpha('#94A3B8', 0.1),
             color: params.value ? '#15803D' : '#94A3B8',
-            border: 'none',
-            '& .MuiChip-label': { px: 0.75 },
+            border: 'none', '& .MuiChip-label': { px: 0.75 },
           }}
         />
       ),
@@ -337,11 +448,16 @@ export default function ProductsPage() {
     {
       field: 'actions',
       headerName: '',
-      width: 90,
+      width: 110,
       sortable: false,
       align: 'center',
-      renderCell: (params: GridRenderCellParams<Product>) => (
+      renderCell: (params: GridRenderCellParams<ProductDto>) => (
         <Stack direction="row" spacing={0.25}>
+          <Tooltip title="View Detail">
+            <IconButton size="small" onClick={() => navigate(`/master/products/${params.row.productCode}`)} sx={{ color: 'text.secondary' }}>
+              <SolarIcon name="eye" size={16} />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Edit">
             <IconButton size="small" onClick={() => openEdit(params.row)} sx={{ color: 'text.secondary' }}>
               <SolarIcon name="edit" size={16} />
@@ -357,31 +473,30 @@ export default function ProductsPage() {
     },
   ];
 
+  if (isLoading) return <TablePageSkeleton />;
+  if (error) return (
+    <PageRoot>
+      <PageHeader title="Products" breadcrumbs={[{ label: 'Master Data' }, { label: 'Products' }]} />
+      <EmptyState icon="emptyTable" title="Failed to load products" description={getErrorMessage(error)} />
+    </PageRoot>
+  );
+
+  const isEditFormReady = drawerMode === 'create' || (drawerMode === 'edit' && !!editDetail && !editDetailLoading);
+
   return (
     <PageRoot>
       <PageHeader
         title="Products"
-        subtitle="Manage product master data — codes, categories, BOM and routing assignments"
+        subtitle="Manage product master data — codes, types, units, and procurement settings"
         breadcrumbs={[{ label: 'Master Data' }, { label: 'Products' }]}
         actions={
           <>
             {selectedIds.size > 0 && (
-              <Button
-                variant="outlined"
-                color="error"
-                size="small"
-                startIcon={<SolarIcon name="delete" size={16} />}
-                onClick={() => setBulkDeleteOpen(true)}
-              >
+              <Button variant="outlined" color="error" size="small" startIcon={<SolarIcon name="delete" size={16} />}>
                 Delete ({selectedIds.size})
               </Button>
             )}
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<SolarIcon name="add" size={16} />}
-              onClick={openCreate}
-            >
+            <Button variant="contained" size="small" startIcon={<SolarIcon name="add" size={16} />} onClick={openCreate}>
               New Product
             </Button>
           </>
@@ -394,18 +509,15 @@ export default function ProductsPage() {
         searchPlaceholder="Search code or name…"
         filters={[
           {
-            label: 'Category',
-            value: categoryFilter,
-            options: CATEGORIES.map((c) => ({ label: c, value: c })),
-            onChange: setCategoryFilter,
+            label: 'Type',
+            value: itemTypeFilter,
+            options: Object.values(ItemType).map((t) => ({ label: ITEM_TYPE_LABELS[t] ?? t, value: t })),
+            onChange: setItemTypeFilter,
           },
           {
             label: 'Status',
             value: statusFilter,
-            options: [
-              { label: 'Active', value: 'active' },
-              { label: 'Inactive', value: 'inactive' },
-            ],
+            options: [{ label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' }],
             onChange: setStatusFilter,
           },
         ]}
@@ -413,7 +525,7 @@ export default function ProductsPage() {
         actions={
           <Stack direction="row" spacing={0.5}>
             <ExportButton />
-            <RefreshButton />
+            <RefreshButton onClick={() => refetch()} />
           </Stack>
         }
       />
@@ -421,6 +533,7 @@ export default function ProductsPage() {
       <Box sx={{ flex: 1, minHeight: 400 }}>
         <DataGrid
           rows={filtered}
+          getRowId={(row) => row.productCode}
           columns={columns}
           density="compact"
           checkboxSelection
@@ -432,86 +545,75 @@ export default function ProductsPage() {
           slots={{
             noRowsOverlay: () => (
               <EmptyState
-                icon={search || categoryFilter || statusFilter ? 'emptySearch' : 'emptyTable'}
-                title={search || categoryFilter || statusFilter ? 'No products match your filters' : 'No products yet'}
-                description={
-                  search || categoryFilter || statusFilter
-                    ? 'Try adjusting your search or filters.'
-                    : 'Add your first product to get started.'
-                }
-                action={
-                  !search && !categoryFilter && !statusFilter ? (
-                    <Button variant="contained" size="small" onClick={openCreate}>
-                      Add Product
-                    </Button>
-                  ) : undefined
-                }
+                icon={search || itemTypeFilter || statusFilter ? 'emptySearch' : 'emptyTable'}
+                title={search || itemTypeFilter || statusFilter ? 'No products match your filters' : 'No products yet'}
+                description={search || itemTypeFilter || statusFilter ? 'Try adjusting your search or filters.' : 'Add your first product to get started.'}
+                action={!search && !itemTypeFilter && !statusFilter ? (
+                  <Button variant="contained" size="small" onClick={openCreate}>Add Product</Button>
+                ) : undefined}
                 compact
               />
             ),
           }}
           sx={{
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            bgcolor: 'background.paper',
-            '& .MuiDataGrid-columnHeaders': {
-              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-            },
-            '& .MuiDataGrid-row:hover': {
-              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.03),
-            },
+            border: '1px solid', borderColor: 'divider', borderRadius: 2, bgcolor: 'background.paper',
+            '& .MuiDataGrid-columnHeaders': { bgcolor: (t) => alpha(t.palette.primary.main, 0.04), borderBottom: '1px solid', borderColor: 'divider' },
+            '& .MuiDataGrid-row:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.03) },
             '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': { outline: 'none' },
             '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': { outline: 'none' },
           }}
         />
       </Box>
 
-      {/* Create / Edit drawer */}
       <FormDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title={drawerMode === 'create' ? 'New Product' : `Edit ${editTarget?.code}`}
-        subtitle={drawerMode === 'create' ? 'Enter product details below' : editTarget?.name}
+        title={drawerMode === 'create' ? 'New Product' : `Edit ${editTarget?.productCode}`}
+        subtitle={drawerMode === 'create' ? 'Enter product details below' : editTarget?.productName}
         onSubmit={() => document.getElementById('product-form')?.dispatchEvent(new Event('submit', { bubbles: true }))}
         submitLabel={drawerMode === 'create' ? 'Create Product' : 'Save Changes'}
         loading={saving}
       >
-        <ProductForm
-          key={editTarget?.id ?? 'new'}
-          defaultValues={editTarget ?? {}}
-          onSubmit={handleSave}
-          loading={saving}
-        />
+        {saveError && <Alert severity="error" sx={{ mb: 2 }}>{saveError}</Alert>}
+        {!isEditFormReady ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+            <CircularProgress size={32} />
+          </Box>
+        ) : (
+          <ProductForm
+            key={drawerMode === 'edit' ? editTarget?.productCode : 'new'}
+            isEdit={drawerMode === 'edit'}
+            defaultValues={editDetail ? {
+              code:             editDetail.productCode,
+              name:             editDetail.productName,
+              baseUoMCode:      editDetail.baseUoMCode,
+              itemType:         editDetail.itemType,
+              procurementType:  editDetail.procurementType ?? undefined,
+              lotControlled:    editDetail.lotControlled,
+              serialControlled: editDetail.serialControlled,
+              customerPartNo:   editDetail.customerPartNo ?? undefined,
+              drawingNo:        editDetail.drawingNo ?? undefined,
+              revision:         editDetail.revision ?? undefined,
+            } : {}}
+            onSubmit={handleSave}
+          />
+        )}
       </FormDrawer>
 
-      {/* Delete confirmation */}
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.productCode)}
         title="Delete Product"
         description={
           <>
-            Delete <strong>{deleteTarget?.name}</strong> ({deleteTarget?.code})?
-            This cannot be undone and may affect existing BOMs and routings.
+            Delete <strong>{deleteTarget?.productName}</strong> ({deleteTarget?.productCode})?
+            This cannot be undone and may affect BOMs and work orders referencing this product.
           </>
         }
         confirmLabel="Delete"
         confirmColor="error"
-      />
-
-      {/* Bulk delete confirmation */}
-      <ConfirmDialog
-        open={bulkDeleteOpen}
-        onClose={() => setBulkDeleteOpen(false)}
-        onConfirm={handleBulkDelete}
-        title={`Delete ${selectedIds.size} Products`}
-        description={`Are you sure you want to delete ${selectedIds.size} selected products? This cannot be undone.`}
-        confirmLabel={`Delete ${selectedIds.size} Products`}
-        confirmColor="error"
+        loading={deleteMutation.isPending}
       />
     </PageRoot>
   );
