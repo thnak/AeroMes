@@ -179,6 +179,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<CartonContent> CartonContents => Set<CartonContent>();
 
     // qual schema
+    public DbSet<SamplingMethod> SamplingMethods => Set<SamplingMethod>();
+    public DbSet<SamplingVolumeRange> SamplingVolumeRanges => Set<SamplingVolumeRange>();
     public DbSet<DefectCode> DefectCodes => Set<DefectCode>();
     public DbSet<DefectDetail> DefectDetails => Set<DefectDetail>();
     public DbSet<InspectionPlan> InspectionPlans => Set<InspectionPlan>();
@@ -2230,6 +2232,31 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     // ── qual ──────────────────────────────────────────────────────────────
     private static void ConfigureQualSchema(ModelBuilder b)
     {
+        b.Entity<SamplingMethod>(e =>
+        {
+            e.ToTable("SamplingMethods", "qual");
+            e.HasKey(x => x.SamplingMethodID);
+            e.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Name).HasMaxLength(150).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.SamplingType).HasConversion<string>().HasMaxLength(40);
+            e.Property(x => x.SampleQuantity).HasColumnType("DECIMAL(12,4)");
+            e.HasIndex(x => x.Code).IsUnique();
+            e.HasQueryFilter(x => !x.IsDeleted);
+            e.HasMany(x => x.VolumeRanges).WithOne()
+                .HasForeignKey(x => x.SamplingMethodID).OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.VolumeRanges).HasField("_volumeRanges")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<SamplingVolumeRange>(e =>
+        {
+            e.ToTable("SamplingVolumeRanges", "qual");
+            e.HasKey(x => x.RangeID);
+            e.Property(x => x.SampleSizeOrRatio).HasColumnType("DECIMAL(12,4)");
+        });
+
         b.Entity<DefectCode>(e =>
         {
             e.ToTable("DefectCodes", "qual");

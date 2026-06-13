@@ -25,6 +25,7 @@ using AeroMes.Application.Traceability.Commands.CommissionSerialUnits;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production.Repositories;
 using AeroMes.Application.Production.Commands.CreateProductionPlan;
+using AeroMes.Application.Quality.SamplingMethods.Commands.CreateSamplingMethod;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrders;
 using AeroMes.Application.Integration.Commands.SyncSalesOrders;
@@ -1065,6 +1066,19 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<DefectParetoDto>))]
 [JsonSerializable(typeof(List<DefectParetoDto>))]
 [JsonSerializable(typeof(QualitySummaryByStyleDto))]
+// sampling method catalog — #78
+[JsonSerializable(typeof(CreateSamplingMethodRequest))]
+[JsonSerializable(typeof(UpdateSamplingMethodRequest))]
+[JsonSerializable(typeof(VolumeRangeRequest))]
+[JsonSerializable(typeof(VolumeRangeInput))]
+[JsonSerializable(typeof(IReadOnlyList<VolumeRangeInput>))]
+[JsonSerializable(typeof(List<VolumeRangeInput>))]
+[JsonSerializable(typeof(SamplingMethodDto))]
+[JsonSerializable(typeof(IReadOnlyList<SamplingMethodDto>))]
+[JsonSerializable(typeof(List<SamplingMethodDto>))]
+[JsonSerializable(typeof(SamplingVolumeRangeDto))]
+[JsonSerializable(typeof(IReadOnlyList<SamplingVolumeRangeDto>))]
+[JsonSerializable(typeof(List<SamplingVolumeRangeDto>))]
 // production planning (order-based) — #135
 [JsonSerializable(typeof(CreateProductionPlanRequest))]
 [JsonSerializable(typeof(PlanLineInput))]
