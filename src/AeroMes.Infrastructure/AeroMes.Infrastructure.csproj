@@ -5,6 +5,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" Version="4.0.0.7" />
     <PackageReference Include="FluentModbus" Version="5.3.0" />
     <PackageReference Include="LiteBus.Events" Version="5.0.0" />
     <PackageReference Include="LiteBus.Extensions.Microsoft.DependencyInjection" Version="5.0.0" />
