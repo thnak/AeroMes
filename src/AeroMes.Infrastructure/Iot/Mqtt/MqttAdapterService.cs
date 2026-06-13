@@ -153,7 +153,7 @@ public sealed class MqttAdapterService : BackgroundService
             var message = new AdapterRawMessage(
                 _adapter.AdapterID, sourceAddress, value, timestamp, "MQTT");
 
-            await _pipeline.IngestAsync(message);
+            await _pipeline.IngestAsync(message, _stoppingToken);
         }
         catch (Exception ex)
         {
