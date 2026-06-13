@@ -59,7 +59,13 @@ import {
   deleteApiV1AuthMfa,
   postApiV1AuthMfaRecoveryCodesRegenerate,
 } from '../../api/mfa/mfa';
-import { useGetApiV1AuthPasskey, deleteApiV1AuthPasskeyCredentialIdBase64 } from '../../api/passkey/passkey';
+import {
+  useGetApiV1AuthPasskey,
+  deleteApiV1AuthPasskeyCredentialIdBase64,
+  getApiV1AuthPasskeyAttestationOptions,
+  postApiV1AuthPasskeyRegister,
+  getGetApiV1AuthPasskeyQueryKey,
+} from '../../api/passkey/passkey';
 
 import type { UpdateMeRequest } from '../../api/model/updateMeRequest';
 import type { TotpConfirmRequest } from '../../api/model/totpConfirmRequest';
@@ -502,10 +508,32 @@ function MfaCard() {
   );
 }
 
+// ─── Base64url helpers (WebAuthn) ─────────────────────────────────────────────
+
+function base64UrlDecode(str: string): ArrayBuffer {
+  const b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  const binary = atob(b64);
+  const buf = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
+  return buf.buffer;
+}
+
+function base64UrlEncode(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
 // ─── Passkeys Card ────────────────────────────────────────────────────────────
 
 function PasskeysCard() {
+  const qc = useQueryClient();
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [registering, setRegistering]   = useState(false);
+  const [regError, setRegError]         = useState<string | null>(null);
+  const [regName, setRegName]           = useState('');
+  const [namePrompt, setNamePrompt]     = useState(false);
 
   const { data: passkeys, isLoading, refetch } = useGetApiV1AuthPasskey();
 
@@ -517,6 +545,55 @@ function PasskeysCard() {
     },
   });
 
+  const startRegistration = async () => {
+    setRegistering(true);
+    setRegError(null);
+    try {
+      const opts = await getApiV1AuthPasskeyAttestationOptions();
+      if (!opts?.creationOptionsJson || !opts?.attestationState) throw new Error('No options');
+
+      const parsedOptions = JSON.parse(opts.creationOptionsJson) as PublicKeyCredentialCreationOptions;
+      // Decode ArrayBuffer fields from base64url
+      parsedOptions.challenge = base64UrlDecode(parsedOptions.challenge as unknown as string);
+      parsedOptions.user.id   = base64UrlDecode(parsedOptions.user.id as unknown as string);
+      if (parsedOptions.excludeCredentials) {
+        parsedOptions.excludeCredentials = parsedOptions.excludeCredentials.map((c) => ({
+          ...c,
+          id: base64UrlDecode(c.id as unknown as string),
+        }));
+      }
+
+      const credential = await navigator.credentials.create({ publicKey: parsedOptions }) as PublicKeyCredential;
+      if (!credential) throw new Error('User cancelled or device not supported');
+
+      const response = credential.response as AuthenticatorAttestationResponse;
+      const credentialJson = JSON.stringify({
+        id:       credential.id,
+        rawId:    base64UrlEncode(credential.rawId),
+        type:     credential.type,
+        response: {
+          attestationObject: base64UrlEncode(response.attestationObject),
+          clientDataJSON:    base64UrlEncode(response.clientDataJSON),
+          transports:        response.getTransports?.() ?? [],
+        },
+      });
+
+      await postApiV1AuthPasskeyRegister({
+        credentialJson,
+        attestationState: opts.attestationState,
+        name: regName || null,
+      });
+
+      qc.invalidateQueries({ queryKey: getGetApiV1AuthPasskeyQueryKey() });
+      setNamePrompt(false);
+      setRegName('');
+    } catch (e) {
+      setRegError(e instanceof Error ? e.message : 'Registration failed');
+    } finally {
+      setRegistering(false);
+    }
+  };
+
   const rows = passkeys ?? [];
 
   return (
@@ -527,13 +604,15 @@ function PasskeysCard() {
           <Typography variant="subtitle1" sx={{ fontWeight: 600, flex: 1 }}>
             Passkeys
           </Typography>
-          <Tooltip title="WebAuthn registration coming in a future release">
-            <span>
-              <Button size="small" variant="outlined" disabled startIcon={<SolarIcon name="add" size={16} />}>
-                Add passkey
-              </Button>
-            </span>
-          </Tooltip>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<SolarIcon name="add" size={16} />}
+            onClick={() => setNamePrompt(true)}
+            disabled={registering}
+          >
+            Add passkey
+          </Button>
         </Stack>
 
         {isLoading ? (
@@ -606,6 +685,44 @@ function PasskeysCard() {
           if (deleteTarget) deleteMutation.mutate(deleteTarget);
         }}
       />
+
+      {/* Device name prompt before WebAuthn ceremony */}
+      <Dialog open={namePrompt} onClose={() => !registering && setNamePrompt(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Register passkey</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Give this device a name so you can identify it later (optional).
+          </Typography>
+          {regError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {regError}
+            </Alert>
+          )}
+          <TextField
+            label="Device name"
+            placeholder="e.g. MacBook Touch ID"
+            fullWidth
+            value={regName}
+            onChange={(e) => setRegName(e.target.value)}
+            disabled={registering}
+            autoFocus
+            onKeyDown={(e) => e.key === 'Enter' && !registering && startRegistration()}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 2.5, pb: 2 }}>
+          <Button variant="outlined" onClick={() => { setNamePrompt(false); setRegName(''); setRegError(null); }} disabled={registering}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={startRegistration}
+            disabled={registering}
+            startIcon={registering ? <CircularProgress size={16} color="inherit" /> : <SolarIcon name="add" size={16} />}
+          >
+            {registering ? 'Waiting for device…' : 'Register'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 }
