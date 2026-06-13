@@ -6,6 +6,7 @@ using AeroMes.Domain.Iot.Repositories;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production.Repositories;
 using AeroMes.Domain.Quality.Repositories;
+using AeroMes.Domain.Lab.Repositories;
 using AeroMes.Domain.Rules.Repositories;
 using AeroMes.Domain.Wms.Repositories;
 using AeroMes.Infrastructure.Data;
@@ -15,6 +16,7 @@ using AeroMes.Infrastructure.Iot.Modbus;
 using AeroMes.Infrastructure.Iot.Mqtt;
 using AeroMes.Infrastructure.Iot.OpcUa;
 using AeroMes.Infrastructure.Repositories;
+using AeroMes.Infrastructure.Lab;
 using AeroMes.Infrastructure.Rules;
 using AeroMes.Infrastructure.Services;
 using LiteBus.Events.Abstractions;
@@ -129,6 +131,7 @@ public static class DependencyInjection
         services.AddScoped<INcrRepository, NcrRepository>();
 
         // rules
+        services.AddScoped<ILabRepository, LabRepository>();
         services.AddScoped<IRuleRepository, RuleRepository>();
         services.AddSingleton<RuleEvaluationService>();
         services.AddScoped<IEventHandler<MachineSignalIngestedEvent>, SignalThresholdRuleHandler>();

@@ -66,6 +66,9 @@ const MachineFleetsPage        = lazy(() => import('./pages/iot/MachineFleetsPag
 const MachineSignalMonitorPage = lazy(() => import('./pages/iot/MachineSignalMonitorPage'));
 const RuleEnginePage           = lazy(() => import('./pages/iot/RuleEnginePage'));
 
+// Lab
+const LabRequestsPage = lazy(() => import('./pages/lab/LabRequestsPage'));
+
 // Maintenance
 const MaintenancePage = lazy(() => import('./pages/maintenance/MaintenancePage'));
 
@@ -217,6 +220,11 @@ export default function App() {
             <Route path="iot/adapters/:adapterId/signals"         element={<IotSignalsPage />} />
             <Route path="iot/machines/:machineCode/state-rules"   element={<IotStateRulesPage />} />
             <Route path="iot/rules"                               element={<RuleEnginePage />} />
+          </Route>
+
+          {/* ── Lab module ────────────────────────────────────── */}
+          <Route element={<ModuleLayout />}>
+            <Route path="lab/requests" element={<LabRequestsPage />} />
           </Route>
 
           {/* ── Maintenance module ────────────────────────────── */}

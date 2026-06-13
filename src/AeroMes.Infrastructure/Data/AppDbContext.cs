@@ -8,6 +8,7 @@ using AeroMes.Domain.Master;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.ValueObjects;
 using AeroMes.Domain.Quality;
+using AeroMes.Domain.Lab;
 using AeroMes.Domain.Rules;
 using AeroMes.Domain.Settings;
 using AeroMes.Domain.Wms;
@@ -161,6 +162,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<RuleAction> RuleActions => Set<RuleAction>();
     public DbSet<RuleExecutionLog> RuleExecutionLogs => Set<RuleExecutionLog>();
 
+    // lab
+    public DbSet<TestMethod> TestMethods => Set<TestMethod>();
+    public DbSet<TestPanel> TestPanels => Set<TestPanel>();
+    public DbSet<TestPanelItem> TestPanelItems => Set<TestPanelItem>();
+    public DbSet<LabRequest> LabRequests => Set<LabRequest>();
+    public DbSet<LabSample> LabSamples => Set<LabSample>();
+    public DbSet<TestResult> TestResults => Set<TestResult>();
+    public DbSet<LabReport> LabReports => Set<LabReport>();
+
     // settings
     public DbSet<SystemOptions> SystemOptions => Set<SystemOptions>();
 
@@ -197,6 +207,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureSettingsSchema(b);
         ConfigureIotSchema(b);
         ConfigureRulesSchema(b);
+        ConfigureLabSchema(b);
     }
 
     // ── auth ──────────────────────────────────────────────────────────────
@@ -2730,6 +2741,105 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.ActionsExecuted).HasColumnType("nvarchar(max)");
             e.Property(x => x.ContextSnapshot).HasColumnType("nvarchar(max)");
             e.HasIndex(x => new { x.RuleId, x.TriggeredAt });
+        });
+    }
+
+    // ── lab ───────────────────────────────────────────────────────────────
+    private static void ConfigureLabSchema(ModelBuilder b)
+    {
+        b.Entity<TestMethod>(e =>
+        {
+            e.ToTable("TestMethods", "lab");
+            e.HasKey(x => x.TestMethodId);
+            e.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.Code).IsUnique();
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Category).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Unit).HasMaxLength(30).IsRequired();
+            e.Property(x => x.MeasurementType).HasMaxLength(20).IsRequired();
+            e.Property(x => x.SpecMin).HasColumnType("decimal(18,4)");
+            e.Property(x => x.SpecMax).HasColumnType("decimal(18,4)");
+            e.Property(x => x.SpecNominal).HasColumnType("decimal(18,4)");
+            e.Property(x => x.ReferenceStd).HasMaxLength(100);
+            e.Property(x => x.InstrumentType).HasMaxLength(100);
+        });
+
+        b.Entity<TestPanel>(e =>
+        {
+            e.ToTable("TestPanels", "lab");
+            e.HasKey(x => x.PanelId);
+            e.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.Code).IsUnique();
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50);
+            e.HasMany(x => x.Items).WithOne().HasForeignKey(x => x.PanelId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<TestPanelItem>(e =>
+        {
+            e.ToTable("TestPanelItems", "lab");
+            e.HasKey(x => x.PanelItemId);
+            e.Property(x => x.SpecOverrideMin).HasColumnType("decimal(18,4)");
+            e.Property(x => x.SpecOverrideMax).HasColumnType("decimal(18,4)");
+        });
+
+        b.Entity<LabRequest>(e =>
+        {
+            e.ToTable("LabRequests", "lab");
+            e.HasKey(x => x.RequestId);
+            e.Property(x => x.RequestNo).HasMaxLength(30).IsRequired();
+            e.HasIndex(x => x.RequestNo).IsUnique();
+            e.Property(x => x.RequestType).HasMaxLength(30).IsRequired();
+            e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Priority).HasMaxLength(20).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(100);
+            e.Property(x => x.CustomerCode).HasMaxLength(30);
+            e.Property(x => x.SampleQty).HasColumnType("decimal(18,4)");
+            e.Property(x => x.SampleUnit).HasMaxLength(20).IsRequired();
+            e.Property(x => x.SampleLocation).HasMaxLength(200);
+            e.Property(x => x.RequestedBy).HasMaxLength(256).IsRequired();
+            e.Property(x => x.AssignedTo).HasMaxLength(256);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasIndex(x => new { x.Status, x.RequestedAt });
+        });
+
+        b.Entity<LabSample>(e =>
+        {
+            e.ToTable("LabSamples", "lab");
+            e.HasKey(x => x.SampleId);
+            e.Property(x => x.SampleCode).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.SampleCode).IsUnique();
+            e.Property(x => x.ConditionOnReceipt).HasMaxLength(30).IsRequired();
+            e.Property(x => x.ReceivedBy).HasMaxLength(256).IsRequired();
+            e.Property(x => x.StorageLocation).HasMaxLength(100);
+            e.Property(x => x.DisposalMethod).HasMaxLength(30);
+        });
+
+        b.Entity<TestResult>(e =>
+        {
+            e.ToTable("TestResults", "lab");
+            e.HasKey(x => x.ResultId);
+            e.Property(x => x.MeasuredValue).HasColumnType("decimal(18,4)");
+            e.Property(x => x.AttributeResult).HasMaxLength(10);
+            e.Property(x => x.InstrumentCode).HasMaxLength(50);
+            e.Property(x => x.TestedBy).HasMaxLength(256).IsRequired();
+            e.Property(x => x.ReviewedBy).HasMaxLength(256);
+            e.Property(x => x.Notes).HasMaxLength(255);
+            e.HasIndex(x => new { x.RequestId, x.SampleId });
+        });
+
+        b.Entity<LabReport>(e =>
+        {
+            e.ToTable("LabReports", "lab");
+            e.HasKey(x => x.ReportId);
+            e.Property(x => x.ReportNo).HasMaxLength(30).IsRequired();
+            e.HasIndex(x => x.ReportNo).IsUnique();
+            e.Property(x => x.OverallResult).HasMaxLength(15).IsRequired();
+            e.Property(x => x.Conclusion).HasMaxLength(500).IsRequired();
+            e.Property(x => x.IssuedBy).HasMaxLength(256).IsRequired();
+            e.Property(x => x.CustomerCode).HasMaxLength(30);
+            e.Property(x => x.DocumentUrl).HasMaxLength(500);
         });
     }
 

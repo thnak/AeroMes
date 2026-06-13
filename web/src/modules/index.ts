@@ -86,6 +86,18 @@ export const MODULES: ModuleConfig[] = [
     ],
   },
   {
+    id: 'lab',
+    label: 'Laboratory',
+    description: 'Test requests, sample management & Certificates of Analysis',
+    icon: 'quality',
+    color: '#7C3AED',
+    path: '/lab',
+    available: true,
+    tabs: [
+      { label: 'Lab Requests', path: '/lab/requests' },
+    ],
+  },
+  {
     id: 'maintenance',
     label: 'Maintenance',
     description: 'Machine issues, repair logs & preventive tasks',
