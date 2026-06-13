@@ -1,10 +1,11 @@
+using AeroMes.Application.Search;
 using AeroMes.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AeroMes.Api.Controllers;
 
-public record HealthStatus(string Status, string? Reason = null);
+public record HealthStatus(string Status, string? Reason = null, string? Search = null);
 
 /// <summary>
 /// Two-tier probes:
@@ -14,7 +15,7 @@ public record HealthStatus(string Status, string? Reason = null);
 [ApiController]
 [Route("health")]
 [AllowAnonymous]
-public class HealthController(AppDbContext db) : ControllerBase
+public class HealthController(AppDbContext db, ISearchService searchService) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<HealthStatus>(StatusCodes.Status200OK)]
@@ -28,11 +29,24 @@ public class HealthController(AppDbContext db) : ControllerBase
     {
         try
         {
-            var ok = await db.Database.CanConnectAsync(ct);
-            return ok
-                ? Ok(new HealthStatus("healthy"))
-                : StatusCode(StatusCodes.Status503ServiceUnavailable,
+            var dbOk = await db.Database.CanConnectAsync(ct);
+            if (!dbOk)
+                return StatusCode(StatusCodes.Status503ServiceUnavailable,
                     new HealthStatus("unhealthy", "database unreachable"));
+
+            // Search is optional; surface its state but don't fail readiness
+            string searchStatus;
+            try
+            {
+                await searchService.SearchAsync("__healthcheck__", null, 1, 1, [], ct);
+                searchStatus = "healthy";
+            }
+            catch
+            {
+                searchStatus = "unavailable";
+            }
+
+            return Ok(new HealthStatus("healthy", null, searchStatus));
         }
         catch (Exception ex)
         {

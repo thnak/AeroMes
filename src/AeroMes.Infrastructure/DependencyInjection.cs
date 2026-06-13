@@ -373,6 +373,22 @@ public static class DependencyInjection
         services.AddScoped<AeroMes.Application.Import.IImportService, Import.ImportService>();
         services.AddScoped<AeroMes.Application.Import.IImportRepository, Import.ImportRepository>();
 
+        // Search — Elasticsearch or null no-op depending on config
+        var searchEnabled = configuration.GetValue<bool>("Search:Enabled");
+        if (searchEnabled)
+        {
+            var esUri = configuration["Search:ElasticsearchUri"] ?? "http://localhost:9200";
+            var esClient = new Elastic.Clients.Elasticsearch.ElasticsearchClient(new Uri(esUri));
+            services.AddSingleton(esClient);
+            services.AddScoped<AeroMes.Application.Search.ISearchIndexer, Search.ElasticsearchIndexer>();
+            services.AddScoped<AeroMes.Application.Search.ISearchService, Search.ElasticsearchSearchService>();
+        }
+        else
+        {
+            services.AddSingleton<AeroMes.Application.Search.ISearchIndexer, Search.NullSearchIndexer>();
+            services.AddSingleton<AeroMes.Application.Search.ISearchService, Search.NullSearchService>();
+        }
+
         // Hangfire — SQL Server storage, DI-aware job activator
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("DefaultConnection is not configured.");

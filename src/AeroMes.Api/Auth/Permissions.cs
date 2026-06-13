@@ -190,6 +190,10 @@ public static class Permissions
     public const string SystemConfigure = "System:Configure";
     public const string PermissionRead = "Permission:Read";
     public const string PermissionManage = "Permission:Manage";
+    public const string AdminWrite = "Admin:Write";
+
+    // Search
+    public const string SearchRead = "Search:Read";
 
     public static readonly string[] All =
     [

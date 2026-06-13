@@ -208,6 +208,7 @@ using AeroMes.Application.Integration.Queries.GetSalesOrdersList;
 using AeroMes.Domain.Integration;
 using AeroMes.Domain.Integration.Repositories;
 using AeroMes.Domain.Production.Repositories;
+using AeroMes.Application.Search;
 using AeroMes.Application.Production.MasterPlan.Commands.CreateMasterPlan;
 using AeroMes.Application.Production.MasterPlan.Queries.GetMasterPlanDetail;
 using AeroMes.Application.Production.MasterPlan.Queries.GetMasterPlans;
@@ -1433,6 +1434,11 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(CreateSalesOrderRequest))]
 [JsonSerializable(typeof(ConfirmSoRequest))]
 [JsonSerializable(typeof(SoSyncSource))]
+// global search (#237 #238 #239)
+[JsonSerializable(typeof(SearchResultDto))]
+[JsonSerializable(typeof(IReadOnlyList<SearchResultDto>))]
+[JsonSerializable(typeof(List<SearchResultDto>))]
+[JsonSerializable(typeof(SearchResultPageDto))]
 // extended reports (#68)
 [JsonSerializable(typeof(OrderProgressDto))]
 [JsonSerializable(typeof(IReadOnlyList<OrderProgressDto>))]
