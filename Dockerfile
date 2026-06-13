@@ -23,13 +23,20 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=backend-builder /publish .
 
-# Runtime defaults — override at container start or via compose env
+# Version baked at build time via --build-arg; can still be overridden at runtime via -e
+ARG APP_VERSION=dev
+ARG BUILD_DATE=unknown
+ARG COMMIT_SHA=
+ENV APP_VERSION=$APP_VERSION
+ENV BUILD_DATE=$BUILD_DATE
+ENV COMMIT_SHA=$COMMIT_SHA
+
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
-# Injected by CI/CD — set at build time with --build-arg or at runtime via env
-ENV APP_VERSION=dev
-ENV BUILD_DATE=unknown
-ENV COMMIT_SHA=
 
 EXPOSE 8080
+# HEALTHCHECK uses wget (included in the debian-based aspnet base image)
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
+    CMD wget -qO /dev/null http://localhost:8080/health || exit 1
+
 ENTRYPOINT ["dotnet", "AeroMes.Api.dll"]

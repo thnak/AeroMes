@@ -309,6 +309,8 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(SendToolServiceRequest))]
 [JsonSerializable(typeof(RecordToolMaintenanceRequest))]
 [JsonSerializable(typeof(RecordToolUsageRequest))]
+// health
+[JsonSerializable(typeof(HealthStatus))]
 // app info
 [JsonSerializable(typeof(ApiResponse<AppInfoDto>))]
 [JsonSerializable(typeof(AppInfoDto))]

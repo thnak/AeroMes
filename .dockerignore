@@ -1,5 +1,6 @@
 **/.git
 **/.gitignore
+**/.github
 **/.vs
 **/.vscode
 **/bin
@@ -11,3 +12,4 @@ src/AeroMes.Api/wwwroot
 **/docker-compose*.yml
 **/.env*
 **/nginx.conf
+deploy.sh

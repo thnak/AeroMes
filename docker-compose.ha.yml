@@ -12,11 +12,16 @@
 #               services.AddSignalR().AddStackExchangeRedis(connectionString)
 #
 #   MIGRATIONS  Only api-01 runs auto-migrations. api-02 starts with
-#               SKIP_MIGRATIONS=true to avoid race conditions on first boot.
-#               In production, prefer running migrations as a separate init job.
+#               SKIP_MIGRATIONS=true. In production, prefer a separate
+#               migration init-job so both replicas start as read-only first.
 #
 #   DATABASE    Replace the embedded SQL Server with an Always On Availability
 #               Group, Azure SQL, or RDS (Multi-AZ) for data-layer HA.
+#
+#   ROLLING UPDATE  Use deploy.sh — it restarts api-01, waits for the Docker
+#               health check to pass, then restarts api-02. nginx's passive
+#               health check + proxy_next_upstream transparently routes around
+#               the restarting instance during the transition.
 #
 # Usage:
 #   cp .env.example .env          # fill in secrets
@@ -52,6 +57,14 @@ services:
       BUILD_DATE: "${BUILD_DATE}"
       COMMIT_SHA: "${COMMIT_SHA}"
       INSTANCE_ID: "api-01"
+    # Docker HEALTHCHECK defined in Dockerfile; compose inherits it.
+    # Override here if needed:
+    # healthcheck:
+    #   test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:8080/health"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 3
+    #   start_period: 30s
     restart: unless-stopped
 
   api-02:
@@ -81,8 +94,10 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certs:/etc/nginx/certs:ro
     depends_on:
-      - api-01
-      - api-02
+      api-01:
+        condition: service_healthy
+      api-02:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

@@ -22,6 +22,10 @@ using Microsoft.AspNetCore.Http.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Give in-flight requests (including SignalR) 30 s to drain on SIGTERM.
+builder.Services.Configure<HostOptions>(opts =>
+    opts.ShutdownTimeout = TimeSpan.FromSeconds(30));
+
 builder.Services.Configure<JsonOptions>(options =>
 {
     options.SerializerOptions.DefaultIgnoreCondition =
@@ -140,12 +144,13 @@ builder.Services.AddCors(opts =>
 
 var app = builder.Build();
 
-// Migrate + seed on startup (idempotent — safe for auto-deploy)
-using (var scope = app.Services.CreateScope())
+// Only the primary instance runs migrations.
+// Secondary replicas set SKIP_MIGRATIONS=true to avoid startup race conditions.
+if (!app.Configuration.GetValue<bool>("SKIP_MIGRATIONS"))
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AeroMes.Infrastructure.Data.AppDbContext>();
     await db.Database.MigrateAsync();
-
     var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
     await seeder.SeedAsync();
 }
