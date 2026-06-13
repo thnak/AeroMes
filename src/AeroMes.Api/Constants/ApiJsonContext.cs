@@ -1186,6 +1186,15 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(GanttIntervalDto))]
 [JsonSerializable(typeof(IReadOnlyList<GanttIntervalDto>))]
 [JsonSerializable(typeof(List<GanttIntervalDto>))]
+// quality criteria catalog — #60
+[JsonSerializable(typeof(CreateQualityCriteriaRequest))]
+[JsonSerializable(typeof(UpdateQualityCriteriaRequest))]
+[JsonSerializable(typeof(SetQualityCriteriaStatusRequest))]
+[JsonSerializable(typeof(QualityCriteriaDto))]
+[JsonSerializable(typeof(IReadOnlyList<QualityCriteriaDto>))]
+[JsonSerializable(typeof(List<QualityCriteriaDto>))]
+[JsonSerializable(typeof(CriteriaType))]
+[JsonSerializable(typeof(CriteriaStatus))]
 // cost rate master — #53
 [JsonSerializable(typeof(UpsertLaborGradeRequest))]
 [JsonSerializable(typeof(LaborGradeDto))]

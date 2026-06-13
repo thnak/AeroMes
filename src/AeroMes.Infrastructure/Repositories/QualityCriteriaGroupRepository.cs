@@ -21,7 +21,7 @@ public class QualityCriteriaGroupRepository(AppDbContext db) : IQualityCriteriaG
         => db.QualityCriteriaGroups.AnyAsync(g => g.Code == code, ct);
 
     public Task<bool> HasCriteriaReferencesAsync(int groupId, CancellationToken ct)
-        => Task.FromResult(false); // criteria entity not yet implemented
+        => db.QualityCriterias.AnyAsync(c => c.GroupID == groupId, ct);
 
     public async Task<IReadOnlyList<QualityCriteriaGroupDto>> GetListAsync(
         string? keyword, bool includeInactive, CancellationToken ct)

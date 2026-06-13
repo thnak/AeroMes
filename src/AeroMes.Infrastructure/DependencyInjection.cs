@@ -148,6 +148,7 @@ public static class DependencyInjection
         services.AddScoped<IQualityInspectionVoucherRepository, QualityInspectionVoucherRepository>();
         services.AddScoped<IQualityInspectionRequestRepository, QualityInspectionRequestRepository>();
         services.AddScoped<IQualityCriteriaGroupRepository, QualityCriteriaGroupRepository>();
+        services.AddScoped<IQualityCriteriaRepository, QualityCriteriaRepository>();
         services.AddScoped<IProductionProcessRepository, ProductionProcessRepository>();
         services.AddScoped<IProductionProcessStepRepository, ProductionProcessStepRepository>();
         services.AddScoped<IScrapTransactionRepository, ScrapTransactionRepository>();

@@ -207,6 +207,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<VoucherDefectDetail> VoucherDefectDetails => Set<VoucherDefectDetail>();
     public DbSet<QualityInspectionRequest> QualityInspectionRequests => Set<QualityInspectionRequest>();
     public DbSet<QualityCriteriaGroup> QualityCriteriaGroups => Set<QualityCriteriaGroup>();
+    public DbSet<QualityCriteria> QualityCriterias => Set<QualityCriteria>();
 
     // iot schema
     public DbSet<AdapterInstance> AdapterInstances => Set<AdapterInstance>();
@@ -2691,6 +2692,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20)
                 .HasDefaultValue(CriteriaGroupStatus.Active);
+        });
+
+        b.Entity<QualityCriteria>(e =>
+        {
+            e.ToTable("QualityCriterias", "qual");
+            e.HasKey(x => x.CriteriaID);
+            e.Property(x => x.CriteriaID).UseIdentityColumn();
+            e.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.Code).IsUnique();
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.CriteriaType).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.InspectionMethod).HasMaxLength(200);
+            e.Property(x => x.MethodDescription).HasMaxLength(2000);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20)
+                .HasDefaultValue(CriteriaStatus.Active);
+            e.HasQueryFilter(x => !x.IsDeleted);
         });
     }
 
