@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   Card,
   CardContent,
   CardHeader,
@@ -16,58 +15,32 @@ import {
   Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
+  DetailPageSkeleton,
+  EmptyState,
   PageHeader,
   PageRoot,
-  SolarIcon,
 } from '../../components';
+import {
+  useGetApiV1IntegrationSalesOrdersId,
+} from '../../api/integration/integration';
+import type { ProductionOrderSummaryDto } from '../../api/model/productionOrderSummaryDto';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-interface SoLineItem {
-  line: number;
-  productCode: string;
-  productName: string;
-  orderedQty: number;
-  confirmedQty: number;
-  uom: string;
-  deliveryDate: string;
-  status: 'Confirmed' | 'In Production' | 'Shipped' | 'Pending';
-}
-
-interface LinkedProductionOrder {
-  poNo: string;
-  product: string;
-  qty: number;
-  status: 'Released' | 'In Progress' | 'Completed';
-  plannedEnd: string;
-}
-
-// ─── Mock detail data ─────────────────────────────────────────────────────────
-
-const MOCK_LINE_ITEMS: SoLineItem[] = [
-  { line: 1, productCode: 'FRM-A001', productName: 'Frame Assembly A',     orderedQty: 400, confirmedQty: 400, uom: 'EA', deliveryDate: '2026-06-30', status: 'In Production' },
-  { line: 2, productCode: 'PNL-B002', productName: 'Panel Sub-assembly B', orderedQty: 300, confirmedQty: 300, uom: 'EA', deliveryDate: '2026-06-25', status: 'In Production' },
-  { line: 3, productCode: 'SHT-C003', productName: 'Shaft Housing C',      orderedQty: 200, confirmedQty: 180, uom: 'EA', deliveryDate: '2026-06-20', status: 'Confirmed'     },
-];
-
-const MOCK_LINKED_POS: LinkedProductionOrder[] = [
-  { poNo: 'PO-2026-0045', product: 'Frame Assembly A',     qty: 400, status: 'In Progress', plannedEnd: '2026-06-28' },
-  { poNo: 'PO-2026-0046', product: 'Panel Sub-assembly B', qty: 300, status: 'Released',    plannedEnd: '2026-06-24' },
-];
-
-const LINE_STATUS_COLOR: Record<SoLineItem['status'], string> = {
-  'Confirmed':     '#1D4ED8',
-  'In Production': '#D97706',
-  'Shipped':       '#15803D',
-  'Pending':       '#94A3B8',
+const PO_STATUS_COLOR: Record<string, string> = {
+  Released:  '#1D4ED8',
+  Running:   '#D97706',
+  Paused:    '#9333EA',
+  Completed: '#15803D',
+  Cancelled: '#B91C1C',
 };
 
-const PO_STATUS_COLOR: Record<LinkedProductionOrder['status'], string> = {
-  'Released':   '#1D4ED8',
-  'In Progress': '#D97706',
-  'Completed':   '#15803D',
+const SO_STATUS_COLOR: Record<string, string> = {
+  Open:      '#94A3B8',
+  Closed:    '#475569',
+  Cancelled: '#DC2626',
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -96,28 +69,33 @@ function InfoRow({ label, value, mono = false }: { label: string; value: React.R
 
 export default function SalesOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const numId = Number(id);
 
-  // In a real app, look up by id. Here we use a fixed mock.
-  const soNo = id === '1' ? 'SO-2026-0091' : `SO-2026-00${id ?? '91'}`;
+  const { data, isLoading, isError } = useGetApiV1IntegrationSalesOrdersId(numId);
+  const so = data?.data;
+
+  if (isLoading) return <DetailPageSkeleton />;
+  if (isError || !so) {
+    return (
+      <PageRoot>
+        <EmptyState title="Sales order not found" description="This order may have been removed or the ERP sync hasn't run yet." />
+      </PageRoot>
+    );
+  }
+
+  const statusColor = SO_STATUS_COLOR[so.status] ?? '#94A3B8';
 
   return (
     <PageRoot>
       <PageHeader
-        title={soNo}
-        subtitle="JAXA Research · Delivery 30 Jun 2026"
+        title={so.soCode}
+        subtitle={[so.customerName, so.deliveryDate ? `Delivery ${new Date(so.deliveryDate).toLocaleDateString()}` : null].filter(Boolean).join(' · ')}
         breadcrumbs={[
           { label: 'Integration', href: '/integration' },
           { label: 'Sales Orders', href: '/integration/sales-orders' },
-          { label: soNo },
+          { label: so.soCode },
         ]}
-        actions={
-          <Button
-            variant="contained"
-            startIcon={<SolarIcon name="add" size={16} />}
-          >
-            Create Production Orders
-          </Button>
-        }
       />
 
       <Grid container spacing={2.5}>
@@ -130,142 +108,119 @@ export default function SalesOrderDetailPage() {
               sx={{ pb: 0 }}
             />
             <CardContent>
-              <InfoRow label="SO #"          value={soNo}                   mono />
+              <InfoRow label="SO #"          value={so.soCode}  mono />
               <Divider sx={{ my: 0.5 }} />
-              <InfoRow label="Customer Code" value="JAXA-001"               mono />
-              <InfoRow label="Customer Name" value="JAXA Research" />
+              <InfoRow label="Customer"      value={so.customerName ?? '—'} />
               <Divider sx={{ my: 0.5 }} />
-              <InfoRow label="Order Date"    value="2026-05-01" />
-              <InfoRow label="Delivery Date" value="2026-06-30" />
+              <InfoRow label="Order Date"    value={new Date(so.orderDate).toLocaleDateString()} />
+              <InfoRow
+                label="Delivery Date"
+                value={so.deliveryDate ? new Date(so.deliveryDate).toLocaleDateString() : '—'}
+              />
               <Divider sx={{ my: 0.5 }} />
               <InfoRow
                 label="Status"
                 value={
                   <Chip
-                    label="In Production"
+                    label={so.status}
                     size="small"
-                    sx={{ bgcolor: alpha('#D97706', 0.12), color: '#D97706', fontWeight: 600, fontSize: 11 }}
+                    sx={{
+                      bgcolor: alpha(statusColor, 0.12),
+                      color: statusColor,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      border: `1px solid ${alpha(statusColor, 0.25)}`,
+                    }}
                   />
                 }
               />
               <Divider sx={{ my: 0.5 }} />
-              <InfoRow label="Currency"      value="JPY" />
-              <InfoRow label="Total Value"   value="¥ 4,500,000" />
-              <Divider sx={{ my: 0.5 }} />
-              <InfoRow label="Synced from ERP" value="2026-06-12 08:14" />
+              <InfoRow label="Synced from ERP" value={new Date(so.syncedAt).toLocaleString()} />
             </CardContent>
           </Card>
         </Grid>
 
-        {/* ── Right column ─────────────────────────────────────────── */}
+        {/* ── Linked production orders ─────────────────────────────── */}
         <Grid size={{ xs: 12, md: 8 }}>
-          <Stack spacing={2.5}>
-            {/* Line items */}
-            <Card>
-              <CardHeader
-                title="Line Items"
-                titleTypographyProps={{ variant: 'subtitle2', fontWeight: 700 }}
-                sx={{ pb: 0 }}
-              />
-              <CardContent sx={{ p: '0 !important' }}>
-                <Box sx={{ overflowX: 'auto' }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow sx={{ '& th': { bgcolor: (t) => alpha(t.palette.primary.main, 0.04), fontWeight: 600, fontSize: 12 } }}>
-                        <TableCell>Line</TableCell>
-                        <TableCell>Product Code</TableCell>
-                        <TableCell>Product Name</TableCell>
-                        <TableCell align="right">Ordered</TableCell>
-                        <TableCell align="right">Confirmed</TableCell>
-                        <TableCell>UOM</TableCell>
-                        <TableCell>Delivery</TableCell>
-                        <TableCell>Status</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {MOCK_LINE_ITEMS.map((item) => (
-                        <TableRow key={item.line} hover>
-                          <TableCell>{item.line}</TableCell>
-                          <TableCell>
-                            <Typography variant="caption" sx={{ fontFamily: 'ui-monospace, monospace', fontWeight: 600 }}>
-                              {item.productCode}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>{item.productName}</TableCell>
-                          <TableCell align="right">{item.orderedQty.toLocaleString()}</TableCell>
-                          <TableCell align="right">{item.confirmedQty.toLocaleString()}</TableCell>
-                          <TableCell>{item.uom}</TableCell>
-                          <TableCell>{item.deliveryDate}</TableCell>
-                          <TableCell>
-                            <Chip
-                              label={item.status}
-                              size="small"
-                              sx={{
-                                bgcolor: alpha(LINE_STATUS_COLOR[item.status], 0.12),
-                                color: LINE_STATUS_COLOR[item.status],
-                                fontWeight: 600,
-                                fontSize: 11,
-                              }}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+          <Card>
+            <CardHeader
+              title="Linked Production Orders"
+              titleTypographyProps={{ variant: 'subtitle2', fontWeight: 700 }}
+              sx={{ pb: 0 }}
+            />
+            <CardContent sx={{ p: '0 !important' }}>
+              {so.productionOrders.length === 0 ? (
+                <Box sx={{ p: 3 }}>
+                  <Typography variant="body2" color="text.secondary" align="center">
+                    No production orders linked to this sales order.
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
-
-            {/* Linked production orders */}
-            <Card>
-              <CardHeader
-                title="Linked Production Orders"
-                titleTypographyProps={{ variant: 'subtitle2', fontWeight: 700 }}
-                sx={{ pb: 0 }}
-              />
-              <CardContent sx={{ p: '0 !important' }}>
+              ) : (
                 <Box sx={{ overflowX: 'auto' }}>
                   <Table size="small">
                     <TableHead>
                       <TableRow sx={{ '& th': { bgcolor: (t) => alpha(t.palette.primary.main, 0.04), fontWeight: 600, fontSize: 12 } }}>
                         <TableCell>PO #</TableCell>
                         <TableCell>Product</TableCell>
-                        <TableCell align="right">Qty</TableCell>
+                        <TableCell align="right">Target Qty</TableCell>
                         <TableCell>Status</TableCell>
+                        <TableCell>Planned Start</TableCell>
                         <TableCell>Planned End</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {MOCK_LINKED_POS.map((po) => (
-                        <TableRow key={po.poNo} hover>
-                          <TableCell>
-                            <Typography variant="caption" sx={{ fontFamily: 'ui-monospace, monospace', fontWeight: 600 }}>
-                              {po.poNo}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>{po.product}</TableCell>
-                          <TableCell align="right">{po.qty.toLocaleString()} EA</TableCell>
-                          <TableCell>
-                            <Chip
-                              label={po.status}
-                              size="small"
-                              sx={{
-                                bgcolor: alpha(PO_STATUS_COLOR[po.status], 0.12),
-                                color: PO_STATUS_COLOR[po.status],
-                                fontWeight: 600,
-                                fontSize: 11,
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell>{po.plannedEnd}</TableCell>
-                        </TableRow>
-                      ))}
+                      {so.productionOrders.map((po: ProductionOrderSummaryDto) => {
+                        const color = PO_STATUS_COLOR[po.status] ?? '#94A3B8';
+                        return (
+                          <TableRow
+                            key={String(po.poid)}
+                            hover
+                            sx={{ cursor: 'pointer' }}
+                            onClick={() => navigate(`/integration/production-orders/${po.poid}`)}
+                          >
+                            <TableCell>
+                              <Typography variant="caption" sx={{ fontFamily: 'ui-monospace, monospace', fontWeight: 600 }}>
+                                {po.poCode}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="caption" sx={{ fontFamily: 'ui-monospace, monospace', fontWeight: 600, color: 'primary.main' }}>
+                                {po.productCode}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="right">{Number(po.targetQuantity).toLocaleString()} EA</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={po.status}
+                                size="small"
+                                sx={{
+                                  bgcolor: alpha(color, 0.12),
+                                  color,
+                                  fontWeight: 600,
+                                  fontSize: 11,
+                                  border: `1px solid ${alpha(color, 0.25)}`,
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" sx={{ fontSize: 12 }}>
+                                {po.plannedStartDate ? new Date(po.plannedStartDate).toLocaleDateString() : '—'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" sx={{ fontSize: 12 }}>
+                                {po.plannedEndDate ? new Date(po.plannedEndDate).toLocaleDateString() : '—'}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </Box>
-              </CardContent>
-            </Card>
-          </Stack>
+              )}
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
     </PageRoot>

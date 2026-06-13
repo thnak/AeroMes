@@ -1,11 +1,11 @@
 import {
+  Alert,
   Box,
   Button,
   Chip,
   FormControlLabel,
   Grid,
   IconButton,
-  MenuItem,
   Stack,
   Switch,
   TextField,
@@ -19,6 +19,7 @@ import { useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ConfirmDialog,
   EmptyState,
@@ -28,61 +29,26 @@ import {
   PageRoot,
   RefreshButton,
   SolarIcon,
+  TablePageSkeleton,
   TableToolbar,
 } from '../../components';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Operation {
-  id: string;
-  code: string;
-  name: string;
-  machineType: string;
-  setupTimeMin: number;
-  cycleTimeSec: number;
-  isActive: boolean;
-  description?: string;
-}
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const MOCK_OPERATIONS: Operation[] = [
-  { id: '1',  code: 'OP-001', name: 'CNC Turning',       machineType: 'Lathe',      setupTimeMin: 30,  cycleTimeSec: 45,  isActive: true,  description: 'CNC turning for cylindrical parts.' },
-  { id: '2',  code: 'OP-002', name: 'CNC Milling',       machineType: 'Mill',       setupTimeMin: 45,  cycleTimeSec: 120, isActive: true,  description: 'CNC milling for prismatic parts.' },
-  { id: '3',  code: 'OP-003', name: 'MIG Welding',       machineType: 'Welding',    setupTimeMin: 20,  cycleTimeSec: 180, isActive: true,  description: 'MIG/MAG welding operation.' },
-  { id: '4',  code: 'OP-004', name: 'Visual Inspection', machineType: 'Inspection', setupTimeMin: 5,   cycleTimeSec: 60,  isActive: true,  description: 'Visual quality inspection.' },
-  { id: '5',  code: 'OP-005', name: 'Painting',          machineType: 'Painting',   setupTimeMin: 30,  cycleTimeSec: 300, isActive: true,  description: 'Surface painting and coating.' },
-  { id: '6',  code: 'OP-006', name: 'Assembly A',        machineType: 'Assembly',   setupTimeMin: 15,  cycleTimeSec: 240, isActive: true,  description: 'Standard assembly operation A.' },
-  { id: '7',  code: 'OP-007', name: 'Pressing',          machineType: 'Press',      setupTimeMin: 25,  cycleTimeSec: 30,  isActive: true,  description: 'Stamping and pressing operation.' },
-  { id: '8',  code: 'OP-008', name: 'Deburring',         machineType: 'Manual',     setupTimeMin: 10,  cycleTimeSec: 90,  isActive: true,  description: 'Manual deburring and edge cleanup.' },
-  { id: '9',  code: 'OP-009', name: 'Heat Treatment',    machineType: 'Furnace',    setupTimeMin: 120, cycleTimeSec: 0,   isActive: true,  description: 'Batch heat treatment (cycle time is batch-based).' },
-  { id: '10', code: 'OP-010', name: 'CMM Inspection',    machineType: 'Inspection', setupTimeMin: 10,  cycleTimeSec: 180, isActive: false, description: 'CMM dimensional inspection.' },
-];
-
-const MACHINE_TYPES = [...new Set(MOCK_OPERATIONS.map((o) => o.machineType))].sort();
-
-const TYPE_COLORS: Record<string, string> = {
-  Lathe:      '#1D4ED8',
-  Mill:       '#0D9488',
-  Welding:    '#D97706',
-  Inspection: '#7C3AED',
-  Painting:   '#DC2626',
-  Assembly:   '#15803D',
-  Press:      '#374151',
-  Manual:     '#64748B',
-  Furnace:    '#B45309',
-};
+import {
+  useGetApiV1Operations,
+  getGetApiV1OperationsQueryKey,
+  postApiV1Operations,
+  putApiV1OperationsCode,
+  deleteApiV1OperationsCode,
+} from '../../api/operations/operations';
+import type { OperationDto } from '../../api/model';
+import { getErrorMessage } from '../../lib/apiClient';
 
 // ─── Form schema ──────────────────────────────────────────────────────────────
 
 const OperationSchema = z.object({
-  code:         z.string().min(1, 'Code is required').max(20),
-  name:         z.string().min(1, 'Name is required').max(200),
-  machineType:  z.string().min(1, 'Machine type is required'),
-  setupTimeMin: z.number().min(0),
-  cycleTimeSec: z.number().min(0),
-  description:  z.string().optional(),
-  isActive:     z.boolean(),
+  code:        z.string().min(1, 'Code is required').max(20),
+  name:        z.string().min(1, 'Name is required').max(200),
+  description: z.string().optional(),
+  isActive:    z.boolean(),
 });
 
 type OperationFormValues = z.infer<typeof OperationSchema>;
@@ -91,16 +57,16 @@ type OperationFormValues = z.infer<typeof OperationSchema>;
 
 function OperationForm({
   defaultValues,
+  isEdit,
   onSubmit,
-  loading: _loading,
 }: {
   defaultValues: Partial<OperationFormValues>;
+  isEdit: boolean;
   onSubmit: (data: OperationFormValues) => void;
-  loading: boolean;
 }) {
   const { register, control, handleSubmit, formState: { errors } } = useForm<OperationFormValues>({
     resolver: zodResolver(OperationSchema),
-    defaultValues: { isActive: true, setupTimeMin: 0, cycleTimeSec: 0, ...defaultValues },
+    defaultValues: { isActive: true, ...defaultValues },
   });
 
   return (
@@ -112,6 +78,7 @@ function OperationForm({
             label="Operation Code"
             fullWidth
             required
+            disabled={isEdit}
             error={!!errors.code}
             helperText={errors.code?.message}
             slotProps={{ htmlInput: { style: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } } }}
@@ -119,22 +86,14 @@ function OperationForm({
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
-            name="machineType"
+            name="isActive"
             control={control}
             render={({ field }) => (
-              <TextField
-                {...field}
-                select
-                label="Machine Type"
-                fullWidth
-                required
-                error={!!errors.machineType}
-                helperText={errors.machineType?.message}
-              >
-                {MACHINE_TYPES.map((t) => (
-                  <MenuItem key={t} value={t}>{t}</MenuItem>
-                ))}
-              </TextField>
+              <FormControlLabel
+                control={<Switch checked={field.value} onChange={field.onChange} color="primary" />}
+                label="Active"
+                sx={{ mt: 1, ml: 0 }}
+              />
             )}
           />
         </Grid>
@@ -146,41 +105,6 @@ function OperationForm({
             required
             error={!!errors.name}
             helperText={errors.name?.message}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <TextField
-            {...register('setupTimeMin', { valueAsNumber: true })}
-            label="Setup Time (min)"
-            fullWidth
-            required
-            type="number"
-            error={!!errors.setupTimeMin}
-            helperText={errors.setupTimeMin?.message}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <TextField
-            {...register('cycleTimeSec', { valueAsNumber: true })}
-            label="Cycle Time (sec)"
-            fullWidth
-            required
-            type="number"
-            error={!!errors.cycleTimeSec}
-            helperText={errors.cycleTimeSec?.message}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Controller
-            name="isActive"
-            control={control}
-            render={({ field }) => (
-              <FormControlLabel
-                control={<Switch checked={field.value} onChange={field.onChange} color="primary" />}
-                label="Active"
-                sx={{ mt: 0.5, ml: 0 }}
-              />
-            )}
           />
         </Grid>
         <Grid size={{ xs: 12 }}>
@@ -203,104 +127,80 @@ function OperationForm({
 type DrawerMode = 'create' | 'edit';
 
 export default function OperationsPage() {
-  const [rows, setRows]                   = useState<Operation[]>(MOCK_OPERATIONS);
-  const [search, setSearch]               = useState('');
-  const [typeFilter, setTypeFilter]       = useState('');
-  const [statusFilter, setStatusFilter]   = useState('');
-  const [selection, setSelection]         = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
-  const [drawerOpen, setDrawerOpen]       = useState(false);
-  const [drawerMode, setDrawerMode]       = useState<DrawerMode>('create');
-  const [editTarget, setEditTarget]       = useState<Operation | null>(null);
-  const [deleteTarget, setDeleteTarget]   = useState<Operation | null>(null);
-  const [saving, setSaving]               = useState(false);
+  const queryClient = useQueryClient();
+
+  const [search, setSearch]             = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [selection, setSelection]       = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
+  const [drawerOpen, setDrawerOpen]     = useState(false);
+  const [drawerMode, setDrawerMode]     = useState<DrawerMode>('create');
+  const [editTarget, setEditTarget]     = useState<OperationDto | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<OperationDto | null>(null);
+  const [saveError, setSaveError]       = useState('');
+
+  const { data: operations = [], isLoading, error, refetch } = useGetApiV1Operations();
 
   const filtered = useMemo(() => {
-    let r = rows;
-    if (search)       r = r.filter((o) => o.name.toLowerCase().includes(search.toLowerCase()) || o.code.toLowerCase().includes(search.toLowerCase()));
-    if (typeFilter)   r = r.filter((o) => o.machineType === typeFilter);
+    let r = operations;
+    if (search)       r = r.filter((o) => o.operationName.toLowerCase().includes(search.toLowerCase()) || o.operationCode.toLowerCase().includes(search.toLowerCase()));
     if (statusFilter) r = r.filter((o) => statusFilter === 'active' ? o.isActive : !o.isActive);
     return r;
-  }, [rows, search, typeFilter, statusFilter]);
+  }, [operations, search, statusFilter]);
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getGetApiV1OperationsQueryKey() });
+
+  const createMutation = useMutation({
+    mutationFn: (data: OperationFormValues) =>
+      postApiV1Operations({ code: data.code, name: data.name, description: data.description ?? null }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: OperationFormValues) =>
+      putApiV1OperationsCode(editTarget!.operationCode, { name: data.name, description: data.description ?? null }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (code: string) => deleteApiV1OperationsCode(code),
+    onSuccess: () => { invalidate(); setDeleteTarget(null); },
+  });
+
+  const saving = createMutation.isPending || updateMutation.isPending;
+
+  function openCreate() { setSaveError(''); setDrawerMode('create'); setEditTarget(null); setDrawerOpen(true); }
+  function openEdit(o: OperationDto) { setSaveError(''); setDrawerMode('edit'); setEditTarget(o); setDrawerOpen(true); }
+
+  function handleSave(data: OperationFormValues) {
+    setSaveError('');
+    if (drawerMode === 'create') createMutation.mutate(data);
+    else updateMutation.mutate(data);
+  }
 
   const selectedIds = selection.type === 'include' ? selection.ids : new Set<string | number>();
 
-  function openCreate() { setDrawerMode('create'); setEditTarget(null); setDrawerOpen(true); }
-  function openEdit(o: Operation) { setDrawerMode('edit'); setEditTarget(o); setDrawerOpen(true); }
-
-  function handleSave(data: OperationFormValues) {
-    setSaving(true);
-    setTimeout(() => {
-      if (drawerMode === 'create') {
-        setRows((prev) => [...prev, { id: String(Date.now()), ...data }]);
-      } else if (editTarget) {
-        setRows((prev) => prev.map((o) => o.id === editTarget.id ? { ...o, ...data } : o));
-      }
-      setSaving(false);
-      setDrawerOpen(false);
-    }, 800);
-  }
-
-  function handleDelete() {
-    if (deleteTarget) {
-      setRows((prev) => prev.filter((o) => o.id !== deleteTarget.id));
-      setDeleteTarget(null);
-    }
-  }
-
-  const columns: GridColDef<Operation>[] = [
+  const columns: GridColDef<OperationDto>[] = [
     {
-      field: 'code',
+      field: 'operationCode',
       headerName: 'Code',
-      width: 110,
-      renderCell: (params: GridRenderCellParams<Operation>) => (
+      width: 130,
+      renderCell: (params: GridRenderCellParams<OperationDto>) => (
         <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 600, color: 'primary.main' }}>
           {params.value}
         </Typography>
       ),
     },
-    { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
+    { field: 'operationName', headerName: 'Name', flex: 1, minWidth: 160 },
     {
-      field: 'machineType',
-      headerName: 'Machine Type',
-      width: 130,
-      renderCell: (params: GridRenderCellParams<Operation>) => {
-        const color = TYPE_COLORS[params.value as string] ?? '#64748B';
-        return (
-          <Chip
-            label={params.value}
-            size="small"
-            sx={{
-              height: 20,
-              fontSize: '0.6875rem',
-              fontWeight: 600,
-              bgcolor: alpha(color, 0.1),
-              color,
-              border: 'none',
-              '& .MuiChip-label': { px: 0.75 },
-            }}
-          />
-        );
-      },
-    },
-    {
-      field: 'setupTimeMin',
-      headerName: 'Setup Time',
-      width: 110,
-      align: 'right',
-      headerAlign: 'right',
-      renderCell: (params: GridRenderCellParams<Operation>) => (
-        <Typography variant="body2" sx={{ fontSize: 12 }}>{params.value} min</Typography>
-      ),
-    },
-    {
-      field: 'cycleTimeSec',
-      headerName: 'Cycle Time',
-      width: 110,
-      align: 'right',
-      headerAlign: 'right',
-      renderCell: (params: GridRenderCellParams<Operation>) => (
-        <Typography variant="body2" sx={{ fontSize: 12 }}>
-          {(params.value as number) > 0 ? `${params.value} sec` : 'Batch'}
+      field: 'description',
+      headerName: 'Description',
+      flex: 1,
+      minWidth: 200,
+      renderCell: (params: GridRenderCellParams<OperationDto>) => (
+        <Typography variant="body2" sx={{ fontSize: 12, color: params.value ? 'text.primary' : 'text.disabled', fontStyle: params.value ? 'normal' : 'italic' }}>
+          {params.value ?? 'No description'}
         </Typography>
       ),
     },
@@ -310,7 +210,7 @@ export default function OperationsPage() {
       width: 90,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (params: GridRenderCellParams<Operation>) => (
+      renderCell: (params: GridRenderCellParams<OperationDto>) => (
         <Chip
           label={params.value ? 'Active' : 'Inactive'}
           size="small"
@@ -332,7 +232,7 @@ export default function OperationsPage() {
       width: 80,
       sortable: false,
       align: 'center',
-      renderCell: (params: GridRenderCellParams<Operation>) => (
+      renderCell: (params: GridRenderCellParams<OperationDto>) => (
         <Stack direction="row" spacing={0.25}>
           <Tooltip title="Edit">
             <IconButton size="small" onClick={() => openEdit(params.row)} sx={{ color: 'text.secondary' }}>
@@ -349,11 +249,19 @@ export default function OperationsPage() {
     },
   ];
 
+  if (isLoading) return <TablePageSkeleton />;
+  if (error) return (
+    <PageRoot>
+      <PageHeader title="Operations" breadcrumbs={[{ label: 'Master Data' }, { label: 'Operations' }]} />
+      <EmptyState icon="emptyTable" title="Failed to load operations" description={getErrorMessage(error)} />
+    </PageRoot>
+  );
+
   return (
     <PageRoot>
       <PageHeader
         title="Operations"
-        subtitle="Define production operations with setup times, cycle times, and machine types"
+        subtitle="Define production operations referenced in routings"
         breadcrumbs={[{ label: 'Master Data' }, { label: 'Operations' }]}
         actions={
           <>
@@ -375,12 +283,6 @@ export default function OperationsPage() {
         searchPlaceholder="Search code or name…"
         filters={[
           {
-            label: 'Machine Type',
-            value: typeFilter,
-            options: MACHINE_TYPES.map((t) => ({ label: t, value: t })),
-            onChange: setTypeFilter,
-          },
-          {
             label: 'Status',
             value: statusFilter,
             options: [{ label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' }],
@@ -391,7 +293,7 @@ export default function OperationsPage() {
         actions={
           <Stack direction="row" spacing={0.5}>
             <ExportButton />
-            <RefreshButton />
+            <RefreshButton onClick={() => refetch()} />
           </Stack>
         }
       />
@@ -399,6 +301,7 @@ export default function OperationsPage() {
       <Box sx={{ flex: 1, minHeight: 400 }}>
         <DataGrid
           rows={filtered}
+          getRowId={(row) => row.operationCode}
           columns={columns}
           density="compact"
           checkboxSelection
@@ -410,10 +313,10 @@ export default function OperationsPage() {
           slots={{
             noRowsOverlay: () => (
               <EmptyState
-                icon={search || typeFilter || statusFilter ? 'emptySearch' : 'emptyTable'}
-                title={search || typeFilter || statusFilter ? 'No operations match your filters' : 'No operations yet'}
-                description={search || typeFilter || statusFilter ? 'Try adjusting your search or filters.' : 'Add your first operation to get started.'}
-                action={!search && !typeFilter && !statusFilter ? (
+                icon={search || statusFilter ? 'emptySearch' : 'emptyTable'}
+                title={search || statusFilter ? 'No operations match your filters' : 'No operations yet'}
+                description={search || statusFilter ? 'Try adjusting your search or filters.' : 'Add your first operation to get started.'}
+                action={!search && !statusFilter ? (
                   <Button variant="contained" size="small" onClick={openCreate}>Add Operation</Button>
                 ) : undefined}
                 compact
@@ -433,33 +336,40 @@ export default function OperationsPage() {
       <FormDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title={drawerMode === 'create' ? 'New Operation' : `Edit ${editTarget?.code}`}
-        subtitle={drawerMode === 'create' ? 'Enter operation details below' : editTarget?.name}
+        title={drawerMode === 'create' ? 'New Operation' : `Edit ${editTarget?.operationCode}`}
+        subtitle={drawerMode === 'create' ? 'Enter operation details below' : editTarget?.operationName}
         onSubmit={() => document.getElementById('op-form')?.dispatchEvent(new Event('submit', { bubbles: true }))}
         submitLabel={drawerMode === 'create' ? 'Create Operation' : 'Save Changes'}
         loading={saving}
       >
+        {saveError && <Alert severity="error" sx={{ mb: 2 }}>{saveError}</Alert>}
         <OperationForm
-          key={editTarget?.id ?? 'new'}
-          defaultValues={editTarget ?? {}}
+          key={editTarget?.operationCode ?? 'new'}
+          isEdit={drawerMode === 'edit'}
+          defaultValues={editTarget ? {
+            code:        editTarget.operationCode,
+            name:        editTarget.operationName,
+            description: editTarget.description ?? undefined,
+            isActive:    editTarget.isActive,
+          } : {}}
           onSubmit={handleSave}
-          loading={saving}
         />
       </FormDrawer>
 
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.operationCode)}
         title="Delete Operation"
         description={
           <>
-            Delete <strong>{deleteTarget?.name}</strong> ({deleteTarget?.code})?
+            Delete <strong>{deleteTarget?.operationName}</strong> ({deleteTarget?.operationCode})?
             This cannot be undone and may affect routings that reference this operation.
           </>
         }
         confirmLabel="Delete"
         confirmColor="error"
+        loading={deleteMutation.isPending}
       />
     </PageRoot>
   );

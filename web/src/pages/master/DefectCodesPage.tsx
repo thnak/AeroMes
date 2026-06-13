@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -19,6 +20,7 @@ import { useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ConfirmDialog,
   EmptyState,
@@ -28,42 +30,24 @@ import {
   PageRoot,
   RefreshButton,
   SolarIcon,
+  TablePageSkeleton,
   TableToolbar,
 } from '../../components';
+import {
+  useGetApiV1QualityDefectCodes,
+  getGetApiV1QualityDefectCodesQueryKey,
+  postApiV1QualityDefectCodes,
+  putApiV1QualityDefectCodesId,
+  deleteApiV1QualityDefectCodesId,
+} from '../../api/defect-codes/defect-codes';
+import type { DefectCodeDto } from '../../api/model';
+import { getErrorMessage } from '../../lib/apiClient';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-type DefectCategory = 'Dimensional' | 'Visual' | 'Functional' | 'Material' | 'Process';
+const CATEGORIES = ['Dimensional', 'Visual', 'Functional', 'Material', 'Process'] as const;
 
-interface DefectCode {
-  id: string;
-  code: string;
-  name: string;
-  category: DefectCategory;
-  description?: string;
-  isActive: boolean;
-}
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const MOCK_DEFECT_CODES: DefectCode[] = [
-  { id: '1',  code: 'DC-001', name: 'Scratch Surface',   category: 'Visual',      description: 'Visible surface scratch on finished area.',    isActive: true  },
-  { id: '2',  code: 'DC-002', name: 'Dimension OOT',     category: 'Dimensional', description: 'Dimension out of tolerance per drawing spec.',  isActive: true  },
-  { id: '3',  code: 'DC-003', name: 'Weld Porosity',     category: 'Process',     description: 'Gas pores detected in weld joint.',            isActive: true  },
-  { id: '4',  code: 'DC-004', name: 'Burr Present',      category: 'Visual',      description: 'Sharp burr remaining on machined edge.',        isActive: true  },
-  { id: '5',  code: 'DC-005', name: 'Wrong Material',    category: 'Material',    description: 'Incorrect material used for part.',             isActive: true  },
-  { id: '6',  code: 'DC-006', name: 'Assembly Gap',      category: 'Functional',  description: 'Gap between mating parts exceeds specification.',isActive: true  },
-  { id: '7',  code: 'DC-007', name: 'Delamination',      category: 'Material',    description: 'Layer separation in composite or coated part.', isActive: true  },
-  { id: '8',  code: 'DC-008', name: 'Oxidation',         category: 'Visual',      description: 'Surface oxidation or rust on metal part.',      isActive: true  },
-  { id: '9',  code: 'DC-009', name: 'Misalignment',      category: 'Dimensional', description: 'Part misaligned during assembly operation.',    isActive: true  },
-  { id: '10', code: 'DC-010', name: 'Incomplete Paint',  category: 'Visual',      description: 'Paint coverage insufficient per spec.',         isActive: true  },
-  { id: '11', code: 'DC-011', name: 'Crack',             category: 'Material',    description: 'Structural crack detected in part.',            isActive: true  },
-  { id: '12', code: 'DC-012', name: 'Thread Damage',     category: 'Functional',  description: 'Thread stripped, cross-threaded, or damaged.',  isActive: false },
-];
-
-const CATEGORIES: DefectCategory[] = ['Dimensional', 'Visual', 'Functional', 'Material', 'Process'];
-
-const CATEGORY_COLORS: Record<DefectCategory, string> = {
+const CATEGORY_COLORS: Record<string, string> = {
   Dimensional: '#1D4ED8',
   Visual:      '#D97706',
   Functional:  '#DC2626',
@@ -74,11 +58,11 @@ const CATEGORY_COLORS: Record<DefectCategory, string> = {
 // ─── Form schema ──────────────────────────────────────────────────────────────
 
 const DefectCodeSchema = z.object({
-  code:        z.string().min(1, 'Code is required').max(20),
-  name:        z.string().min(1, 'Name is required').max(200),
-  category:    z.enum(['Dimensional', 'Visual', 'Functional', 'Material', 'Process']),
-  description: z.string().optional(),
-  isActive:    z.boolean(),
+  code:     z.string().min(1, 'Code is required').max(30)
+    .regex(/^[A-Za-z0-9\-_]+$/, 'Letters, digits, hyphens, and underscores only'),
+  name:     z.string().min(1, 'Name is required').max(150),
+  category: z.string().max(100).optional(),
+  isActive: z.boolean(),
 });
 
 type DefectCodeFormValues = z.infer<typeof DefectCodeSchema>;
@@ -87,12 +71,12 @@ type DefectCodeFormValues = z.infer<typeof DefectCodeSchema>;
 
 function DefectCodeForm({
   defaultValues,
+  isEdit,
   onSubmit,
-  loading: _loading,
 }: {
   defaultValues: Partial<DefectCodeFormValues>;
+  isEdit: boolean;
   onSubmit: (data: DefectCodeFormValues) => void;
-  loading: boolean;
 }) {
   const { register, control, handleSubmit, formState: { errors } } = useForm<DefectCodeFormValues>({
     resolver: zodResolver(DefectCodeSchema),
@@ -108,6 +92,7 @@ function DefectCodeForm({
             label="Defect Code"
             fullWidth
             required
+            disabled={isEdit}
             error={!!errors.code}
             helperText={errors.code?.message}
             slotProps={{ htmlInput: { style: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } } }}
@@ -120,13 +105,14 @@ function DefectCodeForm({
             render={({ field }) => (
               <TextField
                 {...field}
+                value={field.value ?? ''}
                 select
                 label="Category"
                 fullWidth
-                required
                 error={!!errors.category}
                 helperText={errors.category?.message}
               >
+                <MenuItem value=""><em>None</em></MenuItem>
                 {CATEGORIES.map((c) => (
                   <MenuItem key={c} value={c}>{c}</MenuItem>
                 ))}
@@ -144,29 +130,21 @@ function DefectCodeForm({
             helperText={errors.name?.message}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Controller
-            name="isActive"
-            control={control}
-            render={({ field }) => (
-              <FormControlLabel
-                control={<Switch checked={field.value} onChange={field.onChange} color="primary" />}
-                label="Active"
-                sx={{ mt: 0.5, ml: 0 }}
-              />
-            )}
-          />
-        </Grid>
-        <Grid size={{ xs: 12 }}>
-          <TextField
-            {...register('description')}
-            label="Description"
-            fullWidth
-            multiline
-            rows={3}
-            placeholder="Optional description of this defect type…"
-          />
-        </Grid>
+        {isEdit && (
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller
+              name="isActive"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={<Switch checked={field.value} onChange={field.onChange} color="primary" />}
+                  label="Active"
+                  sx={{ mt: 0.5, ml: 0 }}
+                />
+              )}
+            />
+          </Grid>
+        )}
       </Grid>
     </Box>
   );
@@ -177,68 +155,86 @@ function DefectCodeForm({
 type DrawerMode = 'create' | 'edit';
 
 export default function DefectCodesPage() {
-  const [rows, setRows]                     = useState<DefectCode[]>(MOCK_DEFECT_CODES);
-  const [search, setSearch]                 = useState('');
+  const queryClient = useQueryClient();
+
+  const [search, setSearch]             = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [statusFilter, setStatusFilter]     = useState('');
-  const [selection, setSelection]           = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
-  const [drawerOpen, setDrawerOpen]         = useState(false);
-  const [drawerMode, setDrawerMode]         = useState<DrawerMode>('create');
-  const [editTarget, setEditTarget]         = useState<DefectCode | null>(null);
-  const [deleteTarget, setDeleteTarget]     = useState<DefectCode | null>(null);
-  const [saving, setSaving]                 = useState(false);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [selection, setSelection]       = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
+  const [drawerOpen, setDrawerOpen]     = useState(false);
+  const [drawerMode, setDrawerMode]     = useState<DrawerMode>('create');
+  const [editTarget, setEditTarget]     = useState<DefectCodeDto | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DefectCodeDto | null>(null);
+  const [saveError, setSaveError]       = useState('');
+
+  const { data: defectCodes = [], isLoading, error, refetch } =
+    useGetApiV1QualityDefectCodes({ activeOnly: false });
 
   const filtered = useMemo(() => {
-    let r = rows;
-    if (search)         r = r.filter((d) => d.name.toLowerCase().includes(search.toLowerCase()) || d.code.toLowerCase().includes(search.toLowerCase()));
-    if (categoryFilter) r = r.filter((d) => d.category === categoryFilter);
+    let r = defectCodes;
+    if (search)         r = r.filter((d) => d.defectName.toLowerCase().includes(search.toLowerCase()) || d.code.toLowerCase().includes(search.toLowerCase()));
+    if (categoryFilter) r = r.filter((d) => d.defectCategory === categoryFilter);
     if (statusFilter)   r = r.filter((d) => statusFilter === 'active' ? d.isActive : !d.isActive);
     return r;
-  }, [rows, search, categoryFilter, statusFilter]);
+  }, [defectCodes, search, categoryFilter, statusFilter]);
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getGetApiV1QualityDefectCodesQueryKey({ activeOnly: false }) });
+
+  const createMutation = useMutation({
+    mutationFn: (data: DefectCodeFormValues) =>
+      postApiV1QualityDefectCodes({ code: data.code, defectName: data.name, defectCategory: data.category ?? null }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: DefectCodeFormValues) =>
+      putApiV1QualityDefectCodesId(Number(editTarget!.defectCodeId), {
+        defectName: data.name,
+        defectCategory: data.category ?? null,
+        isActive: data.isActive,
+      }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteApiV1QualityDefectCodesId(id),
+    onSuccess: () => { invalidate(); setDeleteTarget(null); },
+  });
+
+  const saving = createMutation.isPending || updateMutation.isPending;
+
+  function openCreate() { setSaveError(''); setDrawerMode('create'); setEditTarget(null); setDrawerOpen(true); }
+  function openEdit(d: DefectCodeDto) { setSaveError(''); setDrawerMode('edit'); setEditTarget(d); setDrawerOpen(true); }
+
+  function handleSave(data: DefectCodeFormValues) {
+    setSaveError('');
+    if (drawerMode === 'create') createMutation.mutate(data);
+    else updateMutation.mutate(data);
+  }
 
   const selectedIds = selection.type === 'include' ? selection.ids : new Set<string | number>();
 
-  function openCreate() { setDrawerMode('create'); setEditTarget(null); setDrawerOpen(true); }
-  function openEdit(d: DefectCode) { setDrawerMode('edit'); setEditTarget(d); setDrawerOpen(true); }
-
-  function handleSave(data: DefectCodeFormValues) {
-    setSaving(true);
-    setTimeout(() => {
-      if (drawerMode === 'create') {
-        setRows((prev) => [...prev, { id: String(Date.now()), ...data }]);
-      } else if (editTarget) {
-        setRows((prev) => prev.map((d) => d.id === editTarget.id ? { ...d, ...data } : d));
-      }
-      setSaving(false);
-      setDrawerOpen(false);
-    }, 800);
-  }
-
-  function handleDelete() {
-    if (deleteTarget) {
-      setRows((prev) => prev.filter((d) => d.id !== deleteTarget.id));
-      setDeleteTarget(null);
-    }
-  }
-
-  const columns: GridColDef<DefectCode>[] = [
+  const columns: GridColDef<DefectCodeDto>[] = [
     {
       field: 'code',
       headerName: 'Code',
       width: 110,
-      renderCell: (params: GridRenderCellParams<DefectCode>) => (
+      renderCell: (params: GridRenderCellParams<DefectCodeDto>) => (
         <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 600, color: 'primary.main' }}>
           {params.value}
         </Typography>
       ),
     },
-    { field: 'name', headerName: 'Name', width: 200 },
+    { field: 'defectName', headerName: 'Name', width: 200 },
     {
-      field: 'category',
+      field: 'defectCategory',
       headerName: 'Category',
       width: 130,
-      renderCell: (params: GridRenderCellParams<DefectCode>) => {
-        const color = CATEGORY_COLORS[params.value as DefectCategory] ?? '#64748B';
+      renderCell: (params: GridRenderCellParams<DefectCodeDto>) => {
+        if (!params.value) return <Typography variant="body2" color="text.disabled" sx={{ fontSize: 12, fontStyle: 'italic' }}>—</Typography>;
+        const color = CATEGORY_COLORS[params.value as string] ?? '#64748B';
         return (
           <Chip
             label={params.value}
@@ -257,23 +253,12 @@ export default function DefectCodesPage() {
       },
     },
     {
-      field: 'description',
-      headerName: 'Description',
-      flex: 1,
-      minWidth: 200,
-      renderCell: (params: GridRenderCellParams<DefectCode>) => (
-        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {params.value ?? '—'}
-        </Typography>
-      ),
-    },
-    {
       field: 'isActive',
       headerName: 'Status',
       width: 90,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (params: GridRenderCellParams<DefectCode>) => (
+      renderCell: (params: GridRenderCellParams<DefectCodeDto>) => (
         <Chip
           label={params.value ? 'Active' : 'Inactive'}
           size="small"
@@ -295,7 +280,7 @@ export default function DefectCodesPage() {
       width: 80,
       sortable: false,
       align: 'center',
-      renderCell: (params: GridRenderCellParams<DefectCode>) => (
+      renderCell: (params: GridRenderCellParams<DefectCodeDto>) => (
         <Stack direction="row" spacing={0.25}>
           <Tooltip title="Edit">
             <IconButton size="small" onClick={() => openEdit(params.row)} sx={{ color: 'text.secondary' }}>
@@ -311,6 +296,14 @@ export default function DefectCodesPage() {
       ),
     },
   ];
+
+  if (isLoading) return <TablePageSkeleton />;
+  if (error) return (
+    <PageRoot>
+      <PageHeader title="Defect Codes" breadcrumbs={[{ label: 'Master Data' }, { label: 'Defect Codes' }]} />
+      <EmptyState icon="emptyTable" title="Failed to load defect codes" description={getErrorMessage(error)} />
+    </PageRoot>
+  );
 
   return (
     <PageRoot>
@@ -354,7 +347,7 @@ export default function DefectCodesPage() {
         actions={
           <Stack direction="row" spacing={0.5}>
             <ExportButton />
-            <RefreshButton />
+            <RefreshButton onClick={() => refetch()} />
           </Stack>
         }
       />
@@ -362,6 +355,7 @@ export default function DefectCodesPage() {
       <Box sx={{ flex: 1, minHeight: 400 }}>
         <DataGrid
           rows={filtered}
+          getRowId={(row) => row.defectCodeId}
           columns={columns}
           density="compact"
           checkboxSelection
@@ -397,32 +391,39 @@ export default function DefectCodesPage() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         title={drawerMode === 'create' ? 'New Defect Code' : `Edit ${editTarget?.code}`}
-        subtitle={drawerMode === 'create' ? 'Enter defect code details below' : editTarget?.name}
+        subtitle={drawerMode === 'create' ? 'Enter defect code details below' : editTarget?.defectName}
         onSubmit={() => document.getElementById('defect-form')?.dispatchEvent(new Event('submit', { bubbles: true }))}
         submitLabel={drawerMode === 'create' ? 'Create Defect Code' : 'Save Changes'}
         loading={saving}
       >
+        {saveError && <Alert severity="error" sx={{ mb: 2 }}>{saveError}</Alert>}
         <DefectCodeForm
-          key={editTarget?.id ?? 'new'}
-          defaultValues={editTarget ?? {}}
+          key={editTarget ? String(editTarget.defectCodeId) : 'new'}
+          isEdit={drawerMode === 'edit'}
+          defaultValues={editTarget ? {
+            code:     editTarget.code,
+            name:     editTarget.defectName,
+            category: editTarget.defectCategory ?? undefined,
+            isActive: editTarget.isActive,
+          } : {}}
           onSubmit={handleSave}
-          loading={saving}
         />
       </FormDrawer>
 
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(Number(deleteTarget.defectCodeId))}
         title="Delete Defect Code"
         description={
           <>
-            Delete <strong>{deleteTarget?.name}</strong> ({deleteTarget?.code})?
+            Delete <strong>{deleteTarget?.defectName}</strong> ({deleteTarget?.code})?
             This cannot be undone and may affect quality records that reference this code.
           </>
         }
         confirmLabel="Delete"
         confirmColor="error"
+        loading={deleteMutation.isPending}
       />
     </PageRoot>
   );
