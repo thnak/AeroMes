@@ -20,6 +20,7 @@ import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import SolarIcon from '../components/SolarIcon';
 import UserMenu from '../components/UserMenu';
 import NotificationsDrawer from '../components/NotificationsDrawer';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import { useAuth } from '../contexts/AuthContext';
 import { MODULES } from '../modules';
 import { APPBAR_HEIGHT } from '../theme/tokens';
@@ -195,6 +196,7 @@ export default function ModuleLayout() {
                 </Badge>
               </IconButton>
             </Tooltip>
+            <LanguageSwitcher />
             <UserMenu />
           </Stack>
         </Toolbar>

@@ -1,0 +1,59 @@
+{
+  "app": {
+    "name": "AeroMes",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry"
+  },
+  "action": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "create": "Create",
+    "update": "Update",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "print": "Print",
+    "download": "Download",
+    "upload": "Upload",
+    "view": "View",
+    "refresh": "Refresh",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "draft": "Draft",
+    "approved": "Approved",
+    "pending": "Pending",
+    "cancelled": "Cancelled",
+    "completed": "Completed",
+    "inProgress": "In Progress"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Invalid email address",
+    "minLength": "Minimum {{count}} characters",
+    "maxLength": "Maximum {{count}} characters",
+    "mustBePositive": "Must be greater than 0",
+    "invalidDate": "Invalid date"
+  },
+  "table": {
+    "noData": "No data available",
+    "loading": "Loading data...",
+    "rowCount": "{{count}} records"
+  },
+  "language": {
+    "vi": "Tiếng Việt",
+    "en-US": "English",
+    "switchTo": "Switch language"
+  }
+}

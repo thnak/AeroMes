@@ -1,0 +1,59 @@
+{
+  "app": {
+    "name": "AeroMes",
+    "loading": "Đang tải...",
+    "error": "Đã xảy ra lỗi",
+    "retry": "Thử lại"
+  },
+  "action": {
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "edit": "Chỉnh sửa",
+    "add": "Thêm mới",
+    "create": "Tạo mới",
+    "update": "Cập nhật",
+    "close": "Đóng",
+    "search": "Tìm kiếm",
+    "filter": "Lọc",
+    "export": "Xuất",
+    "import": "Nhập",
+    "print": "In",
+    "download": "Tải xuống",
+    "upload": "Tải lên",
+    "view": "Xem",
+    "refresh": "Làm mới",
+    "confirm": "Xác nhận",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
+    "submit": "Gửi"
+  },
+  "status": {
+    "active": "Hoạt động",
+    "inactive": "Không hoạt động",
+    "draft": "Nháp",
+    "approved": "Đã duyệt",
+    "pending": "Chờ duyệt",
+    "cancelled": "Đã hủy",
+    "completed": "Hoàn thành",
+    "inProgress": "Đang thực hiện"
+  },
+  "validation": {
+    "required": "Trường này là bắt buộc",
+    "invalidEmail": "Email không hợp lệ",
+    "minLength": "Tối thiểu {{count}} ký tự",
+    "maxLength": "Tối đa {{count}} ký tự",
+    "mustBePositive": "Phải lớn hơn 0",
+    "invalidDate": "Ngày không hợp lệ"
+  },
+  "table": {
+    "noData": "Không có dữ liệu",
+    "loading": "Đang tải dữ liệu...",
+    "rowCount": "{{count}} bản ghi"
+  },
+  "language": {
+    "vi": "Tiếng Việt",
+    "en-US": "English",
+    "switchTo": "Đổi ngôn ngữ"
+  }
+}

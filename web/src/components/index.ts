@@ -13,3 +13,4 @@ export { default as NotificationsDrawer } from './NotificationsDrawer';
 export { default as FileUpload } from './FileUpload';
 export { default as AttachmentList } from './AttachmentList';
 export { default as LabelDialog } from './LabelDialog';
+export { default as LanguageSwitcher } from './LanguageSwitcher';
