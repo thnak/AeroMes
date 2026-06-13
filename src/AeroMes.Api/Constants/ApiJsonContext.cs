@@ -28,6 +28,8 @@ using AeroMes.Application.Production.Commands.CreateProductionPlan;
 using AeroMes.Application.Quality.SamplingMethods.Commands.CreateSamplingMethod;
 using AeroMes.Application.Production.Commands.CreateMaterialPurchaseRequest;
 using AeroMes.Application.Quality.InspectionVouchers.Commands.CreateInspectionVoucher;
+using AeroMes.Domain.Cost;
+using AeroMes.Domain.Cost.Repositories;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrders;
 using AeroMes.Application.Integration.Commands.SyncSalesOrders;
@@ -1092,6 +1094,23 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(SamplingVolumeRangeDto))]
 [JsonSerializable(typeof(IReadOnlyList<SamplingVolumeRangeDto>))]
 [JsonSerializable(typeof(List<SamplingVolumeRangeDto>))]
+// scrap & rework cost management — #104
+[JsonSerializable(typeof(PostScrapRequest))]
+[JsonSerializable(typeof(CreateReworkOrderRequest))]
+[JsonSerializable(typeof(CloseReworkOrderRequest))]
+[JsonSerializable(typeof(ScrapParetoDto))]
+[JsonSerializable(typeof(IReadOnlyList<ScrapParetoDto>))]
+[JsonSerializable(typeof(List<ScrapParetoDto>))]
+[JsonSerializable(typeof(ScrapTransactionDto))]
+[JsonSerializable(typeof(PagedResult<ScrapTransactionDto>))]
+[JsonSerializable(typeof(ReworkOrderDto))]
+[JsonSerializable(typeof(PagedResult<ReworkOrderDto>))]
+[JsonSerializable(typeof(QualityCostSummaryDto))]
+[JsonSerializable(typeof(IReadOnlyList<QualityCostSummaryDto>))]
+[JsonSerializable(typeof(List<QualityCostSummaryDto>))]
+[JsonSerializable(typeof(CopqTrendPointDto))]
+[JsonSerializable(typeof(IReadOnlyList<CopqTrendPointDto>))]
+[JsonSerializable(typeof(List<CopqTrendPointDto>))]
 // quality inspection vouchers — #92
 [JsonSerializable(typeof(CreateInspectionVoucherRequest))]
 [JsonSerializable(typeof(AddDefectRequest))]

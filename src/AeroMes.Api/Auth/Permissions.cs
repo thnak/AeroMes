@@ -68,6 +68,10 @@ public static class Permissions
     public const string QualityUpdate = "Quality:Update";
     public const string QualityApprove = "Quality:Approve";
 
+    // Cost (Scrap & Rework)
+    public const string CostRead = "Cost:Read";
+    public const string CostWrite = "Cost:Write";
+
     // NCR
     public const string NcrRead = "NCR:Read";
     public const string NcrCreate = "NCR:Create";
@@ -199,6 +203,7 @@ public static class Permissions
         ReportRead, ReportExport,
         QualityRead, QualityWrite, QualityCreate, QualityUpdate, QualityApprove,
         NcrRead, NcrCreate, NcrClose,
+        CostRead, CostWrite,
         WarehouseRead, WarehouseReceive, WarehousePutAway, WarehousePick, WarehouseDispatch,
         StockPolicyRead, StockPolicyWrite,
         ReplenishmentAlertRead, ReplenishmentAlertAcknowledge,

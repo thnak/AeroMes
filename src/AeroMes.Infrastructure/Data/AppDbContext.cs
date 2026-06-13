@@ -17,6 +17,7 @@ using AeroMes.Domain.Rules;
 using AeroMes.Domain.Settings;
 using AeroMes.Domain.Traceability;
 using AeroMes.Domain.Wms;
+using AeroMes.Domain.Cost;
 using AeroMes.Infrastructure.Identity;
 using LiteBus.Events.Abstractions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -246,6 +247,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     // storage
     public DbSet<FileObject> FileObjects => Set<FileObject>();
 
+    // cost schema
+    public DbSet<ScrapTransaction> ScrapTransactions => Set<ScrapTransaction>();
+    public DbSet<ReworkOrder> CostReworkOrders => Set<ReworkOrder>();
+    public DbSet<QualityCostSummary> QualityCostSummaries => Set<QualityCostSummary>();
+
     // settings
     public DbSet<SystemOptions> SystemOptions => Set<SystemOptions>();
 
@@ -292,6 +298,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureRecallSchema(b);
         ConfigureProcessRecordSchema(b);
         ConfigureSerialTraceabilitySchema(b);
+        ConfigureCostSchema(b);
     }
 
     // ── auth ──────────────────────────────────────────────────────────────
@@ -4070,6 +4077,69 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasDefaultValueSql("SYSUTCDATETIME()");
             e.HasIndex(x => new { x.SerialID, x.EventTimestamp });
             e.HasIndex(x => x.WorkOrderID);
+        });
+    }
+
+    // ── cost ──────────────────────────────────────────────────────────────
+    private static void ConfigureCostSchema(ModelBuilder b)
+    {
+        b.Entity<ScrapTransaction>(e =>
+        {
+            e.ToTable("ScrapTransactions", "cost");
+            e.HasKey(x => x.ScrapTxID);
+            e.Property(x => x.ScrapTxID).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(50);
+            e.Property(x => x.MaterialCostPerUnit).HasColumnType("DECIMAL(14,6)");
+            e.Property(x => x.LaborCostSunk).HasColumnType("DECIMAL(14,6)");
+            e.Property(x => x.MachineCostSunk).HasColumnType("DECIMAL(14,6)");
+            e.Property(x => x.TotalScrapCost).HasColumnType("DECIMAL(14,6)");
+            e.Property(x => x.DisposalMethod).HasConversion<string>().HasMaxLength(25)
+                .HasDefaultValue(DisposalMethod.Scrap);
+            e.Property(x => x.ApprovedBy).HasMaxLength(50);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(100);
+            e.Property(x => x.ScrapAt).HasColumnType("datetime2(3)")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.HasIndex(x => x.WOID);
+            e.HasIndex(x => x.DefectCodeId);
+            e.HasIndex(x => x.ScrapAt);
+        });
+
+        b.Entity<ReworkOrder>(e =>
+        {
+            e.ToTable("ReworkOrders", "cost");
+            e.HasKey(x => x.ReworkID);
+            e.Property(x => x.ReworkID).UseIdentityColumn();
+            e.Property(x => x.ReworkCode).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.ReworkCode).IsUnique();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20)
+                .HasDefaultValue(ReworkStatus.Open);
+            e.Property(x => x.ActMaterialCost).HasColumnType("DECIMAL(14,4)");
+            e.Property(x => x.ActLaborCost).HasColumnType("DECIMAL(14,4)");
+            e.Property(x => x.ActMachineCost).HasColumnType("DECIMAL(14,4)");
+            e.Property(x => x.ActTotalReworkCost).HasColumnType("DECIMAL(14,4)");
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<QualityCostSummary>(e =>
+        {
+            e.ToTable("QualityCostSummaries", "cost");
+            e.HasKey(x => x.SummaryID);
+            e.Property(x => x.SummaryID).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50);
+            e.Property(x => x.PreventionCost).HasColumnType("DECIMAL(14,2)");
+            e.Property(x => x.AppraisalCost).HasColumnType("DECIMAL(14,2)");
+            e.Property(x => x.InternalScrapCost).HasColumnType("DECIMAL(14,2)");
+            e.Property(x => x.ReworkCost).HasColumnType("DECIMAL(14,2)");
+            e.Property(x => x.CustomerReturnCost).HasColumnType("DECIMAL(14,2)");
+            e.Property(x => x.WarrantyCost).HasColumnType("DECIMAL(14,2)");
+            e.Property(x => x.TotalQualityCost).HasColumnType("DECIMAL(14,2)");
+            e.Property(x => x.TotalProductionValue).HasColumnType("DECIMAL(18,2)");
+            e.Property(x => x.CopqPct).HasColumnType("DECIMAL(10,4)");
+            e.Property(x => x.LastRefreshedAt).HasColumnType("datetime2(3)");
+            e.HasIndex(x => new { x.PeriodYear, x.PeriodMonth, x.ProductCode, x.WorkCenterID }).IsUnique();
         });
     }
 }
