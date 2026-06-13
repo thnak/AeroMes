@@ -9,6 +9,8 @@ using AeroMes.Domain.Quality.Repositories;
 using AeroMes.Domain.Lab.Repositories;
 using AeroMes.Domain.Labels.Repositories;
 using AeroMes.Domain.Reminders.Repositories;
+using AeroMes.Application.Storage;
+using AeroMes.Domain.Storage.Repositories;
 using AeroMes.Domain.Sop.Repositories;
 using AeroMes.Domain.Rules.Repositories;
 using AeroMes.Domain.Wms.Repositories;
@@ -22,6 +24,7 @@ using AeroMes.Infrastructure.Repositories;
 using AeroMes.Infrastructure.Lab;
 using AeroMes.Infrastructure.Labels;
 using AeroMes.Infrastructure.Reminders;
+using AeroMes.Infrastructure.Storage;
 using AeroMes.Infrastructure.Rules;
 using AeroMes.Infrastructure.Sop;
 using AeroMes.Infrastructure.Services;
@@ -265,6 +268,31 @@ public static class DependencyInjection
 
         // Adapter Health Monitoring
         services.AddHostedService<AdapterWatchdogService>();
+
+        // Storage
+        var storageSection = configuration.GetSection("Storage");
+        services.Configure<StorageOptions>(storageSection);
+        var provider = storageSection["Provider"] ?? "Local";
+        if (provider.Equals("S3", StringComparison.OrdinalIgnoreCase))
+        {
+            var s3Opts = storageSection.GetSection("S3").Get<S3StorageOptions>() ?? new();
+            services.AddSingleton<Amazon.S3.IAmazonS3>(_ =>
+            {
+                var s3Config = new Amazon.S3.AmazonS3Config
+                {
+                    ServiceURL = s3Opts.ServiceUrl,
+                    ForcePathStyle = s3Opts.ForcePathStyle,
+                };
+                return new Amazon.S3.AmazonS3Client(s3Opts.AccessKey, s3Opts.SecretKey, s3Config);
+            });
+            services.AddScoped<IFileStorage, S3Storage>();
+        }
+        else
+        {
+            services.AddScoped<IFileStorage, LocalDiskStorage>();
+        }
+        services.AddScoped<IFileObjectRepository, FileObjectRepository>();
+        services.AddScoped<IThumbnailGenerator, ImageSharpThumbnailGenerator>();
 
         return services;
     }

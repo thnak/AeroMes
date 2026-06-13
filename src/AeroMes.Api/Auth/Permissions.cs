@@ -165,6 +165,10 @@ public static class Permissions
     public const string IotRead = "Iot:Read";
     public const string IotWrite = "Iot:Write";
 
+    // File storage
+    public const string FileUpload = "File:Upload";
+    public const string FileDelete = "File:Delete";
+
     // System
     public const string SystemConfigure = "System:Configure";
     public const string PermissionRead = "Permission:Read";
@@ -201,5 +205,6 @@ public static class Permissions
         ApiKeyRead, ApiKeyCreate, ApiKeyRevoke,
         SystemConfigure, PermissionRead, PermissionManage,
         IotRead, IotWrite,
+        FileUpload, FileDelete,
     ];
 }

@@ -11,6 +11,7 @@ using AeroMes.Domain.Quality;
 using AeroMes.Domain.Lab;
 using AeroMes.Domain.Labels;
 using AeroMes.Domain.Reminders;
+using AeroMes.Domain.Storage;
 using AeroMes.Domain.Sop;
 using AeroMes.Domain.Rules;
 using AeroMes.Domain.Settings;
@@ -192,6 +193,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<ReminderAlert> ReminderAlerts => Set<ReminderAlert>();
     public DbSet<ReminderConfiguration> ReminderConfigurations => Set<ReminderConfiguration>();
 
+    // storage
+    public DbSet<FileObject> FileObjects => Set<FileObject>();
+
     // settings
     public DbSet<SystemOptions> SystemOptions => Set<SystemOptions>();
 
@@ -232,6 +236,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureLabSchema(b);
         ConfigureLabelsSchema(b);
         ConfigureRemindersSchema(b);
+        ConfigureStorageSchema(b);
     }
 
     // ── auth ──────────────────────────────────────────────────────────────
@@ -507,10 +512,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.TechnicalStandard).HasMaxLength(200);
             e.Property(x => x.QuantityFormula).HasMaxLength(500);
             e.Property(x => x.PickingStrategy).HasConversion<string>().HasMaxLength(10);
-            e.Property(x => x.TrackingMethod).HasConversion<string>().HasMaxLength(20).HasDefaultValue(TrackingMethod.None);
+            e.Property(x => x.TrackingMethod).HasConversion<string>().HasMaxLength(20).HasColumnType("nvarchar(20)").HasDefaultValueSql("'None'");
             e.Property(x => x.SecondaryUnit).HasMaxLength(20);
             e.Property(x => x.SecondaryUnitConversionFactor).HasColumnType("NUMERIC(18,6)");
-            e.Property(x => x.ProductClass).HasConversion<string>().HasMaxLength(30).HasDefaultValue(ProductClass.Standard);
+            e.Property(x => x.ProductClass).HasConversion<string>().HasMaxLength(30).HasColumnType("nvarchar(30)").HasDefaultValueSql("'Standard'");
             e.Property(x => x.CustomAttributes).HasColumnType("NVARCHAR(MAX)");
             e.HasQueryFilter(x => !x.IsDeleted);
 
@@ -1590,7 +1595,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.DeviceIP).HasMaxLength(30);
             e.Property(x => x.Notes).HasMaxLength(255);
             e.Property(x => x.IdempotencyKey).HasMaxLength(36);
-            e.Property(x => x.PrimaryQty).HasColumnType("NUMERIC(18,4)").HasDefaultValue(1m);
+            e.Property(x => x.PrimaryQty).HasColumnType("NUMERIC(18,4)").HasDefaultValueSql("1");
             e.Property(x => x.SecondaryQty).HasColumnType("NUMERIC(18,4)");
             e.Property(x => x.SerialNumber).HasMaxLength(100);
             e.Property(x => x.ProcessParameters).HasColumnType("NVARCHAR(MAX)");
@@ -1643,8 +1648,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.LotNumber).HasMaxLength(50).IsRequired();
             e.Property(x => x.Quantity).HasColumnType("NUMERIC(18,4)");
-            e.Property(x => x.SecondaryQty).HasColumnType("NUMERIC(18,4)").HasDefaultValue(0m);
-            e.Property(x => x.ReservedQty).HasColumnType("NUMERIC(18,4)").HasDefaultValue(0m);
+            e.Property(x => x.SecondaryQty).HasColumnType("NUMERIC(18,4)").HasDefaultValueSql("0");
+            e.Property(x => x.ReservedQty).HasColumnType("NUMERIC(18,4)").HasDefaultValueSql("0");
             e.Ignore(x => x.AvailableQty);
             e.Property(x => x.ExpiryDate).HasColumnType("date");
             e.Property(x => x.ManufacturedDate).HasColumnType("date");
@@ -3072,6 +3077,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.ReminderType).HasMaxLength(60);
             e.Property(x => x.NotificationChannel).HasMaxLength(20);
             e.HasIndex(x => new { x.UserId, x.ReminderType }).IsUnique();
+        });
+    }
+
+    // ── storage ───────────────────────────────────────────────────────────────
+    private static void ConfigureStorageSchema(ModelBuilder b)
+    {
+        b.Entity<FileObject>(e =>
+        {
+            e.ToTable("FileObjects", "storage");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.StorageKey).HasMaxLength(500).IsRequired();
+            e.Property(x => x.FileName).HasMaxLength(255).IsRequired();
+            e.Property(x => x.ContentType).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Checksum).HasMaxLength(64).IsRequired();
+            e.Property(x => x.OwnerType).HasMaxLength(50).IsRequired();
+            e.Property(x => x.OwnerId).HasMaxLength(100).IsRequired();
+            e.Property(x => x.UploadedBy).HasMaxLength(256).IsRequired();
+            e.HasIndex(x => new { x.OwnerType, x.OwnerId });
+            e.HasQueryFilter(x => !x.IsDeleted);
         });
     }
 }

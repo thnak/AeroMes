@@ -6,6 +6,8 @@ using AeroMes.Application.Inventory.Queries.GetInventoryStock;
 using AeroMes.Application.Inventory.Queries.GetLotTrace;
 using AeroMes.Application.Production.Queries.GetAvailableStock;
 using AeroMes.Application.Production.Queries.GetInventoryByExpiry;
+using AeroMes.Application.Storage.Commands.UploadFile;
+using AeroMes.Application.Storage.Queries.GetFileMetadata;
 using AeroMes.Application.Reports.Queries.GetDowntimeReport;
 using AeroMes.Application.Reports.Queries.GetProductionReport;
 using AeroMes.Application.Reports.Queries.GetQualityReport;
@@ -769,6 +771,10 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(CreateRepairMaterialLineRequest))]
 [JsonSerializable(typeof(List<CreateRepairMaterialLineRequest>))]
 [JsonSerializable(typeof(SetRepairOrderStatusRequest))]
+// file storage
+[JsonSerializable(typeof(FileUploadResult))]
+[JsonSerializable(typeof(FileObjectDto))]
+[JsonSerializable(typeof(IReadOnlyList<FileObjectDto>))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 
