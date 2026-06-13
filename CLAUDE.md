@@ -56,7 +56,7 @@ The project uses **LiteBus**, not MediatR. Key interface mapping:
 | Send command | `await commandMediator.SendAsync(cmd, null, ct)` |
 | Send query | `await queryMediator.QueryAsync(query, null, ct)` |
 
-Validation is wired as `FluentValidationPreHandler<TCommand> : ICommandPreHandler<TCommand>` (open-generic, registered once in `Application/DependencyInjection.cs`). Do not add a second pre-handler without discussion.
+**Validation pattern (no pre-handler):** Validators are registered via `AddValidatorsFromAssembly` in `Application/DependencyInjection.cs`. Handlers inject `IValidator<TCommand>` and call it explicitly at the top of `HandleAsync`. There is no LiteBus pre-handler — do not add one.
 
 Domain events are dispatched in `AppDbContext.SaveChangesAsync` via `IEventMediator.PublishAsync`. `IDomainEvent` is a plain marker interface (no LiteBus inheritance needed — events are POCOs).
 
@@ -91,8 +91,9 @@ Run `/code-style` before writing any new feature. Key rules:
 
 - Project prefix is `AeroMes.*` — never `Mes.*`.
 - Each use-case lives in its own folder: `Application/{Context}/{Commands|Queries}/{UseCaseName}/` — Command/Query record + Handler + Validator co-located.
-- Return strongly-typed `record` types from handlers. No `Result<T>` wrapper.
-- Error handling: throw `DomainException` or `EntityNotFoundException`; `ExceptionMiddleware` converts to RFC 7807. No `try/catch` in handlers.
+- Commands return `ValidationResult<T>` (defined in `Application/Common/ValidationResult.cs`). Use `ValidationResult<Unit>` for void commands. Queries return their result type directly — no wrapper.
+- Error handling in command handlers: run `validator.ValidateAsync` → return `ValidationResult<T>.Invalid(...)` on failure. Wrap domain logic in `try/catch (EntityNotFoundException)` → `NotFound(ex.Message)` and `try/catch (DomainException)` → `Failure(ex.Message)`. Return `ValidationResult<T>.Ok(result)` on success. No unhandled throws from handlers.
+- Controllers unwrap results: `if (!result.IsSuccess) return result.ToErrorResult();` then `return Ok(result.Value!);`. Extension method lives in `Api/Extensions/ValidationResultExtensions.cs`.
 - File-scoped namespaces. Primary constructors for DI. Collection expressions `[...]` over `new List<T>()`.
 - Vietnamese log/error messages are acceptable; English preferred for identifiers.
 

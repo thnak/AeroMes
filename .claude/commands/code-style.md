@@ -21,7 +21,8 @@ The project follows **Clean Architecture + Modular Monolith** with 4 projects:
 │
 ├── 📁 src/
 │   ├── 📁 AeroMes.Api/                     # Host layer: Controllers, Middleware, Program.cs
-│   │   ├── 📁 Controllers/                 # MVC Controllers — call MediatR, return ApiResponse
+│   │   ├── 📁 Controllers/                 # MVC Controllers — call LiteBus mediators, return IActionResult
+│   │   ├── 📁 Extensions/                  # ValidationResultExtensions (ToErrorResult)
 │   │   ├── 📁 Identity/                    # TokenService (JWT generation)
 │   │   ├── 📁 Middleware/                  # ExceptionMiddleware (RFC 7807 ProblemDetails)
 │   │   └── 📁 Serialization/               # AeroMesJsonContext (STJ source generator)
@@ -31,10 +32,10 @@ The project follows **Clean Architecture + Modular Monolith** with 4 projects:
 │   │   ├── 📁 Repositories/                # IRepository implementations from Domain
 │   │   └── 📁 Migrations/                  # EF Core migrations
 │   │
-│   ├── 📁 AeroMes.Application/             # Application logic: CQRS, MediatR, Validators
+│   ├── 📁 AeroMes.Application/             # Application logic: CQRS (LiteBus), Validators
 │   │   ├── 📁 Common/
-│   │   │   ├── 📁 Behaviors/               # ValidationBehavior (MediatR pipeline)
-│   │   │   └── ApiResponse.cs              # record ApiResponse<T> used by Controllers
+│   │   │   ├── ValidationResult.cs         # ValidationResult<T>, Unit
+│   │   │   └── ApiResponse.cs              # record ApiResponse<T> (legacy — Integration/Jobs only)
 │   │   ├── 📁 Interfaces/                  # IUnitOfWork, ITokenService
 │   │   └── 📁 {Module}/                    # One folder per bounded context
 │   │       ├── 📁 Commands/
@@ -93,43 +94,82 @@ public class Product : AuditableEntity
 
 ---
 
-## 3. CQRS Design with MediatR
+## 3. CQRS Design with LiteBus v5
 
-Strict separation between **Write (Commands)** and **Read (Queries)**.
+Strict separation between **Write (Commands)** and **Read (Queries)**. The project uses **LiteBus**, not MediatR.
 
 ```
                   ┌───────────────┐
                   │  Controller   │
                   └───────┬───────┘
-                          │ mediator.Send(...)
+                          │ commandMediator.SendAsync(cmd, null, ct)
             ┌─────────────┴─────────────┐
             ▼                           ▼
     ┌───────────────┐           ┌───────────────┐
     │   Commands    │           │    Queries    │
     │ (Create/Update│           │  (View/Report)│
     └───────┬───────┘           └───────┬───────┘
-            │ IUnitOfWork                │ AsNoTracking / Dapper
+            │ IUnitOfWork                │ AsNoTracking
             ▼                           ▼
     ┌───────────────┐           ┌───────────────┐
-    │  Primary DB   │           │  Read replica │
+    │  Primary DB   │           │  Read store   │
     └───────────────┘           └───────────────┘
+```
+
+### LiteBus interface mapping
+
+| Concept | Interface |
+|---|---|
+| Command (with result) | `: ICommand<ValidationResult<TResult>>` |
+| Command (void / no result) | `: ICommand<ValidationResult<Unit>>` |
+| Query | `: IQuery<TResult>` |
+| Command handler | `: ICommandHandler<TCmd, ValidationResult<TResult>>` |
+| Query handler | `: IQueryHandler<TQuery, TResult>` |
+| Handler method | `HandleAsync(T message, CancellationToken ct)` |
+| Inject in controllers | `ICommandMediator` / `IQueryMediator` (never `IMediator`) |
+| Send command | `await commandMediator.SendAsync(cmd, null, ct)` |
+| Send query | `await queryMediator.QueryAsync(query, null, ct)` |
+
+### Validation pattern
+
+Validators are registered via `services.AddValidatorsFromAssembly(assembly)` in `Application/DependencyInjection.cs`. There is **no pre-handler** — each command handler injects `IValidator<TCommand>` and runs it manually.
+
+```csharp
+// at the top of HandleAsync — always first
+var validation = await validator.ValidateAsync(cmd, ct);
+if (!validation.IsValid)
+    return ValidationResult<TResult>.Invalid(validation.ToErrorDictionary());
+```
+
+### ValidationResult<T> — result type for all commands
+
+`ValidationResult<T>` (in `Application/Common/`) is a discriminated union:
+
+| Factory | When to use |
+|---|---|
+| `ValidationResult<T>.Ok(value)` | Success |
+| `ValidationResult<T>.Invalid(dict)` | FluentValidation failures |
+| `ValidationResult<T>.Failure(message)` | `DomainException` caught |
+| `ValidationResult<T>.NotFound(message)` | `EntityNotFoundException` caught |
+
+Command handlers **catch** domain exceptions instead of letting them propagate:
+
+```csharp
+try { /* domain logic */ }
+catch (EntityNotFoundException ex) { return ValidationResult<T>.NotFound(ex.Message); }
+catch (DomainException ex)         { return ValidationResult<T>.Failure(ex.Message); }
 ```
 
 ### Implementation rules
 
 **Commands (Write):**
 - Must have a co-located `Validator` in the same use-case folder.
-- Handler uses **Repository + IUnitOfWork** — never inject `AppDbContext` directly.
-- Return a strongly-typed result record — no `Result<T>` wrapper.
-- Throw `DomainException` or `EntityNotFoundException` — `ExceptionMiddleware` catches and returns RFC 7807.
+- Handler injects `IValidator<TCommand>` + Repository interfaces + `IUnitOfWork` — never inject `AppDbContext` directly.
+- Return `ValidationResult<T>` — check then unwrap in the controller with `result.ToErrorResult()` / `result.Value!`.
 
 **Queries (Read):**
-- Use `AsNoTracking()` or Dapper. No transactions.
-- May return DTO/record directly — no result wrapper needed.
-
-**Pipeline Behavior (MediatR):**
-- Only **`ValidationBehavior`** — runs FluentValidation automatically before every Handler.
-- `ValidationBehavior` throws `ValidationException` → `ExceptionMiddleware` → HTTP 422.
+- Use `AsNoTracking()`. No transactions.
+- Return the DTO/record directly — no result wrapper needed.
 
 ### Use-case folder structure
 
@@ -137,7 +177,7 @@ Strict separation between **Write (Commands)** and **Read (Queries)**.
 Commands/
   SubmitOutput/
     SubmitOutputCommand.cs    ← record Command + record Result
-    SubmitOutputHandler.cs    ← IRequestHandler
+    SubmitOutputHandler.cs    ← ICommandHandler
     SubmitOutputValidator.cs  ← AbstractValidator<Command>
 ```
 
@@ -198,36 +238,56 @@ public interface IUnitOfWork
 
 ## 5. Error Handling & API Response
 
-### 5.1. ExceptionMiddleware (RFC 7807 ProblemDetails)
+### 5.1. Primary path — ValidationResult<T> in handlers
 
-`AeroMes.Api/Middleware/ExceptionMiddleware.cs` catches all exceptions and returns `application/problem+json`:
-
-| Exception | HTTP Status |
-|---|---|
-| `ValidationException` (FluentValidation) | 422 Unprocessable Entity |
-| `EntityNotFoundException` | 404 Not Found |
-| `DomainException` | 422 Unprocessable Entity |
-| Unhandled `Exception` | 500 Internal Server Error |
-
-No try/catch in Handlers — throw the exception, middleware handles it.
-
-### 5.2. ApiResponse for Controllers
+Command handlers **catch** domain exceptions internally and return a `ValidationResult<T>`:
 
 ```csharp
-// AeroMes.Application/Common/ApiResponse.cs
-public record ApiResponse<T>(bool Success, string Message, T? Data = default);
-public record ApiResponse(bool Success, string Message);
+try { /* domain logic */ }
+catch (EntityNotFoundException ex) { return ValidationResult<T>.NotFound(ex.Message); }
+catch (DomainException ex)         { return ValidationResult<T>.Failure(ex.Message); }
 ```
 
-Controllers return `ApiResponse<T>` when wrapping data is needed. Simple actions may return a DTO directly.
-
-### 5.3. Domain exceptions
+Controllers unwrap using the `ToErrorResult()` extension (`Api/Extensions/ValidationResultExtensions.cs`):
 
 ```csharp
-// When entity is not found in a Handler
-throw new EntityNotFoundException(nameof(Job), cmd.JobId);
+var result = await commandMediator.SendAsync(cmd, null, ct);
+if (!result.IsSuccess) return result.ToErrorResult();
+return Ok(result.Value!);
+```
 
-// When a business rule is violated in the Domain
+`ToErrorResult()` maps the result state to RFC 7807 `application/problem+json`:
+
+| Result state | HTTP Status |
+|---|---|
+| `IsNotFound` | 404 Not Found |
+| `Errors` set | 422 Unprocessable Entity (`ValidationProblemResponse`) |
+| `ErrorMessage` set | 422 Unprocessable Entity (`SimpleProblemResponse`) |
+
+### 5.2. Fallback — ExceptionMiddleware
+
+`ExceptionMiddleware` is the last-resort handler for anything that escapes a handler (e.g. infrastructure errors). Do not rely on it for expected domain failures — use the catch pattern above.
+
+| Exception (unhandled) | HTTP Status |
+|---|---|
+| `EntityNotFoundException` | 404 |
+| `DomainException` | 422 |
+| `Exception` | 500 |
+
+### 5.3. ApiResponse (legacy — Integration / Jobs controllers only)
+
+```csharp
+public record ApiResponse<T>(bool Success, string Message, T? Data = default);
+```
+
+`ApiResponse<T>` is used in `IntegrationController` and `JobsController` for backward compatibility. **New controllers must not use it** — return DTOs or named result records directly via `IActionResult`.
+
+### 5.4. Domain exceptions in Domain layer
+
+Entities and domain services throw these; handlers are responsible for catching them:
+
+```csharp
+throw new EntityNotFoundException(nameof(Job), cmd.JobId);
 throw new DomainException($"Job {job.JobID} must be Active. Current: {job.Status}.");
 ```
 
@@ -255,30 +315,26 @@ public record SubmitOutputCommand(
     long JobId,
     int QtyOk,
     int QtyNg,
-    string? DeviceIp,
     string? Notes,
     string? IdempotencyKey,
-    DateTime? Timestamp,
-    List<DefectEntry> Defects) : IRequest<SubmitOutputResult>;
+    List<DefectEntry> Defects) : ICommand<ValidationResult<SubmitOutputResult>>;
 
 public record DefectEntry(string DefectCode, int Qty);
-public record SubmitOutputResult(long LogId, int WorkOrderOK, int WorkOrderNG, bool IsDuplicate = false);
+public record SubmitOutputResult(long LogId, int WorkOrderOk, int WorkOrderNg, bool IsDuplicate = false);
 ```
 
 ### 7.2. Validator
+
+Validators are plain FluentValidation `AbstractValidator<T>` — registered via DI and injected into the handler. Keep validators to structural/format rules; defer existence checks (e.g. "does this job exist?") to the handler where you already load the entity.
 
 ```csharp
 namespace AeroMes.Application.Production.Commands.SubmitOutput;
 
 public class SubmitOutputValidator : AbstractValidator<SubmitOutputCommand>
 {
-    public SubmitOutputValidator(IJobRepository jobRepo, IDefectCodeRepository defectRepo)
+    public SubmitOutputValidator()
     {
-        RuleFor(x => x.JobId)
-            .GreaterThan(0).WithMessage("Job id is required.")
-            .MustAsync(async (id, ct) => await jobRepo.GetByIdAsync(id, ct) is not null)
-            .WithMessage(x => $"Job {x.JobId} does not exist.");
-
+        RuleFor(x => x.JobId).GreaterThan(0);
         RuleFor(x => x.QtyOk).GreaterThanOrEqualTo(0);
         RuleFor(x => x.QtyNg).GreaterThanOrEqualTo(0);
 
@@ -288,10 +344,6 @@ public class SubmitOutputValidator : AbstractValidator<SubmitOutputCommand>
 
         When(x => x.Defects is { Count: > 0 }, () =>
         {
-            RuleFor(x => x.Defects)
-                .Must(d => d.All(e => e.Qty > 0))
-                .WithMessage("Each defect entry must have a positive quantity.");
-
             RuleForEach(x => x.Defects).ChildRules(d =>
             {
                 d.RuleFor(x => x.DefectCode).NotEmpty();
@@ -312,48 +364,81 @@ public class SubmitOutputHandler(
     IWorkOrderRepository workOrderRepo,
     IProductionLogRepository productionLogRepo,
     IDefectCodeRepository defectCodeRepo,
-    IUnitOfWork uow)
-    : IRequestHandler<SubmitOutputCommand, SubmitOutputResult>
+    IUnitOfWork uow,
+    IValidator<SubmitOutputCommand> validator)
+    : ICommandHandler<SubmitOutputCommand, ValidationResult<SubmitOutputResult>>
 {
-    public async Task<SubmitOutputResult> Handle(SubmitOutputCommand cmd, CancellationToken ct)
+    public async Task<ValidationResult<SubmitOutputResult>> HandleAsync(
+        SubmitOutputCommand cmd, CancellationToken ct)
     {
-        if (cmd.IdempotencyKey is not null &&
-            await productionLogRepo.ExistsByIdempotencyKeyAsync(cmd.IdempotencyKey, ct))
-            return new SubmitOutputResult(-1, -1, -1, IsDuplicate: true);
+        var validation = await validator.ValidateAsync(cmd, ct);
+        if (!validation.IsValid)
+            return ValidationResult<SubmitOutputResult>.Invalid(validation.ToErrorDictionary());
 
-        var job = await jobRepo.GetByIdAsync(cmd.JobId, ct)
-            ?? throw new EntityNotFoundException(nameof(Job), cmd.JobId);
-
-        if (job.Status != JobStatus.Active)
-            throw new DomainException($"Job {job.JobID} must be Active. Current: {job.Status}.");
-
-        var workOrder = await workOrderRepo.GetByIdAsync(job.WOID, ct)
-            ?? throw new EntityNotFoundException(nameof(WorkOrder), job.WOID);
-
-        workOrder.AccumulateOutput(cmd.QtyOk, cmd.QtyNg, job.OperatorID);
-
-        var log = ProductionLog.Create(
-            cmd.JobId, cmd.QtyOk, cmd.QtyNg,
-            cmd.DeviceIp, cmd.IdempotencyKey, cmd.Notes, cmd.Timestamp);
-
-        if (cmd.QtyNg > 0 && cmd.Defects.Count > 0)
+        try
         {
-            var codes = await defectCodeRepo.GetByCodesAsync(
-                cmd.Defects.Select(d => d.DefectCode), ct);
+            if (cmd.IdempotencyKey is not null &&
+                await productionLogRepo.ExistsByIdempotencyKeyAsync(cmd.IdempotencyKey, ct))
+                return ValidationResult<SubmitOutputResult>.Ok(
+                    new SubmitOutputResult(-1, -1, -1, IsDuplicate: true));
 
-            foreach (var entry in cmd.Defects)
+            var job = await jobRepo.GetByIdAsync(cmd.JobId, ct)
+                ?? throw new EntityNotFoundException(nameof(Job), cmd.JobId);
+
+            if (job.Status != JobStatus.Active)
+                throw new DomainException($"Job {job.JobID} must be Active. Current: {job.Status}.");
+
+            var workOrder = await workOrderRepo.GetByIdAsync(job.WOID, ct)
+                ?? throw new EntityNotFoundException(nameof(WorkOrder), job.WOID);
+
+            workOrder.AccumulateOutput(cmd.QtyOk, cmd.QtyNg, job.OperatorID);
+
+            var log = ProductionLog.Create(cmd.JobId, cmd.QtyOk, cmd.QtyNg, cmd.IdempotencyKey, cmd.Notes);
+
+            if (cmd.QtyNg > 0 && cmd.Defects.Count > 0)
             {
-                if (!codes.TryGetValue(entry.DefectCode, out var code))
-                    throw new EntityNotFoundException("DefectCode", entry.DefectCode);
-                log.AddDefect(code.DefectCodeID, entry.Qty);
+                var codes = await defectCodeRepo.GetByCodesAsync(
+                    cmd.Defects.Select(d => d.DefectCode), ct);
+                foreach (var entry in cmd.Defects)
+                {
+                    if (!codes.TryGetValue(entry.DefectCode, out var code))
+                        throw new EntityNotFoundException("DefectCode", entry.DefectCode);
+                    log.AddDefect(code.DefectCodeID, entry.Qty);
+                }
             }
+
+            await productionLogRepo.AddAsync(log, ct);
+            await uow.SaveChangesAsync(ct);
+
+            return ValidationResult<SubmitOutputResult>.Ok(
+                new SubmitOutputResult(log.LogID, workOrder.ActualQtyOK.Value, workOrder.ActualQtyNG.Value));
         }
-
-        await productionLogRepo.AddAsync(log, ct);
-        await uow.SaveChangesAsync(ct);
-
-        return new SubmitOutputResult(log.LogID, workOrder.ActualQtyOK.Value, workOrder.ActualQtyNG.Value);
+        catch (EntityNotFoundException ex)
+        {
+            return ValidationResult<SubmitOutputResult>.NotFound(ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ValidationResult<SubmitOutputResult>.Failure(ex.Message);
+        }
     }
+}
+```
+
+### 7.4. Controller action
+
+```csharp
+[HttpPost]
+[ProducesResponseType<SubmitOutputResult>(StatusCodes.Status200OK)]
+[ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+[ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+public async Task<IActionResult> SubmitOutput([FromBody] SubmitOutputRequest req, CancellationToken ct)
+{
+    var result = await commandMediator.SendAsync(
+        new SubmitOutputCommand(req.JobId, req.QtyOk, req.QtyNg, req.Notes, req.IdempotencyKey, req.Defects),
+        null, ct);
+    if (!result.IsSuccess) return result.ToErrorResult();
+    return Ok(result.Value!);
 }
 ```
 
