@@ -27,12 +27,15 @@ using AeroMes.Domain.Iot;
 using AeroMes.Domain.Iot.Repositories;
 using AeroMes.Infrastructure.Iot;
 using AeroMes.Infrastructure.Iot.Mqtt;
+using AeroMes.Infrastructure.Iot.OpcUa;
 using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MQTTnet;
 using MQTTnet.Client;
+using OpcUa = Opc.Ua;
+using OpcUaClient = Opc.Ua.Client;
 
 namespace AeroMes.Api.Controllers;
 
@@ -394,6 +397,221 @@ public class IotController(
         }
     }
 
+    // ── OPC-UA commissioning ──────────────────────────────────────────────
+
+    [HttpPost("adapters/{id:int}/browse")]
+    [RequirePermission(Permissions.IotWrite)]
+    [ProducesResponseType<IReadOnlyList<OpcNodeInfo>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> BrowseOpcUaNode(int id, [FromBody] OpcBrowseRequest req, CancellationToken ct)
+    {
+        var adapter = await adapterRepository.GetByIdAsync(id, ct);
+        if (adapter is null) return NotFound();
+
+        if (adapter.AdapterType != AdapterType.OpcUa)
+            return UnprocessableEntity(new { error = "Adapter is not of type OPC-UA" });
+
+        OpcUaAdapterConfig config;
+        try
+        {
+            config = JsonSerializer.Deserialize<OpcUaAdapterConfig>(adapter.ConfigJson)
+                     ?? new OpcUaAdapterConfig();
+        }
+        catch (Exception ex)
+        {
+            return UnprocessableEntity(new { error = $"Invalid ConfigJson: {ex.Message}" });
+        }
+
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(10));
+
+        OpcUaClient.Session? session = null;
+        try
+        {
+            var appConfig = BuildOpcAppConfig();
+            await appConfig.Validate(OpcUa.ApplicationType.Client);
+
+            var useSecurity = !string.Equals(config.SecurityMode, "None", StringComparison.OrdinalIgnoreCase);
+            var endpoint = OpcUaClient.CoreClientUtils.SelectEndpoint(appConfig, config.ServerUrl, useSecurity, 15_000);
+
+            var userIdentity = config.AuthMode == "UsernamePassword"
+                ? new OpcUa.UserIdentity(config.Username!, config.Password!)
+                : new OpcUa.UserIdentity(new OpcUa.AnonymousIdentityToken());
+
+            session = await OpcUaClient.Session.Create(
+                appConfig,
+                new OpcUa.ConfiguredEndpoint(null, endpoint, OpcUa.EndpointConfiguration.Create(appConfig)),
+                false, "AeroMes-Browse", (uint)config.SessionTimeoutMs, userIdentity, null);
+
+            var startNode = string.IsNullOrWhiteSpace(req.NodeId)
+                ? OpcUa.ObjectIds.ObjectsFolder
+                : OpcUa.NodeId.Parse(req.NodeId);
+
+            var browser = new OpcUaClient.Browser(session)
+            {
+                BrowseDirection = OpcUa.BrowseDirection.Forward,
+                ReferenceTypeId = OpcUa.ReferenceTypeIds.HierarchicalReferences,
+                IncludeSubtypes = true,
+                NodeClassMask = 0,
+                ResultMask = (uint)OpcUa.BrowseResultMask.All,
+            };
+
+            var references = browser.Browse(startNode);
+
+            var nodes = references.Select(r => new OpcNodeInfo(
+                NodeId: r.NodeId.ToString(),
+                DisplayName: r.DisplayName.Text,
+                NodeClass: r.NodeClass.ToString(),
+                DataType: string.Empty // DataType requires additional read — omit for browse
+            )).ToList();
+
+            return Ok((IReadOnlyList<OpcNodeInfo>)nodes);
+        }
+        catch (OperationCanceledException)
+        {
+            return UnprocessableEntity(new { error = "OPC-UA browse timed out" });
+        }
+        catch (Exception ex)
+        {
+            return UnprocessableEntity(new { error = ex.Message });
+        }
+        finally
+        {
+            if (session is not null)
+            {
+                try { if (session.Connected) await session.CloseAsync(); } catch { /* ignore */ }
+                session.Dispose();
+            }
+        }
+    }
+
+    [HttpPost("adapters/{id:int}/read-node")]
+    [RequirePermission(Permissions.IotWrite)]
+    [ProducesResponseType<OpcNodeValue>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ReadOpcUaNode(int id, [FromBody] OpcReadNodeRequest req, CancellationToken ct)
+    {
+        var adapter = await adapterRepository.GetByIdAsync(id, ct);
+        if (adapter is null) return NotFound();
+
+        if (adapter.AdapterType != AdapterType.OpcUa)
+            return UnprocessableEntity(new { error = "Adapter is not of type OPC-UA" });
+
+        OpcUaAdapterConfig config;
+        try
+        {
+            config = JsonSerializer.Deserialize<OpcUaAdapterConfig>(adapter.ConfigJson)
+                     ?? new OpcUaAdapterConfig();
+        }
+        catch (Exception ex)
+        {
+            return UnprocessableEntity(new { error = $"Invalid ConfigJson: {ex.Message}" });
+        }
+
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(10));
+
+        OpcUaClient.Session? session = null;
+        try
+        {
+            var appConfig = BuildOpcAppConfig();
+            await appConfig.Validate(OpcUa.ApplicationType.Client);
+
+            var useSecurity = !string.Equals(config.SecurityMode, "None", StringComparison.OrdinalIgnoreCase);
+            var endpoint = OpcUaClient.CoreClientUtils.SelectEndpoint(appConfig, config.ServerUrl, useSecurity, 15_000);
+
+            var userIdentity = config.AuthMode == "UsernamePassword"
+                ? new OpcUa.UserIdentity(config.Username!, config.Password!)
+                : new OpcUa.UserIdentity(new OpcUa.AnonymousIdentityToken());
+
+            session = await OpcUaClient.Session.Create(
+                appConfig,
+                new OpcUa.ConfiguredEndpoint(null, endpoint, OpcUa.EndpointConfiguration.Create(appConfig)),
+                false, "AeroMes-Read", (uint)config.SessionTimeoutMs, userIdentity, null);
+
+            var nodeId = OpcUa.NodeId.Parse(req.NodeId);
+
+            var nodesToRead = new OpcUa.ReadValueIdCollection
+            {
+                new OpcUa.ReadValueId { NodeId = nodeId, AttributeId = OpcUa.Attributes.Value },
+                new OpcUa.ReadValueId { NodeId = nodeId, AttributeId = OpcUa.Attributes.DataType },
+            };
+
+            session.Read(null, 0, OpcUa.TimestampsToReturn.Source, nodesToRead,
+                out var results, out _);
+
+            var valueResult = results[0];
+            var dataTypeResult = results[1];
+
+            var dataTypeName = string.Empty;
+            if (OpcUa.StatusCode.IsGood(dataTypeResult.StatusCode) && dataTypeResult.Value is OpcUa.NodeId dtNodeId)
+            {
+                dataTypeName = dtNodeId.ToString();
+            }
+
+            var sourceTs = valueResult.SourceTimestamp == DateTime.MinValue
+                ? DateTimeOffset.UtcNow
+                : new DateTimeOffset(valueResult.SourceTimestamp, TimeSpan.Zero);
+
+            var nodeValue = new OpcNodeValue(
+                NodeId: req.NodeId,
+                Value: valueResult.Value?.ToString() ?? string.Empty,
+                DataType: dataTypeName,
+                StatusCode: valueResult.StatusCode.ToString(),
+                SourceTimestamp: sourceTs);
+
+            return Ok(nodeValue);
+        }
+        catch (OperationCanceledException)
+        {
+            return UnprocessableEntity(new { error = "OPC-UA read timed out" });
+        }
+        catch (Exception ex)
+        {
+            return UnprocessableEntity(new { error = ex.Message });
+        }
+        finally
+        {
+            if (session is not null)
+            {
+                try { if (session.Connected) await session.CloseAsync(); } catch { /* ignore */ }
+                session.Dispose();
+            }
+        }
+    }
+
+    private static OpcUa.ApplicationConfiguration BuildOpcAppConfig() => new()
+    {
+        ApplicationName = "AeroMes",
+        ApplicationUri = "urn:aeromes:client",
+        ApplicationType = OpcUa.ApplicationType.Client,
+        SecurityConfiguration = new OpcUa.SecurityConfiguration
+        {
+            ApplicationCertificate = new OpcUa.CertificateIdentifier
+            {
+                StoreType = "Directory",
+                StorePath = "./pki/own"
+            },
+            TrustedPeerCertificates = new OpcUa.CertificateTrustList
+            {
+                StoreType = "Directory",
+                StorePath = "./pki/trusted"
+            },
+            RejectedCertificateStore = new OpcUa.CertificateTrustList
+            {
+                StoreType = "Directory",
+                StorePath = "./pki/rejected"
+            },
+            AutoAcceptUntrustedCertificates = true,
+            AddAppCertToTrustedStore = true,
+        },
+        TransportConfigurations = new OpcUa.TransportConfigurationCollection(),
+        TransportQuotas = new OpcUa.TransportQuotas { OperationTimeout = 15_000 },
+        ClientConfiguration = new OpcUa.ClientConfiguration { DefaultSessionTimeout = 30_000 },
+    };
+
     // ── Pipeline ──────────────────────────────────────────────────────────
 
     [HttpGet("pipeline/stats")]
@@ -428,3 +646,7 @@ public record AdapterCreatedResult(int AdapterId);
 public record SignalCreatedResult(int SignalId);
 public record StateRuleCreatedResult(int RuleId);
 public record MqttConnectionTestResult(bool Success, int LatencyMs, string BrokerHost, int BrokerPort, string? Error);
+public record OpcBrowseRequest(string? NodeId);
+public record OpcNodeInfo(string NodeId, string DisplayName, string NodeClass, string DataType);
+public record OpcReadNodeRequest(string NodeId);
+public record OpcNodeValue(string NodeId, string Value, string DataType, string StatusCode, DateTimeOffset SourceTimestamp);

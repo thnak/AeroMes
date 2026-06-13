@@ -626,6 +626,12 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(PipelineStats))]
 // iot mqtt
 [JsonSerializable(typeof(MqttConnectionTestResult))]
+// iot opc-ua
+[JsonSerializable(typeof(OpcBrowseRequest))]
+[JsonSerializable(typeof(OpcNodeInfo))]
+[JsonSerializable(typeof(IReadOnlyList<OpcNodeInfo>))]
+[JsonSerializable(typeof(OpcReadNodeRequest))]
+[JsonSerializable(typeof(OpcNodeValue))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 
