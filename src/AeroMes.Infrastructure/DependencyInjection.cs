@@ -8,6 +8,7 @@ using AeroMes.Domain.Production.Repositories;
 using AeroMes.Domain.Quality.Repositories;
 using AeroMes.Domain.Lab.Repositories;
 using AeroMes.Domain.Labels.Repositories;
+using AeroMes.Domain.Reminders.Repositories;
 using AeroMes.Domain.Sop.Repositories;
 using AeroMes.Domain.Rules.Repositories;
 using AeroMes.Domain.Wms.Repositories;
@@ -20,6 +21,7 @@ using AeroMes.Infrastructure.Iot.OpcUa;
 using AeroMes.Infrastructure.Repositories;
 using AeroMes.Infrastructure.Lab;
 using AeroMes.Infrastructure.Labels;
+using AeroMes.Infrastructure.Reminders;
 using AeroMes.Infrastructure.Rules;
 using AeroMes.Infrastructure.Sop;
 using AeroMes.Infrastructure.Services;
@@ -135,10 +137,12 @@ public static class DependencyInjection
         services.AddScoped<INcrRepository, NcrRepository>();
         services.AddScoped<IDefectLifecycleRepository, DefectLifecycleRepository>();
 
-        // rules / sop / lab / labels
+        // rules / sop / lab / labels / reminders
         services.AddScoped<ISopRepository, SopRepository>();
         services.AddScoped<ILabRepository, LabRepository>();
         services.AddScoped<ILabelRepository, LabelRepository>();
+        services.AddScoped<IReminderRepository, ReminderRepository>();
+        services.AddHostedService<ReminderEvaluationService>();
         services.AddScoped<IRuleRepository, RuleRepository>();
         services.AddSingleton<RuleEvaluationService>();
         services.AddScoped<IEventHandler<MachineSignalIngestedEvent>, SignalThresholdRuleHandler>();

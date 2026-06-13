@@ -10,6 +10,7 @@ using AeroMes.Domain.Production.ValueObjects;
 using AeroMes.Domain.Quality;
 using AeroMes.Domain.Lab;
 using AeroMes.Domain.Labels;
+using AeroMes.Domain.Reminders;
 using AeroMes.Domain.Sop;
 using AeroMes.Domain.Rules;
 using AeroMes.Domain.Settings;
@@ -187,6 +188,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<LabelTemplate> LabelTemplates => Set<LabelTemplate>();
     public DbSet<LabelPrintJob> LabelPrintJobs => Set<LabelPrintJob>();
 
+    // reminders
+    public DbSet<ReminderAlert> ReminderAlerts => Set<ReminderAlert>();
+    public DbSet<ReminderConfiguration> ReminderConfigurations => Set<ReminderConfiguration>();
+
     // settings
     public DbSet<SystemOptions> SystemOptions => Set<SystemOptions>();
 
@@ -226,6 +231,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureSopSchema(b);
         ConfigureLabSchema(b);
         ConfigureLabelsSchema(b);
+        ConfigureRemindersSchema(b);
     }
 
     // ── auth ──────────────────────────────────────────────────────────────
@@ -3025,6 +3031,34 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.EntityCode).HasMaxLength(100);
             e.Property(x => x.Status).HasMaxLength(20);
             e.Property(x => x.PrintedBy).HasMaxLength(256);
+        });
+    }
+
+    // ── reminders ─────────────────────────────────────────────────────────────
+    private static void ConfigureRemindersSchema(ModelBuilder b)
+    {
+        b.Entity<ReminderAlert>(e =>
+        {
+            e.ToTable("ReminderAlerts", "reminders");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ReminderType).HasMaxLength(60);
+            e.Property(x => x.EntityType).HasMaxLength(50);
+            e.Property(x => x.EntityId).HasMaxLength(100);
+            e.Property(x => x.EntityCode).HasMaxLength(100);
+            e.Property(x => x.Message).HasMaxLength(500);
+            e.Property(x => x.Severity).HasMaxLength(20);
+            e.Property(x => x.UserId).HasMaxLength(450);
+            e.HasIndex(x => new { x.ReminderType, x.EntityId, x.IsRead });
+        });
+
+        b.Entity<ReminderConfiguration>(e =>
+        {
+            e.ToTable("ReminderConfigurations", "reminders");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.UserId).HasMaxLength(450);
+            e.Property(x => x.ReminderType).HasMaxLength(60);
+            e.Property(x => x.NotificationChannel).HasMaxLength(20);
+            e.HasIndex(x => new { x.UserId, x.ReminderType }).IsUnique();
         });
     }
 }

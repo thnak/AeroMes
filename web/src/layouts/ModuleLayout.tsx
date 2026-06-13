@@ -19,9 +19,11 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import SolarIcon from '../components/SolarIcon';
 import UserMenu from '../components/UserMenu';
+import NotificationsDrawer from '../components/NotificationsDrawer';
 import { useAuth } from '../contexts/AuthContext';
 import { MODULES } from '../modules';
 import { APPBAR_HEIGHT } from '../theme/tokens';
+import { useGetApiV1RemindersAlertsUnreadCount } from '../api/reminders/reminders';
 
 const pageVariants: Variants = {
   initial: { opacity: 0, y: 8 },
@@ -34,7 +36,10 @@ export default function ModuleLayout() {
   const { pathname } = useLocation();
   const { hasRole } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const { data: unreadData } = useGetApiV1RemindersAlertsUnreadCount({ query: { refetchInterval: 60_000 } });
+  const unreadCount = (unreadData as unknown as { count?: number })?.count ?? 0;
 
   const mod = MODULES.find(
     (m) => pathname === m.path || pathname.startsWith(m.path + '/'),
@@ -180,9 +185,9 @@ export default function ModuleLayout() {
               </Tooltip>
             )}
             <Tooltip title="Notifications">
-              <IconButton size="small" sx={{ color: 'text.secondary' }}>
+              <IconButton size="small" onClick={() => setNotifOpen(true)} sx={{ color: 'text.secondary' }}>
                 <Badge
-                  badgeContent={3}
+                  badgeContent={unreadCount > 0 ? unreadCount : undefined}
                   color="error"
                   sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', minWidth: 16, height: 16 } }}
                 >
@@ -223,6 +228,8 @@ export default function ModuleLayout() {
           </Tabs>
         )}
       </AppBar>
+
+      <NotificationsDrawer open={notifOpen} onClose={() => setNotifOpen(false)} />
 
       {/* ── Page content ─────────────────────────────────────────────────── */}
       <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', bgcolor: 'background.default' }}>

@@ -742,6 +742,13 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(List<LabelPrintJobDto>))]
 [JsonSerializable(typeof(CreatePrintJobRequest))]
 [JsonSerializable(typeof(ScanResultDto))]
+// reminders
+[JsonSerializable(typeof(ReminderAlertDto))]
+[JsonSerializable(typeof(List<ReminderAlertDto>))]
+[JsonSerializable(typeof(UnreadCountDto))]
+[JsonSerializable(typeof(ReminderConfigDto))]
+[JsonSerializable(typeof(List<ReminderConfigDto>))]
+[JsonSerializable(typeof(UpsertReminderConfigRequest))]
 // defect lifecycle
 [JsonSerializable(typeof(DefectEntryDto))]
 [JsonSerializable(typeof(List<DefectEntryDto>))]

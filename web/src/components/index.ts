@@ -9,3 +9,4 @@ export { default as FormDrawer } from './FormDrawer';
 export { KpiRowSkeleton, TablePageSkeleton, DetailPageSkeleton } from './LoadingSkeleton';
 export { default as NewFeatureBadge } from './NewFeatureBadge';
 export { default as QrCodeDialog } from './QrCodeDialog';
+export { default as NotificationsDrawer } from './NotificationsDrawer';
