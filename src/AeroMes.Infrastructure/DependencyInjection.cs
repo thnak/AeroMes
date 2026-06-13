@@ -60,6 +60,8 @@ public static class DependencyInjection
         services.AddScoped<IMoldRepository, MoldRepository>();
         services.AddScoped<IToolRepository, ToolRepository>();
         services.AddScoped<IBomHeaderRepository, BomHeaderRepository>();
+        services.AddScoped<ISubstituteMaterialRepository, SubstituteMaterialRepository>();
+        services.AddScoped<IDisassemblyBomRepository, DisassemblyBomRepository>();
         services.AddScoped<IEngChangeRepository, EngChangeRepository>();
 
         // wms repositories

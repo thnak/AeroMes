@@ -70,6 +70,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<MoldMaintenanceLog> MoldMaintenanceLogs => Set<MoldMaintenanceLog>();
     public DbSet<Tool> Tools => Set<Tool>();
     public DbSet<BomHeader> BomHeaders => Set<BomHeader>();
+    public DbSet<BomByProduct> BomByProducts => Set<BomByProduct>();
+    public DbSet<SubstituteMaterial> SubstituteMaterials => Set<SubstituteMaterial>();
+    public DbSet<DisassemblyBom> DisassemblyBoms => Set<DisassemblyBom>();
+    public DbSet<DisassemblyBomLine> DisassemblyBomLines => Set<DisassemblyBomLine>();
     public DbSet<BomLine> BomLines => Set<BomLine>();
     public DbSet<EngChange> EngChanges => Set<EngChange>();
     public DbSet<ToolOperationMapping> ToolOperationMappings => Set<ToolOperationMapping>();
@@ -1273,6 +1277,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.ProductCode)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            e.Property(x => x.BomType).HasConversion<string>().HasMaxLength(30);
+            e.Property(x => x.IsDefault).HasDefaultValue(false);
+
             e.HasMany(x => x.Lines)
                 .WithOne()
                 .HasForeignKey(x => x.BomHeaderId)
@@ -1280,6 +1287,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Navigation(x => x.Lines)
                 .HasField("_lines")
                 .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            e.HasMany(x => x.ByProducts).WithOne().HasForeignKey(x => x.BomHeaderId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .Metadata.PrincipalToDependent!.SetField("_byProducts");
+            e.Navigation(x => x.ByProducts).UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
         b.Entity<BomLine>(e =>
@@ -1301,6 +1313,57 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .WithMany()
                 .HasForeignKey(x => x.UoMCode)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<BomByProduct>(b =>
+        {
+            b.ToTable("BomByProducts", "master");
+            b.HasKey(x => x.BomByProductId);
+            b.Property(x => x.BomByProductId).UseIdentityColumn();
+            b.Property(x => x.Quantity).HasColumnType("NUMERIC(18,4)");
+            b.HasOne(x => x.ByProduct).WithMany().HasForeignKey(x => x.ByProductCode)
+                .HasPrincipalKey(p => p.ProductCode).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<SubstituteMaterial>(b =>
+        {
+            b.ToTable("SubstituteMaterials", "master");
+            b.HasKey(x => x.SubstituteId);
+            b.Property(x => x.SubstituteId).UseIdentityColumn();
+            b.HasIndex(x => x.SubstituteCode).IsUnique();
+            b.Property(x => x.ConversionRatio).HasColumnType("NUMERIC(18,6)");
+            b.HasQueryFilter(x => !x.IsDeleted);
+            b.HasOne(x => x.PrimaryMaterial).WithMany().HasForeignKey(x => x.PrimaryMaterialCode)
+                .HasPrincipalKey(p => p.ProductCode).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne(x => x.SubstituteMaterialProduct).WithMany().HasForeignKey(x => x.SubstituteMaterialCode)
+                .HasPrincipalKey(p => p.ProductCode).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<DisassemblyBom>(b =>
+        {
+            b.ToTable("DisassemblyBoms", "master");
+            b.HasKey(x => x.DisassemblyBomId);
+            b.Property(x => x.DisassemblyBomId).UseIdentityColumn();
+            b.HasIndex(x => x.BomCode).IsUnique();
+            b.Property(x => x.LossRatio).HasColumnType("NUMERIC(18,4)");
+            b.HasQueryFilter(x => !x.IsDeleted);
+            b.HasOne(x => x.SourceProduct).WithMany().HasForeignKey(x => x.SourceProductCode)
+                .HasPrincipalKey(p => p.ProductCode).OnDelete(DeleteBehavior.Restrict);
+            b.HasMany(x => x.Lines).WithOne().HasForeignKey(x => x.DisassemblyBomId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .Metadata.PrincipalToDependent!.SetField("_lines");
+            b.Navigation(x => x.Lines).UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<DisassemblyBomLine>(b =>
+        {
+            b.ToTable("DisassemblyBomLines", "master");
+            b.HasKey(x => x.LineId);
+            b.Property(x => x.LineId).UseIdentityColumn();
+            b.Property(x => x.RecoveryRate).HasColumnType("NUMERIC(18,4)");
+            b.Property(x => x.FixedQuantity).HasColumnType("NUMERIC(18,4)");
+            b.HasOne(x => x.Component).WithMany().HasForeignKey(x => x.ComponentCode)
+                .HasPrincipalKey(p => p.ProductCode).OnDelete(DeleteBehavior.Restrict);
         });
 
         b.Entity<EngChange>(e =>

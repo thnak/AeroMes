@@ -24,6 +24,9 @@ public interface IBomHeaderRepository
     /// <summary>No-tracking version history (with lines) for a product, newest first.</summary>
     Task<IReadOnlyList<BomHeader>> GetVersionsByProductAsync(string productCode, CancellationToken ct = default);
 
+    /// <summary>Tracked load of the current default BOM for the given product + type, for singleton enforcement.</summary>
+    Task<BomHeader?> GetDefaultByProductAndTypeAsync(string productCode, BomType bomType, CancellationToken ct = default);
+
     Task<bool> VersionExistsAsync(string productCode, string version, CancellationToken ct = default);
 
     Task AddAsync(BomHeader entity, CancellationToken ct = default);

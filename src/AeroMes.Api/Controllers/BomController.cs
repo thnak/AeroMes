@@ -3,13 +3,16 @@ using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.Boms.Commands.ActivateBomVersion;
 using AeroMes.Application.Master.Boms.Commands.ApproveBom;
 using AeroMes.Application.Master.Boms.Commands.CreateBomDraft;
+using AeroMes.Application.Master.Boms.Commands.SetBomDefault;
 using AeroMes.Application.Master.Boms.Commands.SubmitBomForReview;
+using AeroMes.Application.Master.Boms.Commands.UpdateBomByProducts;
 using AeroMes.Application.Master.Boms.Commands.UpdateBomLines;
 using AeroMes.Application.Master.Boms.Queries.CompareBomVersions;
 using AeroMes.Application.Master.Boms.Queries.ExplodeBom;
 using AeroMes.Application.Master.Boms.Queries.GetActiveBom;
 using AeroMes.Application.Master.Boms.Queries.GetBomVersionDetail;
 using AeroMes.Application.Master.Boms.Queries.GetBomVersions;
+using AeroMes.Domain.Master;
 using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
@@ -85,7 +88,7 @@ public class BomController(ICommandMediator commandMediator, IQueryMediator quer
     {
         var result = await commandMediator.SendAsync(
             new CreateBomDraftCommand(
-                productCode, req.Version, req.BaseQuantity, req.Notes,
+                productCode, req.Version, req.BomType, req.BaseQuantity, req.Notes,
                 req.CloneFromVersion, User.Identity?.Name), null, ct);
         if (!result.IsSuccess) return result.ToErrorResult();
         return CreatedAtAction(nameof(GetVersion),
@@ -145,14 +148,45 @@ public class BomController(ICommandMediator commandMediator, IQueryMediator quer
         if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
+
+    [HttpPut("{productCode}/versions/{version}/by-products")]
+    [RequirePermission(Permissions.MasterDataWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateByProducts(
+        string productCode, string version, [FromBody] UpdateBomByProductsRequest req, CancellationToken ct)
+    {
+        var entries = req.ByProducts.Select(b => new BomByProductEntry(b.ByProductCode, b.Quantity, b.UoMCode, b.Notes)).ToList();
+        var result = await commandMediator.SendAsync(
+            new UpdateBomByProductsCommand(productCode, version, entries, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpPost("{productCode}/versions/{version}/set-default")]
+    [RequirePermission(Permissions.MasterDataWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> SetDefault(string productCode, string version, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new SetBomDefaultCommand(productCode, version, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
 }
 
 public record CreateBomDraftRequest(
     string Version,
+    BomType BomType = BomType.Production,
     decimal BaseQuantity = 1m,
     string? Notes = null,
     string? CloneFromVersion = null);
 
 public record UpdateBomLinesRequest(IReadOnlyList<BomLineInput> Lines);
+public record UpdateBomByProductsRequest(IReadOnlyList<BomByProductInput> ByProducts);
+public record BomByProductInput(string ByProductCode, decimal Quantity, string UoMCode, string? Notes = null);
 public record ActivateBomRequest(DateOnly? EffectiveFrom = null);
 public record BomDraftCreatedResult(int BomHeaderId, string Version);

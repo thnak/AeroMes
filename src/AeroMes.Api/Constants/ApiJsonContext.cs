@@ -142,10 +142,40 @@ using AeroMes.Application.Wms.Commands.CreateCarton;
 using AeroMes.Application.Wms.Queries.GetShipmentList;
 using AeroMes.Application.Wms.Queries.GetShipmentById;
 using AeroMes.Application.Wms.Queries.GetPickListForShipment;
+using AeroMes.Application.Master.SubstituteMaterials.Commands.CreateSubstituteMaterial;
+using AeroMes.Application.Master.SubstituteMaterials.Queries.GetSubstituteMaterials;
+using AeroMes.Application.Master.DisassemblyBoms.Commands.CreateDisassemblyBom;
+using AeroMes.Application.Master.DisassemblyBoms.Queries.GetDisassemblyBoms;
+using AeroMes.Application.Master.DisassemblyBoms.Queries.GetDisassemblyBomById;
+using AeroMes.Application.Master.Boms.Commands.UpdateBomByProducts;
+using AeroMes.Domain.Master;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AeroMes.Api.Constants;
 
+// substitute materials
+[JsonSerializable(typeof(SubstituteMaterialCreatedResult))]
+[JsonSerializable(typeof(SubstituteMaterialDto))]
+[JsonSerializable(typeof(IReadOnlyList<SubstituteMaterialDto>))]
+[JsonSerializable(typeof(CreateSubstituteMaterialRequest))]
+[JsonSerializable(typeof(UpdateSubstituteMaterialRequest))]
+[JsonSerializable(typeof(SetSubstituteMaterialStatusRequest))]
+// disassembly boms
+[JsonSerializable(typeof(DisassemblyBomCreatedResult))]
+[JsonSerializable(typeof(DisassemblyBomSummaryDto))]
+[JsonSerializable(typeof(IReadOnlyList<DisassemblyBomSummaryDto>))]
+[JsonSerializable(typeof(DisassemblyBomDetailDto))]
+[JsonSerializable(typeof(DisassemblyBomLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<DisassemblyBomLineDto>))]
+[JsonSerializable(typeof(CreateDisassemblyBomRequest))]
+[JsonSerializable(typeof(UpdateDisassemblyBomRequest))]
+[JsonSerializable(typeof(SetDisassemblyBomStatusRequest))]
+[JsonSerializable(typeof(UpdateBomByProductsRequest))]
+[JsonSerializable(typeof(BomByProductInput))]
+[JsonSerializable(typeof(BomType))]
+[JsonSerializable(typeof(DisassemblyBomType))]
+[JsonSerializable(typeof(DisassemblyComponentType))]
+[JsonSerializable(typeof(SubstituteMaterialStatus))]
 [JsonSourceGenerationOptions(JsonSerializerDefaults.Web, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(ProblemDetails))]
 [JsonSerializable(typeof(AeroMes.Domain.Settings.SystemOptions))]

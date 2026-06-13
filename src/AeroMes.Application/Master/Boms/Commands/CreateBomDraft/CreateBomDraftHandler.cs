@@ -22,7 +22,7 @@ public class CreateBomDraftHandler(
         try
         {
             var header = BomHeader.Create(
-                cmd.ProductCode, cmd.Version, cmd.BaseQuantity, null, cmd.Notes, cmd.CreatedBy);
+                cmd.ProductCode, cmd.Version, cmd.BomType, cmd.BaseQuantity, null, cmd.Notes, cmd.CreatedBy);
 
             if (cmd.CloneFromVersion is not null)
             {

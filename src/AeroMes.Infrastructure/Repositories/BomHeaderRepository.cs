@@ -52,6 +52,12 @@ public class BomHeaderRepository(AppDbContext db) : IBomHeaderRepository
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync(ct);
 
+    public Task<BomHeader?> GetDefaultByProductAndTypeAsync(string productCode, BomType bomType, CancellationToken ct) =>
+        db.BomHeaders
+            .FirstOrDefaultAsync(x =>
+                x.ProductCode == productCode.ToUpperInvariant() &&
+                x.BomType == bomType && x.IsDefault, ct);
+
     public Task<bool> VersionExistsAsync(string productCode, string version, CancellationToken ct) =>
         db.BomHeaders.AnyAsync(x =>
             x.ProductCode == productCode.ToUpperInvariant() && x.Version == version, ct);
