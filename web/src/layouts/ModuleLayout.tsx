@@ -14,10 +14,11 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import SolarIcon from '../components/SolarIcon';
+import CommandPalette from '../components/CommandPalette';
 import UserMenu from '../components/UserMenu';
 import NotificationsDrawer from '../components/NotificationsDrawer';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -37,10 +38,23 @@ export default function ModuleLayout() {
   const { pathname } = useLocation();
   const { hasRole } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const { data: unreadData } = useGetApiV1RemindersAlertsUnreadCount({ query: { refetchInterval: 60_000 } });
   const unreadCount = (unreadData as unknown as { count?: number })?.count ?? 0;
+
+  // ⌘K / Ctrl+K global shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setPaletteOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   const mod = MODULES.find(
     (m) => pathname === m.path || pathname.startsWith(m.path + '/'),
@@ -56,11 +70,6 @@ export default function ModuleLayout() {
       (t) => pathname === t.path || pathname.startsWith(t.path + '/'),
     ),
   );
-
-  function openSearch() {
-    setSearchOpen(true);
-    setTimeout(() => searchRef.current?.focus(), 50);
-  }
 
   function closeSearch() {
     setSearchOpen(false);
@@ -179,8 +188,8 @@ export default function ModuleLayout() {
           {/* Right actions */}
           <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', flexShrink: 0 }}>
             {!searchOpen && (
-              <Tooltip title="Search (/)">
-                <IconButton size="small" onClick={openSearch} sx={{ color: 'text.secondary' }}>
+              <Tooltip title="Search (⌘K)">
+                <IconButton size="small" onClick={() => setPaletteOpen(true)} sx={{ color: 'text.secondary' }}>
                   <SolarIcon name="search" size={20} />
                 </IconButton>
               </Tooltip>
@@ -232,6 +241,7 @@ export default function ModuleLayout() {
       </AppBar>
 
       <NotificationsDrawer open={notifOpen} onClose={() => setNotifOpen(false)} />
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
       {/* ── Page content ─────────────────────────────────────────────────── */}
       <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', bgcolor: 'background.default' }}>
