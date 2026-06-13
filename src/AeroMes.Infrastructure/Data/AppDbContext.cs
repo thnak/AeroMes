@@ -20,6 +20,7 @@ using AeroMes.Domain.Wms;
 using AeroMes.Domain.Cost;
 using AeroMes.Domain.Maintenance;
 using AeroMes.Domain.Energy;
+using AeroMes.Domain.Templates;
 using AeroMes.Infrastructure.Identity;
 using LiteBus.Events.Abstractions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -291,6 +292,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     // settings
     public DbSet<SystemOptions> SystemOptions => Set<SystemOptions>();
 
+    // templates schema
+    public DbSet<DocumentTemplate> DocumentTemplates => Set<DocumentTemplate>();
+    public DbSet<PrintAuditLog> PrintAuditLogs => Set<PrintAuditLog>();
+
     public override async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
         var result = await base.SaveChangesAsync(ct);
@@ -337,6 +342,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureEnergySchema(b);
         ConfigureMaintenanceSchema(b);
         ConfigureCostSchema(b);
+        ConfigureTemplatesSchema(b);
     }
 
     // ── auth ──────────────────────────────────────────────────────────────
@@ -4632,6 +4638,34 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.TotalRateSnapshot).HasColumnType("DECIMAL(14,4)").IsRequired();
             e.Ignore(x => x.LineTotal);
             e.HasIndex(x => x.WOID);
+        });
+    }
+
+    // ── templates ─────────────────────────────────────────────────────────
+    private static void ConfigureTemplatesSchema(ModelBuilder b)
+    {
+        b.Entity<DocumentTemplate>(e =>
+        {
+            e.ToTable("DocumentTemplates", "templates");
+            e.HasKey(x => x.TemplateId);
+            e.Property(x => x.TemplateId).UseIdentityColumn();
+            e.Property(x => x.TemplateName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.DocumentType).HasConversion<string>().HasMaxLength(50).IsRequired();
+            e.Property(x => x.OutputFormat).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.HasIndex(x => x.DocumentType);
+        });
+
+        b.Entity<PrintAuditLog>(e =>
+        {
+            e.ToTable("PrintAuditLogs", "templates");
+            e.HasKey(x => x.LogId);
+            e.Property(x => x.LogId).UseIdentityColumn();
+            e.Property(x => x.DocumentType).HasMaxLength(60).IsRequired();
+            e.Property(x => x.DocumentId).HasMaxLength(100).IsRequired();
+            e.Property(x => x.TemplateName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.OutputFormat).HasMaxLength(20).IsRequired();
+            e.Property(x => x.PrintedBy).HasMaxLength(256).IsRequired();
+            e.HasIndex(x => new { x.DocumentType, x.DocumentId });
         });
     }
 }

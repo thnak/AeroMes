@@ -356,6 +356,10 @@ public static class DependencyInjection
         services.AddSingleton<IIdentityEncodingService, IdentityEncodingService>();
         services.AddSingleton<ILabelRenderer, QuestPdfLabelRenderer>();
 
+        // Document templates & print
+        services.AddScoped<AeroMes.Application.Templates.IDocumentTemplateRepository, DocumentTemplateRepository>();
+        services.AddScoped<AeroMes.Application.Documents.IDocumentPrintService, Documents.DocumentPrintService>();
+
         return services;
     }
 }

@@ -195,6 +195,9 @@ using AeroMes.Domain.Quality;
 using AeroMes.Domain.Quality.Repositories;
 using AeroMes.Domain.Energy;
 using AeroMes.Domain.Energy.Repositories;
+using AeroMes.Application.Templates;
+using AeroMes.Application.Documents.Queries.GetDocumentPrintTemplates;
+using AeroMes.Domain.Templates;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AeroMes.Api.Constants;
@@ -1352,6 +1355,24 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<StoppageReasonItem>))]
 [JsonSerializable(typeof(List<StoppageReasonItem>))]
 [JsonSerializable(typeof(SaveLayoutRequest))]
+// document print templates (#98)
+[JsonSerializable(typeof(DocumentTemplateDto))]
+[JsonSerializable(typeof(IReadOnlyList<DocumentTemplateDto>))]
+[JsonSerializable(typeof(List<DocumentTemplateDto>))]
+[JsonSerializable(typeof(TemplateFieldItem))]
+[JsonSerializable(typeof(IReadOnlyList<TemplateFieldItem>))]
+[JsonSerializable(typeof(List<TemplateFieldItem>))]
+[JsonSerializable(typeof(PrintAuditLogDto))]
+[JsonSerializable(typeof(IReadOnlyList<PrintAuditLogDto>))]
+[JsonSerializable(typeof(List<PrintAuditLogDto>))]
+[JsonSerializable(typeof(DocumentType))]
+[JsonSerializable(typeof(PrintOutputFormat))]
+[JsonSerializable(typeof(CreateTemplateRequest))]
+[JsonSerializable(typeof(UpdateTemplateRequest))]
+// document print available templates (#102)
+[JsonSerializable(typeof(AvailableTemplateItem))]
+[JsonSerializable(typeof(IReadOnlyList<AvailableTemplateItem>))]
+[JsonSerializable(typeof(List<AvailableTemplateItem>))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 
