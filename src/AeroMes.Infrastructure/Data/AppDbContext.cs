@@ -38,6 +38,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<SecurityAuditLog> SecurityAuditLogs => Set<SecurityAuditLog>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
+    public DbSet<DashboardLayout> DashboardLayouts => Set<DashboardLayout>();
 
     // master schema
     public DbSet<WorkCenter> WorkCenters => Set<WorkCenter>();
@@ -448,6 +449,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .WithMany()
                 .HasForeignKey(x => x.OwnerUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<DashboardLayout>(e =>
+        {
+            e.ToTable("DashboardLayouts", "auth");
+            e.HasKey(x => x.LayoutId);
+            e.Property(x => x.LayoutId).UseIdentityColumn();
+            e.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+            e.HasIndex(x => x.UserId).IsUnique();
+            e.Property(x => x.LayoutJson).IsRequired();
         });
 
         // Passkey (WebAuthn) — IdentityUserPasskey<TKey> is not auto-discovered; must be configured manually

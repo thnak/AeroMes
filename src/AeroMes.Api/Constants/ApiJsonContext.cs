@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AeroMes.Api.Controllers;
+using AeroMes.Application.Interfaces;
 using AeroMes.Api.Middleware;
 using AeroMes.Application.Inventory.Queries.GetInventoryStock;
 using AeroMes.Application.Inventory.Queries.GetLotTrace;
@@ -1301,6 +1302,37 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(ProcessApplicationScope))]
 [JsonSerializable(typeof(StageCapacityType))]
 [JsonSerializable(typeof(PlannedTimeSource))]
+
+// Overview Dashboard
+[JsonSerializable(typeof(IncompleteOrdersResult))]
+[JsonSerializable(typeof(RemainingVolumeItem))]
+[JsonSerializable(typeof(IReadOnlyList<RemainingVolumeItem>))]
+[JsonSerializable(typeof(List<RemainingVolumeItem>))]
+[JsonSerializable(typeof(OutputOverTimeItem))]
+[JsonSerializable(typeof(IReadOnlyList<OutputOverTimeItem>))]
+[JsonSerializable(typeof(List<OutputOverTimeItem>))]
+[JsonSerializable(typeof(OrdersByStatusItem))]
+[JsonSerializable(typeof(IReadOnlyList<OrdersByStatusItem>))]
+[JsonSerializable(typeof(List<OrdersByStatusItem>))]
+[JsonSerializable(typeof(OutputByStageItem))]
+[JsonSerializable(typeof(IReadOnlyList<OutputByStageItem>))]
+[JsonSerializable(typeof(List<OutputByStageItem>))]
+[JsonSerializable(typeof(OutputByDepartmentItem))]
+[JsonSerializable(typeof(IReadOnlyList<OutputByDepartmentItem>))]
+[JsonSerializable(typeof(List<OutputByDepartmentItem>))]
+[JsonSerializable(typeof(TopProductByVolumeItem))]
+[JsonSerializable(typeof(IReadOnlyList<TopProductByVolumeItem>))]
+[JsonSerializable(typeof(List<TopProductByVolumeItem>))]
+[JsonSerializable(typeof(TopProductByErrorRateItem))]
+[JsonSerializable(typeof(IReadOnlyList<TopProductByErrorRateItem>))]
+[JsonSerializable(typeof(List<TopProductByErrorRateItem>))]
+[JsonSerializable(typeof(ErrorRateByCategoryItem))]
+[JsonSerializable(typeof(IReadOnlyList<ErrorRateByCategoryItem>))]
+[JsonSerializable(typeof(List<ErrorRateByCategoryItem>))]
+[JsonSerializable(typeof(StoppageReasonItem))]
+[JsonSerializable(typeof(IReadOnlyList<StoppageReasonItem>))]
+[JsonSerializable(typeof(List<StoppageReasonItem>))]
+[JsonSerializable(typeof(SaveLayoutRequest))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 
