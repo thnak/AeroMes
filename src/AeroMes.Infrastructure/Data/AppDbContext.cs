@@ -81,6 +81,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<MaterialBlendLog> MaterialBlendLogs => Set<MaterialBlendLog>();
     public DbSet<FabricRoll> FabricRolls => Set<FabricRoll>();
     public DbSet<FabricConsumptionLog> FabricConsumptionLogs => Set<FabricConsumptionLog>();
+    public DbSet<CutOrder> CutOrders => Set<CutOrder>();
+    public DbSet<CutOrderLine> CutOrderLines => Set<CutOrderLine>();
+    public DbSet<CutOrderFabricUsage> CutOrderFabricUsages => Set<CutOrderFabricUsage>();
+    public DbSet<Bundle> Bundles => Set<Bundle>();
     public DbSet<Tool> Tools => Set<Tool>();
     public DbSet<BomHeader> BomHeaders => Set<BomHeader>();
     public DbSet<BomByProduct> BomByProducts => Set<BomByProduct>();
@@ -1421,6 +1425,72 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasDefaultValueSql("SYSUTCDATETIME()");
             e.HasIndex(x => x.RollID).HasDatabaseName("IX_FabricLog_Roll");
             e.HasIndex(x => x.CutOrderID).HasDatabaseName("IX_FabricLog_CutOrder");
+        });
+
+        b.Entity<CutOrder>(e =>
+        {
+            e.ToTable("CutOrders", "prod");
+            e.HasKey(x => x.CutOrderID);
+            e.Property(x => x.CutOrderID).ValueGeneratedOnAdd();
+            e.Property(x => x.CutOrderCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.StyleCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ColorCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.FabricProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ShadeCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.MarkerReference).HasMaxLength(100);
+            e.Property(x => x.MarkerEfficiencyPct).HasColumnType("DECIMAL(5,2)");
+            e.Property(x => x.SpreadLengthMeters).HasColumnType("DECIMAL(10,3)").IsRequired();
+            e.Property(x => x.FabricWidthCm).HasColumnType("DECIMAL(6,1)").IsRequired();
+            e.Property(x => x.EstimatedFabricMeters).HasColumnType("DECIMAL(10,3)");
+            e.Property(x => x.ActualFabricMeters).HasColumnType("DECIMAL(10,3)");
+            e.Property(x => x.FabricWastePct)
+                .HasColumnType("DECIMAL(5,2)")
+                .HasComputedColumnSql(
+                    "CASE WHEN [ActualFabricMeters] > 0 AND [MarkerEfficiencyPct] > 0 THEN 100.0 - [MarkerEfficiencyPct] ELSE NULL END");
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.CuttingStartedAt).HasColumnType("datetime2");
+            e.Property(x => x.CuttingCompletedAt).HasColumnType("datetime2");
+            e.Property(x => x.CreatedAt).HasColumnType("datetime2").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.HasIndex(x => x.CutOrderCode).IsUnique();
+            e.HasIndex(x => x.WOID).HasDatabaseName("IX_CutOrder_WOID");
+            e.HasIndex(x => new { x.StyleCode, x.ColorCode }).HasDatabaseName("IX_CutOrder_Style");
+            e.HasMany(x => x.Lines).WithOne().HasForeignKey(l => l.CutOrderID);
+            e.HasMany(x => x.FabricUsage).WithOne().HasForeignKey(u => u.CutOrderID);
+            e.Navigation(x => x.Lines).AutoInclude(false);
+            e.Navigation(x => x.FabricUsage).AutoInclude(false);
+        });
+
+        b.Entity<CutOrderLine>(e =>
+        {
+            e.ToTable("CutOrderLines", "prod");
+            e.HasKey(x => x.LineID);
+            e.Property(x => x.LineID).ValueGeneratedOnAdd();
+            e.Property(x => x.SizeCode).HasMaxLength(10).IsRequired();
+            e.HasIndex(x => new { x.CutOrderID, x.SizeCode }).IsUnique()
+                .HasDatabaseName("UQ_CutOrderLine");
+        });
+
+        b.Entity<CutOrderFabricUsage>(e =>
+        {
+            e.ToTable("CutOrderFabricUsage", "prod");
+            e.HasKey(x => x.UsageID);
+            e.Property(x => x.UsageID).ValueGeneratedOnAdd();
+            e.Property(x => x.MetersUsed).HasColumnType("DECIMAL(10,3)").IsRequired();
+            e.HasIndex(x => new { x.CutOrderID, x.RollID }).IsUnique()
+                .HasDatabaseName("UQ_CO_Roll");
+        });
+
+        b.Entity<Bundle>(e =>
+        {
+            e.ToTable("Bundles", "prod");
+            e.HasKey(x => x.BundleID);
+            e.Property(x => x.BundleID).ValueGeneratedOnAdd();
+            e.Property(x => x.SizeCode).HasMaxLength(10).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.CreatedAt).HasColumnType("datetime2").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.HasIndex(x => x.CutOrderID);
         });
 
         b.Entity<Tool>(e =>
