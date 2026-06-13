@@ -268,6 +268,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<ScrapTransaction> ScrapTransactions => Set<ScrapTransaction>();
     public DbSet<ReworkOrder> CostReworkOrders => Set<ReworkOrder>();
     public DbSet<QualityCostSummary> QualityCostSummaries => Set<QualityCostSummary>();
+    public DbSet<LaborGrade> LaborGrades => Set<LaborGrade>();
+    public DbSet<MachineCostRate> MachineCostRates => Set<MachineCostRate>();
+    public DbSet<EnergyTariff> CostEnergyTariffs => Set<EnergyTariff>();
+    public DbSet<MachineEnergyProfile> MachineEnergyProfiles => Set<MachineEnergyProfile>();
+    public DbSet<ItemCostHistory> ItemCostHistories => Set<ItemCostHistory>();
 
     // settings
     public DbSet<SystemOptions> SystemOptions => Set<SystemOptions>();
@@ -4352,6 +4357,72 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.CopqPct).HasColumnType("DECIMAL(10,4)");
             e.Property(x => x.LastRefreshedAt).HasColumnType("datetime2(3)");
             e.HasIndex(x => new { x.PeriodYear, x.PeriodMonth, x.ProductCode, x.WorkCenterID }).IsUnique();
+        });
+
+        b.Entity<LaborGrade>(e =>
+        {
+            e.ToTable("LaborGrades", "cost");
+            e.HasKey(x => x.LaborGradeID);
+            e.Property(x => x.LaborGradeID).UseIdentityColumn();
+            e.Property(x => x.GradeCode).HasMaxLength(20).IsRequired();
+            e.HasIndex(x => new { x.GradeCode, x.EffectiveFrom }).IsUnique();
+            e.Property(x => x.GradeName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.HourlyRate).HasColumnType("DECIMAL(12,4)").IsRequired();
+            e.Property(x => x.OvertimeMultiplier).HasColumnType("DECIMAL(5,2)").HasDefaultValue(1.5m);
+            e.Property(x => x.Currency).HasMaxLength(3).HasDefaultValue("VND");
+            e.Property(x => x.CreatedBy).HasMaxLength(50);
+            e.HasIndex(x => x.GradeCode);
+        });
+
+        b.Entity<MachineCostRate>(e =>
+        {
+            e.ToTable("MachineCostRates", "cost");
+            e.HasKey(x => x.RateID);
+            e.Property(x => x.RateID).UseIdentityColumn();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.RateType).HasConversion<string>().HasMaxLength(30).IsRequired();
+            e.Property(x => x.RatePerHour).HasColumnType("DECIMAL(14,4)").IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(255);
+            e.Property(x => x.CreatedBy).HasMaxLength(50);
+            e.HasIndex(x => x.MachineCode);
+        });
+
+        b.Entity<EnergyTariff>(e =>
+        {
+            e.ToTable("EnergyTariffs", "cost");
+            e.HasKey(x => x.TariffID);
+            e.Property(x => x.TariffID).UseIdentityColumn();
+            e.Property(x => x.TariffName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.TariffType).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.PeakRateKWh).HasColumnType("DECIMAL(12,6)").IsRequired();
+            e.Property(x => x.OffPeakRateKWh).HasColumnType("DECIMAL(12,6)");
+            e.Property(x => x.IsActive).HasDefaultValue(true);
+        });
+
+        b.Entity<MachineEnergyProfile>(e =>
+        {
+            e.ToTable("MachineEnergyProfiles", "cost");
+            e.HasKey(x => x.ProfileID);
+            e.Property(x => x.ProfileID).UseIdentityColumn();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.NominalKW).HasColumnType("DECIMAL(10,3)").IsRequired();
+            e.Property(x => x.LoadFactor).HasColumnType("DECIMAL(5,2)").HasDefaultValue(0.75m);
+            e.HasIndex(x => x.MachineCode);
+        });
+
+        b.Entity<ItemCostHistory>(e =>
+        {
+            e.ToTable("ItemCostHistory", "cost");
+            e.HasKey(x => x.CostID);
+            e.Property(x => x.CostID).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.CostType).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.UnitCost).HasColumnType("DECIMAL(18,6)").IsRequired();
+            e.Property(x => x.CostUoM).HasMaxLength(20).IsRequired();
+            e.Property(x => x.SourceRef).HasMaxLength(100);
+            e.Property(x => x.ApprovedBy).HasMaxLength(50);
+            e.Property(x => x.CreatedBy).HasMaxLength(50);
+            e.HasIndex(x => x.ProductCode);
         });
     }
 }

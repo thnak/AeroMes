@@ -151,6 +151,11 @@ public static class DependencyInjection
         services.AddScoped<IProductionProcessRepository, ProductionProcessRepository>();
         services.AddScoped<IScrapTransactionRepository, ScrapTransactionRepository>();
         services.AddScoped<IReworkOrderRepository, ReworkOrderRepository>();
+        services.AddScoped<ILaborGradeRepository, LaborGradeRepository>();
+        services.AddScoped<IMachineCostRateRepository, MachineCostRateRepository>();
+        services.AddScoped<IEnergyTariffRepository, EnergyTariffCostRepository>();
+        services.AddScoped<IMachineEnergyProfileRepository, MachineEnergyProfileRepository>();
+        services.AddScoped<IItemCostHistoryRepository, ItemCostHistoryRepository>();
         services.AddScoped<IQualityCostSummaryRepository, QualityCostSummaryRepository>();
         services.AddScoped<IMaintenanceOrderRepository, MaintenanceOrderRepository>();
         services.AddScoped<IMachineTcoRepository, MachineTcoRepository>();
