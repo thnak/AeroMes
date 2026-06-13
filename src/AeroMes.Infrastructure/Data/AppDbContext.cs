@@ -15,6 +15,7 @@ using AeroMes.Domain.Storage;
 using AeroMes.Domain.Sop;
 using AeroMes.Domain.Rules;
 using AeroMes.Domain.Settings;
+using AeroMes.Domain.Traceability;
 using AeroMes.Domain.Wms;
 using AeroMes.Infrastructure.Identity;
 using LiteBus.Events.Abstractions;
@@ -111,6 +112,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<ProductionOutputLine> ProductionOutputLines => Set<ProductionOutputLine>();
     public DbSet<MaterialConsumptionLine> MaterialConsumptionLines => Set<MaterialConsumptionLine>();
     public DbSet<ByProductLine> ByProductLines => Set<ByProductLine>();
+    public DbSet<LotLineage> LotLineages => Set<LotLineage>();
+    public DbSet<LotEvent> LotEvents => Set<LotEvent>();
 
     // wms schema
     public DbSet<WarehouseZone> WarehouseZones => Set<WarehouseZone>();
@@ -249,6 +252,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureLabelsSchema(b);
         ConfigureRemindersSchema(b);
         ConfigureStorageSchema(b);
+        ConfigureTraceabilitySchema(b);
     }
 
     // ── auth ──────────────────────────────────────────────────────────────
@@ -3309,6 +3313,45 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.UploadedBy).HasMaxLength(256).IsRequired();
             e.HasIndex(x => new { x.OwnerType, x.OwnerId });
             e.HasQueryFilter(x => !x.IsDeleted);
+        });
+    }
+
+    // ── trace ─────────────────────────────────────────────────────────────
+    private static void ConfigureTraceabilitySchema(ModelBuilder b)
+    {
+        b.Entity<LotLineage>(e =>
+        {
+            e.ToTable("LotLineages", "trace");
+            e.HasKey(x => x.LineageId);
+            e.Property(x => x.LineageId).ValueGeneratedOnAdd();
+            e.Property(x => x.ParentLotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ChildLotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LineageType).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.QuantityConsumed).HasColumnType("NUMERIC(18,6)");
+            e.Property(x => x.UoM).HasMaxLength(20);
+            e.Property(x => x.RecordedAt).HasColumnType("datetime2");
+            e.HasIndex(x => x.ParentLotNumber);
+            e.HasIndex(x => x.ChildLotNumber);
+        });
+
+        b.Entity<LotEvent>(e =>
+        {
+            e.ToTable("LotEvents", "trace");
+            e.HasKey(x => x.EventId);
+            e.Property(x => x.EventId).ValueGeneratedOnAdd();
+            e.Property(x => x.EventType).HasConversion<string>().HasMaxLength(30).IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.UoM).HasMaxLength(20);
+            e.Property(x => x.Payload).HasColumnType("nvarchar(max)");
+            e.Property(x => x.OperatorCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.EquipmentCode).HasMaxLength(50);
+            e.Property(x => x.EventTimestamp).HasColumnType("datetime2(3)").IsRequired();
+            e.Property(x => x.RecordedAt).HasColumnType("datetime2(3)").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.Property(x => x.SourceSystem).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.HasIndex(x => new { x.LotNumber, x.EventTimestamp });
+            e.HasIndex(x => x.ProductCode);
         });
     }
 }

@@ -18,6 +18,8 @@ using AeroMes.Application.Production.Queries.GetProductionOrderProgress;
 using AeroMes.Application.Production.Statistics.Commands.CreateProductionStatisticsSheet;
 using AeroMes.Application.Production.Statistics.Queries.GetProductionStatisticsSheetDetail;
 using AeroMes.Application.Production.Statistics.Queries.GetProductionStatisticsSheets;
+using AeroMes.Domain.Traceability;
+using AeroMes.Domain.Traceability.Repositories;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrders;
 using AeroMes.Application.Integration.Commands.SyncSalesOrders;
@@ -333,6 +335,16 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(BatchOrderItemRequest))]
 [JsonSerializable(typeof(BatchCreateProductionOrdersRequest))]
 [JsonSerializable(typeof(IReadOnlyList<BatchOrderItemRequest>))]
+// traceability
+[JsonSerializable(typeof(LotGenealogyDto))]
+[JsonSerializable(typeof(LineageNodeDto))]
+[JsonSerializable(typeof(IReadOnlyList<LineageNodeDto>))]
+[JsonSerializable(typeof(LineageEdgeDto))]
+[JsonSerializable(typeof(IReadOnlyList<LineageEdgeDto>))]
+[JsonSerializable(typeof(LotEventDto))]
+[JsonSerializable(typeof(IReadOnlyList<LotEventDto>))]
+[JsonSerializable(typeof(RecordLineageRequest))]
+[JsonSerializable(typeof(AppendLotEventRequest))]
 // production statistics sheets
 [JsonSerializable(typeof(StatisticsSheetCreatedResult))]
 [JsonSerializable(typeof(ProductionStatisticsSheetSummaryDto))]

@@ -1,6 +1,7 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Application.Wms.Services;
 using AeroMes.Domain.Integration.Repositories;
+using AeroMes.Domain.Traceability.Repositories;
 using AeroMes.Domain.Iot.Events;
 using AeroMes.Domain.Iot.Repositories;
 using AeroMes.Domain.Master.Repositories;
@@ -121,6 +122,7 @@ public static class DependencyInjection
         services.AddScoped<IMultiProductionOrderRepository, MultiProductionOrderRepository>();
         services.AddScoped<IProductionOrderProgressRepository, ProductionOrderProgressRepository>();
         services.AddScoped<IProductionStatisticsSheetRepository, ProductionStatisticsSheetRepository>();
+        services.AddScoped<ILotTraceabilityRepository, LotTraceabilityRepository>();
 
         // ERP client + background sync
         services.AddHttpClient("erp").ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
