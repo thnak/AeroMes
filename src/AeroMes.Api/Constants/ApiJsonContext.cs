@@ -1023,6 +1023,15 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(RegrindUsageSummaryDto))]
 [JsonSerializable(typeof(IReadOnlyList<RegrindUsageSummaryDto>))]
 [JsonSerializable(typeof(List<RegrindUsageSummaryDto>))]
+// disassembly order management — #132
+[JsonSerializable(typeof(CreateDisassemblyOrderRequest))]
+[JsonSerializable(typeof(UpdateStatusRequest))]
+[JsonSerializable(typeof(RecordRecoveryRequest))]
+[JsonSerializable(typeof(DisassemblyOrderDto))]
+[JsonSerializable(typeof(PagedResult<DisassemblyOrderDto>))]
+[JsonSerializable(typeof(DisassemblyRecoveredLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<DisassemblyRecoveredLineDto>))]
+[JsonSerializable(typeof(List<DisassemblyRecoveredLineDto>))]
 // packaging management — #131
 [JsonSerializable(typeof(CreatePackagingBomRequest))]
 [JsonSerializable(typeof(PackagingBomLineRequest))]

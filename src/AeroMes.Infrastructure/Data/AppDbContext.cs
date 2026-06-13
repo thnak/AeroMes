@@ -138,6 +138,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<PackagingBom> PackagingBoms => Set<PackagingBom>();
     public DbSet<PackagingOrder> PackagingOrders => Set<PackagingOrder>();
     public DbSet<PackagingLabel> PackagingLabels => Set<PackagingLabel>();
+    public DbSet<DisassemblyOrder> DisassemblyOrders => Set<DisassemblyOrder>();
 
     // wms schema
     public DbSet<WarehouseZone> WarehouseZones => Set<WarehouseZone>();
@@ -2168,6 +2169,33 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         {
             e.ToTable("PackagingLabels", "prod");
             e.HasKey(x => x.LabelID);
+        });
+
+        b.Entity<DisassemblyOrder>(e =>
+        {
+            e.ToTable("DisassemblyOrders", "prod");
+            e.HasKey(x => x.DisassemblyOrderID);
+            e.Property(x => x.OrderCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.SourceProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.SourceQty).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasMany(x => x.RecoveredLines).WithOne()
+                .HasForeignKey(x => x.DisassemblyOrderID)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.RecoveredLines)
+                .HasField("_recoveredLines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+            e.HasIndex(x => x.OrderCode).IsUnique();
+            e.HasIndex(x => x.Status);
+        });
+
+        b.Entity<DisassemblyRecoveredLine>(e =>
+        {
+            e.ToTable("DisassemblyRecoveredLines", "prod");
+            e.HasKey(x => x.LineID);
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ExpectedQty).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.ActualQty).HasColumnType("DECIMAL(18,4)");
         });
     }
 
