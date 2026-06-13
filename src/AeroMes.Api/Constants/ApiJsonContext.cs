@@ -72,6 +72,7 @@ using AeroMes.Application.Master.MachineProductConfigs.Queries.GetMachineProduct
 using AeroMes.Application.Master.MachineProductParams.Queries.GetMachineSetupSheet;
 using AeroMes.Application.Master.OperatorCertifications.Queries.CheckOperatorEligibility;
 using AeroMes.Application.Master.OperatorCertifications.Queries.GetOperatorCertifications;
+using AeroMes.Application.Master.Warehouses.Queries.GetWarehouses;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AeroMes.Api.Constants;
@@ -324,6 +325,13 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(CreateEngChangeRequest))]
 [JsonSerializable(typeof(CreateEcoRequest))]
 [JsonSerializable(typeof(ImplementEcoRequest))]
+// warehouse catalog
+[JsonSerializable(typeof(IReadOnlyList<WarehouseDto>))]
+[JsonSerializable(typeof(WarehouseCreatedResult))]
+[JsonSerializable(typeof(CreateWarehouseRequest))]
+[JsonSerializable(typeof(UpdateWarehouseRequest))]
+// machine additions
+[JsonSerializable(typeof(DuplicateMachineRequest))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

@@ -47,6 +47,7 @@ public static class DependencyInjection
         services.AddScoped<ISupplierRepository, SupplierRepository>();
         services.AddScoped<ICapabilityGroupRepository, CapabilityGroupRepository>();
         services.AddScoped<ICapabilityGroupMemberRepository, CapabilityGroupMemberRepository>();
+        services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<IProductAttributeRepository, ProductAttributeRepository>();

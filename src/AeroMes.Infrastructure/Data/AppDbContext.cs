@@ -75,6 +75,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<ToolMaintenanceLog> ToolMaintenanceLogs => Set<ToolMaintenanceLog>();
     public DbSet<MachineProductParam> MachineProductParams => Set<MachineProductParam>();
     public DbSet<OperatorCertification> OperatorCertifications => Set<OperatorCertification>();
+    public DbSet<Warehouse> Warehouses => Set<Warehouse>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -612,6 +613,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .WithMany()
                 .HasForeignKey(x => x.WorkCenterID)
                 .IsRequired(false);
+        });
+
+        b.Entity<Warehouse>(e =>
+        {
+            e.ToTable("Warehouses", "master");
+            e.HasKey(x => x.WarehouseId);
+            e.Property(x => x.WarehouseId).UseIdentityColumn();
+            e.Property(x => x.WarehouseCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.WarehouseName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Address).HasMaxLength(200);
+            e.Property(x => x.WarehouseType).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.IntegrationSource).HasConversion<string>().HasMaxLength(20);
+            e.HasIndex(x => x.WarehouseCode).IsUnique().HasFilter("[IsDeleted] = 0");
+            e.HasQueryFilter(x => !x.IsDeleted);
         });
 
         b.Entity<ShiftTemplate>(e =>

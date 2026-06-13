@@ -90,8 +90,18 @@ public class Machine : AuditableEntity
     }
 
     public void SetStatus(MachineStatus status) => Status = status;
-    public void Activate() => IsActive = true;
-    public void Deactivate() => IsActive = false;
+
+    public void Activate(string updatedBy)
+    {
+        IsActive = true;
+        Touch(updatedBy);
+    }
+
+    public void Deactivate(string updatedBy)
+    {
+        IsActive = false;
+        Touch(updatedBy);
+    }
 }
 
 public enum MachineStatus { Running, Down, Idle, Offline }
