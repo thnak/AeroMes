@@ -1,0 +1,86 @@
+[
+  {
+    "version": "1.3.0",
+    "date": "2026-06-13",
+    "changes": [
+      {
+        "type": "feature",
+        "title": "Module Status Live Badges",
+        "description": "Real-time badge counts on module tiles show pending items and cross-module alerts without leaving the launchpad."
+      },
+      {
+        "type": "feature",
+        "title": "Release Notes & System Info",
+        "description": "Version history page and system info panel. Accessible from Settings → System or the user menu."
+      },
+      {
+        "type": "improvement",
+        "title": "Inventory Stock API",
+        "description": "New stock query and lot traceability endpoints expose inventory data for downstream consumers and BI tools."
+      },
+      {
+        "type": "improvement",
+        "title": "Report Endpoints",
+        "description": "Production, downtime, and quality report APIs now available for export and external BI integration."
+      }
+    ]
+  },
+  {
+    "version": "1.2.0",
+    "date": "2026-06-01",
+    "changes": [
+      {
+        "type": "feature",
+        "title": "Work Order Auto-Rules",
+        "description": "Configure rules that automatically advance work orders based on job completion criteria."
+      },
+      {
+        "type": "feature",
+        "title": "Engineering Change Orders (ECO)",
+        "description": "Full ECO workflow with BOM revision control, impact analysis, and multi-version side-by-side comparison."
+      },
+      {
+        "type": "fix",
+        "title": "OrgUnit Sync Validation",
+        "description": "Fixed ValidationResult unwrapping in OrgUnits sync endpoint returning incorrect error shape to callers."
+      },
+      {
+        "type": "improvement",
+        "title": "BOM Versioning",
+        "description": "Side-by-side BOM comparison and multi-level exploded view with indentation and quantity rollup."
+      }
+    ]
+  },
+  {
+    "version": "1.1.0",
+    "date": "2026-05-15",
+    "changes": [
+      {
+        "type": "feature",
+        "title": "Multi-Factor Authentication",
+        "description": "TOTP and passkey (WebAuthn) MFA with per-account setup flow and optional enforcement by role."
+      },
+      {
+        "type": "feature",
+        "title": "Audit Log",
+        "description": "Comprehensive audit trail for all data modifications, accessible to administrators with filter and export."
+      },
+      {
+        "type": "improvement",
+        "title": "Dual Auth — JWT + Cookie",
+        "description": "API clients use Bearer JWT while the web frontend uses HttpOnly cookies transparently for security."
+      }
+    ]
+  },
+  {
+    "version": "1.0.0",
+    "date": "2026-05-01",
+    "changes": [
+      {
+        "type": "feature",
+        "title": "Initial Release",
+        "description": "AeroMes MES platform — production, quality, master data, integration, and reporting modules."
+      }
+    ]
+  }
+]

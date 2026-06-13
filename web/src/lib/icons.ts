@@ -107,6 +107,14 @@ export const Icons = {
   forbidden:       'solar:lock-keyhole-bold',
   notFound:        'solar:ghost-outline',
   serverError:     'solar:server-2-broken',
+
+  // Release / system info
+  release:         'solar:history-bold-duotone',
+  sparkles:        'solar:stars-minimalistic-bold',
+  version:         'solar:tag-bold-duotone',
+  server:          'solar:server-2-bold-duotone',
+  instance:        'solar:cpu-bold',
+  commit:          'solar:code-bold',
 } as const;
 
 export type IconKey = keyof typeof Icons;

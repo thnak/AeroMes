@@ -1,0 +1,89 @@
+# HA production compose — 2 API replicas behind nginx
+#
+# HA considerations for AeroMes:
+#
+#   AUTH      JWT is stateless — works across any replica automatically.
+#             Cookie auth is also stateless (no server-side session store).
+#
+#   SIGNALR   WebSocket connections are stateful — they must land on the same
+#             replica for the duration of the connection. nginx ip_hash achieves
+#             this. For truly elastic scaling (auto-scaling groups, k8s), replace
+#             ip_hash with a Redis SignalR backplane:
+#               services.AddSignalR().AddStackExchangeRedis(connectionString)
+#
+#   MIGRATIONS  Only api-01 runs auto-migrations. api-02 starts with
+#               SKIP_MIGRATIONS=true to avoid race conditions on first boot.
+#               In production, prefer running migrations as a separate init job.
+#
+#   DATABASE    Replace the embedded SQL Server with an Always On Availability
+#               Group, Azure SQL, or RDS (Multi-AZ) for data-layer HA.
+#
+# Usage:
+#   cp .env.example .env          # fill in secrets
+#   docker compose -f docker-compose.ha.yml up -d
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SQL_SA_PASSWORD}"
+    volumes:
+      - sqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${SQL_SA_PASSWORD}\" -Q 'SELECT 1' -No || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  api-01:
+    image: "${IMAGE:-ghcr.io/your-org/aeromes}:${TAG:-latest}"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "${SQL_CONNECTION_STRING}"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "aeromes-api"
+      Jwt__Audience: "aeromes-web"
+      APP_VERSION: "${APP_VERSION}"
+      BUILD_DATE: "${BUILD_DATE}"
+      COMMIT_SHA: "${COMMIT_SHA}"
+      INSTANCE_ID: "api-01"
+    restart: unless-stopped
+
+  api-02:
+    image: "${IMAGE:-ghcr.io/your-org/aeromes}:${TAG:-latest}"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "${SQL_CONNECTION_STRING}"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "aeromes-api"
+      Jwt__Audience: "aeromes-web"
+      APP_VERSION: "${APP_VERSION}"
+      BUILD_DATE: "${BUILD_DATE}"
+      COMMIT_SHA: "${COMMIT_SHA}"
+      INSTANCE_ID: "api-02"
+      SKIP_MIGRATIONS: "true"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - api-01
+      - api-02
+    restart: unless-stopped
+
+volumes:
+  sqldata:

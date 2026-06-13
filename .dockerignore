@@ -1,0 +1,13 @@
+**/.git
+**/.gitignore
+**/.vs
+**/.vscode
+**/bin
+**/obj
+**/node_modules
+src/AeroMes.Api/wwwroot
+**/*.user
+**/Dockerfile
+**/docker-compose*.yml
+**/.env*
+**/nginx.conf

@@ -7,3 +7,4 @@ export { default as ConfirmDialog } from './ConfirmDialog';
 export { default as TableToolbar, ExportButton, RefreshButton } from './TableToolbar';
 export { default as FormDrawer } from './FormDrawer';
 export { KpiRowSkeleton, TablePageSkeleton, DetailPageSkeleton } from './LoadingSkeleton';
+export { default as NewFeatureBadge } from './NewFeatureBadge';

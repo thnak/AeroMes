@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   Divider,
   FormControlLabel,
   Grid,
@@ -12,6 +13,7 @@ import {
   ListItemIcon,
   ListItemText,
   MenuItem,
+  Skeleton,
   Stack,
   Switch,
   TextField,
@@ -19,9 +21,11 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader, PageRoot, SolarIcon } from '../../components';
 import { Icons } from '../../lib/icons';
 import { Icon } from '@iconify/react';
+import { useAppInfo, useChangelog } from '../../lib/useAppInfo';
 
 // ─── Settings nav ─────────────────────────────────────────────────────────────
 
@@ -38,6 +42,7 @@ const SECTIONS: SettingsSection[] = [
   { key: 'notifications',label: 'Notifications',    icon: Icons.notifications, description: 'Alert rules and recipients' },
   { key: 'security',     label: 'Security & Auth',  icon: Icons.forbidden,     description: 'Password policy, MFA, sessions' },
   { key: 'integrations', label: 'Integrations',     icon: Icons.integration,   description: 'ERP / API connections' },
+  { key: 'system',       label: 'System',           icon: Icons.server,        description: 'Version, build info, release notes' },
 ];
 
 // ─── Section panels ───────────────────────────────────────────────────────────
@@ -244,12 +249,91 @@ function IntegrationsSettings() {
   );
 }
 
+function SystemSettings() {
+  const navigate = useNavigate();
+  const { data: appInfo, isLoading: infoLoading } = useAppInfo();
+  const { data: changelog } = useChangelog();
+  const latest = changelog?.[0];
+
+  return (
+    <Stack spacing={3}>
+      <Box>
+        <Typography variant="subtitle1" gutterBottom>Build Information</Typography>
+        <Divider sx={{ mb: 2 }} />
+        {infoLoading ? (
+          <Grid container spacing={2}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Grid key={i} size={{ xs: 12, sm: 6 }}>
+                <Skeleton width={80} height={13} />
+                <Skeleton width={160} height={22} sx={{ mt: 0.5 }} />
+              </Grid>
+            ))}
+          </Grid>
+        ) : appInfo ? (
+          <Grid container spacing={2}>
+            {[
+              { label: 'Version',     value: `v${appInfo.version}`, mono: true },
+              { label: 'Build date',  value: appInfo.buildDate !== 'unknown' ? appInfo.buildDate : '—' },
+              { label: 'Environment', value: appInfo.environment },
+              { label: 'Instance ID', value: appInfo.instanceId, mono: true },
+              ...(appInfo.commitSha ? [{ label: 'Commit SHA', value: appInfo.commitSha.slice(0, 8), mono: true }] : []),
+            ].map((f) => (
+              <Grid key={f.label} size={{ xs: 12, sm: 6 }}>
+                <Typography variant="caption" color="text.disabled"
+                  sx={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: '0.625rem' }}>
+                  {f.label}
+                </Typography>
+                <Typography variant="body2"
+                  sx={{ fontWeight: 600, fontFamily: f.mono ? 'ui-monospace, monospace' : undefined }}>
+                  {f.value}
+                </Typography>
+              </Grid>
+            ))}
+          </Grid>
+        ) : null}
+      </Box>
+
+      {latest && (
+        <Box>
+          <Typography variant="subtitle1" gutterBottom>Latest Release</Typography>
+          <Divider sx={{ mb: 2 }} />
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'ui-monospace, monospace' }}>
+              v{latest.version}
+            </Typography>
+            <Chip label={latest.date} size="small" variant="outlined"
+              sx={{ height: 20, fontSize: '0.65rem', '& .MuiChip-label': { px: 0.75 } }} />
+          </Stack>
+          <Stack spacing={0.75}>
+            {latest.changes.slice(0, 4).map((c, i) => (
+              <Stack key={i} direction="row" spacing={0.75} sx={{ alignItems: 'flex-start' }}>
+                <Typography variant="caption" sx={{ color: 'text.disabled', flexShrink: 0, lineHeight: 1.6 }}>•</Typography>
+                <Typography variant="caption" color="text.secondary">{c.title}</Typography>
+              </Stack>
+            ))}
+          </Stack>
+          <Button
+            size="small"
+            variant="outlined"
+            sx={{ mt: 2 }}
+            startIcon={<SolarIcon name="release" size={15} />}
+            onClick={() => navigate('/admin/release-notes')}
+          >
+            View full release notes
+          </Button>
+        </Box>
+      )}
+    </Stack>
+  );
+}
+
 const PANEL_MAP: Record<string, React.FC> = {
   general:      GeneralSettings,
   shifts:       ShiftSettings,
   notifications:NotificationSettings,
   security:     SecuritySettings,
   integrations: IntegrationsSettings,
+  system:       SystemSettings,
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────

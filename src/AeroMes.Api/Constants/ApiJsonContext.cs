@@ -309,6 +309,9 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(SendToolServiceRequest))]
 [JsonSerializable(typeof(RecordToolMaintenanceRequest))]
 [JsonSerializable(typeof(RecordToolUsageRequest))]
+// app info
+[JsonSerializable(typeof(ApiResponse<AppInfoDto>))]
+[JsonSerializable(typeof(AppInfoDto))]
 // versioned BOM + engineering changes
 [JsonSerializable(typeof(BomVersionDetailDto))]
 [JsonSerializable(typeof(IReadOnlyList<BomVersionDto>))]

@@ -1,5 +1,6 @@
 import {
   Avatar,
+  Badge,
   Box,
   Divider,
   IconButton,
@@ -15,6 +16,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import SolarIcon from './SolarIcon';
+import { useAppInfo, useChangelog, getLastSeenRelease } from '../lib/useAppInfo';
 
 export default function UserMenu() {
   const { mode, setMode } = useColorScheme();
@@ -22,6 +24,12 @@ export default function UserMenu() {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const initials = user?.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() ?? 'U';
+  const { data: appInfo } = useAppInfo();
+  const { data: changelog } = useChangelog();
+
+  // Show unread dot if latest release version hasn't been seen yet
+  const latestVersion = changelog?.[0]?.version;
+  const hasUnread = latestVersion != null && getLastSeenRelease() !== latestVersion;
 
   return (
     <>
@@ -77,6 +85,19 @@ export default function UserMenu() {
           <ListItemIcon><SolarIcon name="settings" size={18} /></ListItemIcon>
           <ListItemText>Change Password</ListItemText>
         </MenuItem>
+        <MenuItem onClick={() => { setAnchorEl(null); navigate('/admin/release-notes'); }}>
+          <ListItemIcon>
+            <Badge variant="dot" color="primary" invisible={!hasUnread}>
+              <SolarIcon name="release" size={18} />
+            </Badge>
+          </ListItemIcon>
+          <ListItemText>What's New</ListItemText>
+          {hasUnread && (
+            <Typography variant="caption" color="primary.main" sx={{ fontWeight: 700, fontSize: '0.625rem' }}>
+              NEW
+            </Typography>
+          )}
+        </MenuItem>
         <Divider />
         <MenuItem
           onClick={() => { setAnchorEl(null); logout(); navigate('/auth/login', { replace: true }); }}
@@ -85,6 +106,13 @@ export default function UserMenu() {
           <ListItemIcon sx={{ color: 'error.main' }}><SolarIcon name="logout" size={18} /></ListItemIcon>
           <ListItemText>Sign out</ListItemText>
         </MenuItem>
+        {appInfo && (
+          <Box sx={{ px: 2, py: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="caption" color="text.disabled" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.625rem' }}>
+              AeroMes v{appInfo.version} · {appInfo.environment}
+            </Typography>
+          </Box>
+        )}
       </Menu>
     </>
   );
