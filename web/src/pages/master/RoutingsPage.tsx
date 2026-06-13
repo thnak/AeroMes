@@ -1,11 +1,12 @@
+import Autocomplete from '@mui/material/Autocomplete';
 import {
+  Alert,
   Box,
   Button,
   Chip,
   FormControlLabel,
   Grid,
   IconButton,
-  MenuItem,
   Stack,
   Switch,
   TextField,
@@ -20,6 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ConfirmDialog,
   EmptyState,
@@ -29,45 +31,28 @@ import {
   PageRoot,
   RefreshButton,
   SolarIcon,
+  TablePageSkeleton,
   TableToolbar,
 } from '../../components';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Routing {
-  id: string;
-  code: string;
-  productCode: string;
-  productName: string;
-  stepsCount: number;
-  totalTimeMin: number;
-  isActive: boolean;
-  version: string;
-  updatedAt: string;
-}
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const MOCK_ROUTINGS: Routing[] = [
-  { id: '1', code: 'RT-001', productCode: 'FRM-A001', productName: 'Frame Assembly A',      stepsCount: 5, totalTimeMin: 420, isActive: true,  version: 'Rev.C', updatedAt: '2026-03-15' },
-  { id: '2', code: 'RT-002', productCode: 'PNL-B002', productName: 'Panel Sub-assembly B',  stepsCount: 4, totalTimeMin: 360, isActive: true,  version: 'Rev.B', updatedAt: '2026-04-10' },
-  { id: '3', code: 'RT-003', productCode: 'SHT-C003', productName: 'Shaft Housing C',       stepsCount: 3, totalTimeMin: 280, isActive: true,  version: 'Rev.A', updatedAt: '2026-01-20' },
-  { id: '4', code: 'RT-004', productCode: 'BRK-D004', productName: 'Bracket Set D',         stepsCount: 2, totalTimeMin: 90,  isActive: true,  version: 'Rev.A', updatedAt: '2026-05-05' },
-  { id: '5', code: 'RT-005', productCode: 'MTR-E005', productName: 'Motor Mount E',         stepsCount: 4, totalTimeMin: 310, isActive: true,  version: 'Rev.B', updatedAt: '2026-02-28' },
-  { id: '6', code: 'RT-006', productCode: 'COV-F006', productName: 'Cover Plate F',         stepsCount: 3, totalTimeMin: 150, isActive: true,  version: 'Rev.A', updatedAt: '2026-03-10' },
-  { id: '7', code: 'RT-007', productCode: 'HNG-J010', productName: 'Hinge Assembly J',      stepsCount: 6, totalTimeMin: 480, isActive: true,  version: 'Rev.D', updatedAt: '2026-05-18' },
-  { id: '8', code: 'RT-008', productCode: 'WHL-L012', productName: 'Wheel & Hub Assembly L',stepsCount: 7, totalTimeMin: 600, isActive: false, version: 'Rev.C', updatedAt: '2026-04-22' },
-];
-
-const PRODUCTS = MOCK_ROUTINGS.map((r) => ({ code: r.productCode, name: r.productName }));
+import {
+  useGetApiV1Routings,
+  getGetApiV1RoutingsQueryKey,
+  postApiV1Routings,
+  putApiV1RoutingsId,
+  deleteApiV1RoutingsId,
+} from '../../api/routings/routings';
+import { useGetApiV1Products } from '../../api/products/products';
+import type { RoutingDto } from '../../api/model';
+import { getErrorMessage } from '../../lib/apiClient';
 
 // ─── Form schema ──────────────────────────────────────────────────────────────
 
 const RoutingSchema = z.object({
-  code:        z.string().min(1, 'Code is required').max(20),
+  code:        z.string().min(1, 'Code is required').max(20)
+    .regex(/^[A-Za-z0-9\-_]+$/, 'Letters, digits, hyphens, and underscores only'),
+  name:        z.string().min(1, 'Name is required').max(200),
   productCode: z.string().min(1, 'Product is required'),
-  version:     z.string().min(1, 'Version is required'),
-  isActive:    z.boolean(),
+  isDefault:   z.boolean(),
 });
 
 type RoutingFormValues = z.infer<typeof RoutingSchema>;
@@ -76,41 +61,56 @@ type RoutingFormValues = z.infer<typeof RoutingSchema>;
 
 function RoutingForm({
   defaultValues,
+  isEdit,
+  productOptions,
   onSubmit,
-  loading: _loading,
 }: {
   defaultValues: Partial<RoutingFormValues>;
+  isEdit: boolean;
+  productOptions: { code: string; name: string }[];
   onSubmit: (data: RoutingFormValues) => void;
-  loading: boolean;
 }) {
   const { register, control, handleSubmit, formState: { errors } } = useForm<RoutingFormValues>({
     resolver: zodResolver(RoutingSchema),
-    defaultValues: { isActive: true, version: 'Rev.A', ...defaultValues },
+    defaultValues: { isDefault: false, ...defaultValues },
   });
 
   return (
     <Box component="form" id="routing-form" onSubmit={handleSubmit(onSubmit)} noValidate>
       <Grid container spacing={2}>
-        <Grid size={{ xs: 12, sm: 6 }}>
+        <Grid size={{ xs: 12, sm: 8 }}>
           <TextField
             {...register('code')}
             label="Routing Code"
             fullWidth
             required
+            disabled={isEdit}
             error={!!errors.code}
             helperText={errors.code?.message}
             slotProps={{ htmlInput: { style: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } } }}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <Controller
+            name="isDefault"
+            control={control}
+            render={({ field }) => (
+              <FormControlLabel
+                control={<Switch checked={field.value} onChange={field.onChange} color="primary" />}
+                label="Default"
+                sx={{ mt: 1, ml: 0 }}
+              />
+            )}
+          />
+        </Grid>
+        <Grid size={{ xs: 12 }}>
           <TextField
-            {...register('version')}
-            label="Version"
+            {...register('name')}
+            label="Routing Name"
             fullWidth
             required
-            placeholder="e.g. Rev.A"
-            error={!!errors.version}
-            helperText={errors.version?.message}
+            error={!!errors.name}
+            helperText={errors.name?.message}
           />
         </Grid>
         <Grid size={{ xs: 12 }}>
@@ -118,31 +118,22 @@ function RoutingForm({
             name="productCode"
             control={control}
             render={({ field }) => (
-              <TextField
-                {...field}
-                select
-                label="Product"
-                fullWidth
-                required
-                error={!!errors.productCode}
-                helperText={errors.productCode?.message}
-              >
-                {PRODUCTS.map((p) => (
-                  <MenuItem key={p.code} value={p.code}>{p.code} — {p.name}</MenuItem>
-                ))}
-              </TextField>
-            )}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Controller
-            name="isActive"
-            control={control}
-            render={({ field }) => (
-              <FormControlLabel
-                control={<Switch checked={field.value} onChange={field.onChange} color="primary" />}
-                label="Active"
-                sx={{ mt: 0.5, ml: 0 }}
+              <Autocomplete
+                disabled={isEdit}
+                options={productOptions}
+                getOptionLabel={(opt) => typeof opt === 'string' ? opt : `${opt.code} — ${opt.name}`}
+                isOptionEqualToValue={(opt, val) => opt.code === val.code}
+                value={productOptions.find((p) => p.code === field.value) ?? null}
+                onChange={(_, val) => field.onChange(val?.code ?? '')}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Product"
+                    required
+                    error={!!errors.productCode}
+                    helperText={errors.productCode?.message}
+                  />
+                )}
               />
             )}
           />
@@ -157,140 +148,120 @@ function RoutingForm({
 type DrawerMode = 'create' | 'edit';
 
 export default function RoutingsPage() {
-  const navigate = useNavigate();
-  const [rows, setRows]                   = useState<Routing[]>(MOCK_ROUTINGS);
-  const [search, setSearch]               = useState('');
+  const navigate    = useNavigate();
+  const queryClient = useQueryClient();
+
+  const [search, setSearch]             = useState('');
   const [productFilter, setProductFilter] = useState('');
-  const [statusFilter, setStatusFilter]   = useState('');
-  const [selection, setSelection]         = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
-  const [drawerOpen, setDrawerOpen]       = useState(false);
-  const [drawerMode, setDrawerMode]       = useState<DrawerMode>('create');
-  const [editTarget, setEditTarget]       = useState<Routing | null>(null);
-  const [deleteTarget, setDeleteTarget]   = useState<Routing | null>(null);
-  const [saving, setSaving]               = useState(false);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [selection, setSelection]       = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
+  const [drawerOpen, setDrawerOpen]     = useState(false);
+  const [drawerMode, setDrawerMode]     = useState<DrawerMode>('create');
+  const [editTarget, setEditTarget]     = useState<RoutingDto | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<RoutingDto | null>(null);
+  const [saveError, setSaveError]       = useState('');
+
+  const { data: routings = [], isLoading, error, refetch } = useGetApiV1Routings({ activeOnly: false });
+  const { data: allProducts = [] } = useGetApiV1Products({ activeOnly: false });
+
+  const productNameMap = useMemo(
+    () => new Map(allProducts.map((p) => [p.productCode, p.productName])),
+    [allProducts],
+  );
+
+  const productOptions = useMemo(
+    () => allProducts.map((p) => ({ code: p.productCode, name: p.productName })),
+    [allProducts],
+  );
+
+  const productFilterOptions = useMemo(() => {
+    const used = new Set(routings.map((r) => r.productCode));
+    return allProducts.filter((p) => used.has(p.productCode)).map((p) => ({ label: `${p.productCode} — ${p.productName}`, value: p.productCode }));
+  }, [allProducts, routings]);
 
   const filtered = useMemo(() => {
-    let r = rows;
-    if (search)        r = r.filter((rt) => rt.code.toLowerCase().includes(search.toLowerCase()) || rt.productCode.toLowerCase().includes(search.toLowerCase()) || rt.productName.toLowerCase().includes(search.toLowerCase()));
+    let r = routings;
+    if (search)        r = r.filter((rt) => rt.routingCode.toLowerCase().includes(search.toLowerCase()) || rt.routingName.toLowerCase().includes(search.toLowerCase()) || rt.productCode.toLowerCase().includes(search.toLowerCase()));
     if (productFilter) r = r.filter((rt) => rt.productCode === productFilter);
     if (statusFilter)  r = r.filter((rt) => statusFilter === 'active' ? rt.isActive : !rt.isActive);
     return r;
-  }, [rows, search, productFilter, statusFilter]);
+  }, [routings, search, productFilter, statusFilter]);
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getGetApiV1RoutingsQueryKey({ activeOnly: false }) });
+
+  const createMutation = useMutation({
+    mutationFn: (data: RoutingFormValues) =>
+      postApiV1Routings({ code: data.code, name: data.name, productCode: data.productCode, isDefault: data.isDefault }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: RoutingFormValues) =>
+      putApiV1RoutingsId(Number(editTarget!.routingID), { name: data.name, isDefault: data.isDefault }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteApiV1RoutingsId(id),
+    onSuccess: () => { invalidate(); setDeleteTarget(null); },
+  });
+
+  const saving = createMutation.isPending || updateMutation.isPending;
+
+  function openCreate() { setSaveError(''); setDrawerMode('create'); setEditTarget(null); setDrawerOpen(true); }
+  function openEdit(rt: RoutingDto) { setSaveError(''); setDrawerMode('edit'); setEditTarget(rt); setDrawerOpen(true); }
+  function handleSave(data: RoutingFormValues) {
+    setSaveError('');
+    if (drawerMode === 'create') createMutation.mutate(data);
+    else updateMutation.mutate(data);
+  }
 
   const selectedIds = selection.type === 'include' ? selection.ids : new Set<string | number>();
 
-  function openCreate() { setDrawerMode('create'); setEditTarget(null); setDrawerOpen(true); }
-  function openEdit(rt: Routing) { setDrawerMode('edit'); setEditTarget(rt); setDrawerOpen(true); }
-
-  function handleSave(data: RoutingFormValues) {
-    setSaving(true);
-    setTimeout(() => {
-      const product = PRODUCTS.find((p) => p.code === data.productCode);
-      if (drawerMode === 'create') {
-        setRows((prev) => [...prev, {
-          id: String(Date.now()),
-          productName: product?.name ?? '',
-          stepsCount: 0,
-          totalTimeMin: 0,
-          updatedAt: new Date().toISOString().slice(0, 10),
-          ...data,
-        }]);
-      } else if (editTarget) {
-        setRows((prev) => prev.map((rt) =>
-          rt.id === editTarget.id
-            ? { ...rt, ...data, productName: product?.name ?? rt.productName }
-            : rt
-        ));
-      }
-      setSaving(false);
-      setDrawerOpen(false);
-    }, 800);
-  }
-
-  function handleDelete() {
-    if (deleteTarget) {
-      setRows((prev) => prev.filter((rt) => rt.id !== deleteTarget.id));
-      setDeleteTarget(null);
-    }
-  }
-
-  const columns: GridColDef<Routing>[] = [
+  const columns: GridColDef<RoutingDto>[] = [
     {
-      field: 'code',
+      field: 'routingCode',
       headerName: 'Code',
       width: 110,
-      renderCell: (params: GridRenderCellParams<Routing>) => (
+      renderCell: (params: GridRenderCellParams<RoutingDto>) => (
         <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 600, color: 'primary.main' }}>
           {params.value}
         </Typography>
       ),
     },
+    { field: 'routingName', headerName: 'Name', flex: 1, minWidth: 160 },
     {
       field: 'productCode',
       headerName: 'Product',
       flex: 1,
       minWidth: 200,
-      renderCell: (params: GridRenderCellParams<Routing>) => (
+      renderCell: (params: GridRenderCellParams<RoutingDto>) => (
         <Stack>
           <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, fontWeight: 600, color: 'primary.main' }}>
             {params.value}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
-            {params.row.productName}
+            {productNameMap.get(params.value as string) ?? ''}
           </Typography>
         </Stack>
       ),
     },
     {
-      field: 'stepsCount',
-      headerName: 'Steps',
+      field: 'isDefault',
+      headerName: 'Default',
       width: 80,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (params: GridRenderCellParams<Routing>) => (
-        <Chip
-          label={`${params.value} steps`}
-          size="small"
-          sx={(theme) => ({
-            height: 20,
-            fontSize: '0.6875rem',
-            fontWeight: 600,
-            bgcolor: alpha(theme.palette.primary.main, 0.08),
-            color: 'primary.main',
-            border: 'none',
-            '& .MuiChip-label': { px: 0.75 },
-          })}
-        />
-      ),
-    },
-    {
-      field: 'totalTimeMin',
-      headerName: 'Total Time',
-      width: 110,
-      align: 'right',
-      headerAlign: 'right',
-      renderCell: (params: GridRenderCellParams<Routing>) => (
-        <Typography variant="body2" sx={{ fontSize: 12 }}>{params.value} min</Typography>
-      ),
-    },
-    {
-      field: 'version',
-      headerName: 'Version',
-      width: 90,
-      renderCell: (params: GridRenderCellParams<Routing>) => (
-        <Chip
-          label={params.value}
-          size="small"
-          sx={{
-            height: 20,
-            fontSize: '0.6875rem',
-            fontWeight: 600,
-            bgcolor: alpha('#7C3AED', 0.08),
-            color: '#7C3AED',
-            border: 'none',
-            '& .MuiChip-label': { px: 0.75 },
-          }}
-        />
+      renderCell: (params: GridRenderCellParams<RoutingDto>) => (
+        params.value ? (
+          <Chip
+            label="Default"
+            size="small"
+            sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 600, bgcolor: alpha('#7C3AED', 0.1), color: '#7C3AED', border: 'none', '& .MuiChip-label': { px: 0.75 } }}
+          />
+        ) : null
       ),
     },
     {
@@ -299,7 +270,7 @@ export default function RoutingsPage() {
       width: 90,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (params: GridRenderCellParams<Routing>) => (
+      renderCell: (params: GridRenderCellParams<RoutingDto>) => (
         <Chip
           label={params.value ? 'Active' : 'Inactive'}
           size="small"
@@ -316,23 +287,15 @@ export default function RoutingsPage() {
       ),
     },
     {
-      field: 'updatedAt',
-      headerName: 'Updated',
-      width: 110,
-      renderCell: (params: GridRenderCellParams<Routing>) => (
-        <Typography variant="body2" sx={{ fontSize: 12, color: 'text.secondary' }}>{params.value}</Typography>
-      ),
-    },
-    {
       field: 'actions',
       headerName: '',
       width: 110,
       sortable: false,
       align: 'center',
-      renderCell: (params: GridRenderCellParams<Routing>) => (
+      renderCell: (params: GridRenderCellParams<RoutingDto>) => (
         <Stack direction="row" spacing={0.25}>
           <Tooltip title="View Steps">
-            <IconButton size="small" onClick={() => navigate(`/master/routings/${params.row.id}/steps`)} sx={{ color: 'text.secondary' }}>
+            <IconButton size="small" onClick={() => navigate(`/master/routings/${params.row.routingID}/steps`)} sx={{ color: 'text.secondary' }}>
               <SolarIcon name="eye" size={16} />
             </IconButton>
           </Tooltip>
@@ -350,6 +313,14 @@ export default function RoutingsPage() {
       ),
     },
   ];
+
+  if (isLoading) return <TablePageSkeleton />;
+  if (error) return (
+    <PageRoot>
+      <PageHeader title="Routings" breadcrumbs={[{ label: 'Master Data' }, { label: 'Routings' }]} />
+      <EmptyState icon="emptyTable" title="Failed to load routings" description={getErrorMessage(error)} />
+    </PageRoot>
+  );
 
   return (
     <PageRoot>
@@ -374,12 +345,12 @@ export default function RoutingsPage() {
       <TableToolbar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search routing code or product…"
+        searchPlaceholder="Search code, name, or product…"
         filters={[
           {
             label: 'Product',
             value: productFilter,
-            options: PRODUCTS.map((p) => ({ label: `${p.code} — ${p.name}`, value: p.code })),
+            options: productFilterOptions,
             onChange: setProductFilter,
           },
           {
@@ -393,7 +364,7 @@ export default function RoutingsPage() {
         actions={
           <Stack direction="row" spacing={0.5}>
             <ExportButton />
-            <RefreshButton />
+            <RefreshButton onClick={() => refetch()} />
           </Stack>
         }
       />
@@ -401,6 +372,7 @@ export default function RoutingsPage() {
       <Box sx={{ flex: 1, minHeight: 400 }}>
         <DataGrid
           rows={filtered}
+          getRowId={(row) => row.routingID}
           columns={columns}
           density="compact"
           checkboxSelection
@@ -435,38 +407,41 @@ export default function RoutingsPage() {
       <FormDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title={drawerMode === 'create' ? 'New Routing' : `Edit ${editTarget?.code}`}
-        subtitle={drawerMode === 'create' ? 'Enter routing details below' : editTarget?.productName}
+        title={drawerMode === 'create' ? 'New Routing' : `Edit ${editTarget?.routingCode}`}
+        subtitle={drawerMode === 'create' ? 'Enter routing details below' : (productNameMap.get(editTarget?.productCode ?? '') ?? editTarget?.productCode)}
         onSubmit={() => document.getElementById('routing-form')?.dispatchEvent(new Event('submit', { bubbles: true }))}
         submitLabel={drawerMode === 'create' ? 'Create Routing' : 'Save Changes'}
         loading={saving}
       >
+        {saveError && <Alert severity="error" sx={{ mb: 2 }}>{saveError}</Alert>}
         <RoutingForm
-          key={editTarget?.id ?? 'new'}
+          key={editTarget ? String(editTarget.routingID) : 'new'}
+          isEdit={drawerMode === 'edit'}
+          productOptions={productOptions}
           defaultValues={editTarget ? {
-            code:        editTarget.code,
+            code:        editTarget.routingCode,
+            name:        editTarget.routingName,
             productCode: editTarget.productCode,
-            version:     editTarget.version,
-            isActive:    editTarget.isActive,
+            isDefault:   editTarget.isDefault,
           } : {}}
           onSubmit={handleSave}
-          loading={saving}
         />
       </FormDrawer>
 
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(Number(deleteTarget.routingID))}
         title="Delete Routing"
         description={
           <>
-            Delete routing <strong>{deleteTarget?.code}</strong> for {deleteTarget?.productCode}?
+            Delete routing <strong>{deleteTarget?.routingCode}</strong> — {deleteTarget?.routingName}?
             This cannot be undone and may affect work orders using this routing.
           </>
         }
         confirmLabel="Delete"
         confirmColor="error"
+        loading={deleteMutation.isPending}
       />
     </PageRoot>
   );

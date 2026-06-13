@@ -1,12 +1,16 @@
+import Autocomplete from '@mui/material/Autocomplete';
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
+  FormControlLabel,
+  Grid,
   IconButton,
-  MenuItem,
   Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -17,185 +21,251 @@ import {
   Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ConfirmDialog,
+  EmptyState,
+  FormDrawer,
   PageHeader,
   PageRoot,
   SolarIcon,
+  TablePageSkeleton,
 } from '../../components';
+import {
+  useGetApiV1RoutingsId,
+  getGetApiV1RoutingsIdQueryKey,
+  postApiV1RoutingsIdSteps,
+  deleteApiV1RoutingsStepsStepId,
+} from '../../api/routings/routings';
+import { useGetApiV1Operations } from '../../api/operations/operations';
+import { useGetApiV1WorkCenters } from '../../api/work-centers/work-centers';
+import type { RoutingStepDto } from '../../api/model';
+import { getErrorMessage } from '../../lib/apiClient';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Form schema ──────────────────────────────────────────────────────────────
 
-interface RoutingStep {
-  id: string;
-  seq: number;
-  operationCode: string;
-  operationName: string;
-  machineType: string;
-  workCenter: string;
-  setupTimeMin: number;
-  cycleTimeSec: number;
-  isActive: boolean;
-}
+const StepSchema = z.object({
+  stepNumber:          z.coerce.number().int('Must be a whole number').positive('Must be positive'),
+  operationCode:       z.string().min(1, 'Operation is required'),
+  defaultWorkCenterId: z.coerce.number().int().positive('Work center is required'),
+  standardCycleTime:   z.coerce.number().min(0, 'Cannot be negative'),
+  isQcRequired:        z.boolean(),
+});
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+type StepFormValues = z.infer<typeof StepSchema>;
 
-const ROUTING_META: Record<string, { code: string; productCode: string; productName: string; version: string }> = {
-  '1': { code: 'RT-001', productCode: 'FRM-A001', productName: 'Frame Assembly A',      version: 'Rev.C' },
-  '2': { code: 'RT-002', productCode: 'PNL-B002', productName: 'Panel Sub-assembly B',  version: 'Rev.B' },
-  '3': { code: 'RT-003', productCode: 'SHT-C003', productName: 'Shaft Housing C',       version: 'Rev.A' },
-  '4': { code: 'RT-004', productCode: 'BRK-D004', productName: 'Bracket Set D',         version: 'Rev.A' },
-  '5': { code: 'RT-005', productCode: 'MTR-E005', productName: 'Motor Mount E',         version: 'Rev.B' },
-  '6': { code: 'RT-006', productCode: 'COV-F006', productName: 'Cover Plate F',         version: 'Rev.A' },
-  '7': { code: 'RT-007', productCode: 'HNG-J010', productName: 'Hinge Assembly J',      version: 'Rev.D' },
-  '8': { code: 'RT-008', productCode: 'WHL-L012', productName: 'Wheel & Hub Assembly L',version: 'Rev.C' },
-};
+// ─── Form component ───────────────────────────────────────────────────────────
 
-const INITIAL_STEPS: RoutingStep[] = [
-  { id: '1', seq: 10, operationCode: 'OP-001', operationName: 'CNC Turning',       machineType: 'Lathe',      workCenter: 'WC-009', setupTimeMin: 30,  cycleTimeSec: 45,  isActive: true },
-  { id: '2', seq: 20, operationCode: 'OP-007', operationName: 'Pressing',          machineType: 'Press',      workCenter: 'WC-010', setupTimeMin: 25,  cycleTimeSec: 30,  isActive: true },
-  { id: '3', seq: 30, operationCode: 'OP-008', operationName: 'Deburring',         machineType: 'Manual',     workCenter: 'WC-001', setupTimeMin: 10,  cycleTimeSec: 90,  isActive: true },
-  { id: '4', seq: 40, operationCode: 'OP-003', operationName: 'MIG Welding',       machineType: 'Welding',    workCenter: 'WC-003', setupTimeMin: 20,  cycleTimeSec: 180, isActive: true },
-  { id: '5', seq: 50, operationCode: 'OP-005', operationName: 'Painting',          machineType: 'Painting',   workCenter: 'WC-005', setupTimeMin: 30,  cycleTimeSec: 300, isActive: true },
-  { id: '6', seq: 60, operationCode: 'OP-004', operationName: 'Visual Inspection', machineType: 'Inspection', workCenter: 'WC-004', setupTimeMin: 5,   cycleTimeSec: 60,  isActive: true },
-];
+function StepForm({
+  defaultValues,
+  operationOptions,
+  workCenterOptions,
+  onSubmit,
+}: {
+  defaultValues: Partial<StepFormValues>;
+  operationOptions: { code: string; name: string }[];
+  workCenterOptions: { id: number; code: string; name: string }[];
+  onSubmit: (data: StepFormValues) => void;
+}) {
+  const { register, control, handleSubmit, formState: { errors } } = useForm<StepFormValues>({
+    resolver: zodResolver(StepSchema) as any,
+    defaultValues: { standardCycleTime: 0, isQcRequired: false, ...defaultValues },
+  });
 
-const AVAILABLE_OPS = [
-  { code: 'OP-001', name: 'CNC Turning',       machineType: 'Lathe',      workCenter: 'WC-009' },
-  { code: 'OP-002', name: 'CNC Milling',       machineType: 'Mill',       workCenter: 'WC-007' },
-  { code: 'OP-003', name: 'MIG Welding',       machineType: 'Welding',    workCenter: 'WC-003' },
-  { code: 'OP-004', name: 'Visual Inspection', machineType: 'Inspection', workCenter: 'WC-004' },
-  { code: 'OP-005', name: 'Painting',          machineType: 'Painting',   workCenter: 'WC-005' },
-  { code: 'OP-006', name: 'Assembly A',        machineType: 'Assembly',   workCenter: 'WC-002' },
-  { code: 'OP-007', name: 'Pressing',          machineType: 'Press',      workCenter: 'WC-010' },
-  { code: 'OP-008', name: 'Deburring',         machineType: 'Manual',     workCenter: 'WC-001' },
-  { code: 'OP-009', name: 'Heat Treatment',    machineType: 'Furnace',    workCenter: 'WC-001' },
-  { code: 'OP-010', name: 'CMM Inspection',    machineType: 'Inspection', workCenter: 'WC-004' },
-];
-
-// ─── Inline edit row ──────────────────────────────────────────────────────────
-
-interface EditingValues {
-  operationCode: string;
-  setupTimeMin: string;
-  cycleTimeSec: string;
+  return (
+    <Box component="form" id="step-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 6 }}>
+          <TextField
+            {...register('stepNumber')}
+            label="Step Number"
+            type="number"
+            fullWidth
+            required
+            error={!!errors.stepNumber}
+            helperText={errors.stepNumber?.message}
+            slotProps={{ htmlInput: { min: 1, step: 1 } }}
+          />
+        </Grid>
+        <Grid size={{ xs: 6 }}>
+          <Controller
+            name="isQcRequired"
+            control={control}
+            render={({ field }) => (
+              <FormControlLabel
+                control={<Switch checked={field.value} onChange={field.onChange} color="primary" />}
+                label="QC Required"
+                sx={{ mt: 1, ml: 0 }}
+              />
+            )}
+          />
+        </Grid>
+        <Grid size={{ xs: 12 }}>
+          <Controller
+            name="operationCode"
+            control={control}
+            render={({ field }) => (
+              <Autocomplete
+                options={operationOptions}
+                getOptionLabel={(opt) => typeof opt === 'string' ? opt : `${opt.code} — ${opt.name}`}
+                isOptionEqualToValue={(opt, val) => opt.code === val.code}
+                value={operationOptions.find((o) => o.code === field.value) ?? null}
+                onChange={(_, val) => field.onChange(val?.code ?? '')}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Operation"
+                    required
+                    error={!!errors.operationCode}
+                    helperText={errors.operationCode?.message}
+                  />
+                )}
+              />
+            )}
+          />
+        </Grid>
+        <Grid size={{ xs: 12 }}>
+          <Controller
+            name="defaultWorkCenterId"
+            control={control}
+            render={({ field }) => (
+              <Autocomplete
+                options={workCenterOptions}
+                getOptionLabel={(opt) => typeof opt === 'string' ? opt : `${opt.code} — ${opt.name}`}
+                isOptionEqualToValue={(opt, val) => opt.id === val.id}
+                value={workCenterOptions.find((w) => w.id === Number(field.value)) ?? null}
+                onChange={(_, val) => field.onChange(val?.id ?? 0)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Default Work Center"
+                    required
+                    error={!!errors.defaultWorkCenterId}
+                    helperText={errors.defaultWorkCenterId?.message}
+                  />
+                )}
+              />
+            )}
+          />
+        </Grid>
+        <Grid size={{ xs: 12 }}>
+          <TextField
+            {...register('standardCycleTime')}
+            label="Standard Cycle Time"
+            type="number"
+            fullWidth
+            error={!!errors.standardCycleTime}
+            helperText={errors.standardCycleTime?.message ?? '0 = not set'}
+            slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+          />
+        </Grid>
+      </Grid>
+    </Box>
+  );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function RoutingStepsPage() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const { id }       = useParams<{ id: string }>();
+  const navigate     = useNavigate();
+  const queryClient  = useQueryClient();
+  const routingId    = Number(id);
 
-  const meta = ROUTING_META[id ?? ''] ?? ROUTING_META['1'];
+  const [drawerOpen, setDrawerOpen]     = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<RoutingStepDto | null>(null);
+  const [saveError, setSaveError]       = useState('');
 
-  const [steps, setSteps]               = useState<RoutingStep[]>(INITIAL_STEPS);
-  const [editingId, setEditingId]       = useState<string | null>(null);
-  const [editValues, setEditValues]     = useState<EditingValues>({ operationCode: '', setupTimeMin: '', cycleTimeSec: '' });
-  const [deleteTarget, setDeleteTarget] = useState<RoutingStep | null>(null);
+  const { data: routing, isLoading, error, refetch } = useGetApiV1RoutingsId(routingId);
+  const { data: operations = [] } = useGetApiV1Operations();
+  const { data: workCenters = [] } = useGetApiV1WorkCenters();
 
-  function startEdit(step: RoutingStep) {
-    setEditingId(step.id);
-    setEditValues({
-      operationCode: step.operationCode,
-      setupTimeMin:  String(step.setupTimeMin),
-      cycleTimeSec:  String(step.cycleTimeSec),
-    });
-  }
+  const operationMap = useMemo(
+    () => new Map(operations.map((o) => [o.operationCode, o.operationName])),
+    [operations],
+  );
 
-  function cancelEdit() {
-    setEditingId(null);
-  }
+  const workCenterMap = useMemo(
+    () => new Map(workCenters.map((w) => [Number(w.workCenterID), { code: w.workCenterCode, name: w.workCenterName }])),
+    [workCenters],
+  );
 
-  function saveEdit(step: RoutingStep) {
-    const op = AVAILABLE_OPS.find((o) => o.code === editValues.operationCode);
-    setSteps((prev) => prev.map((s) =>
-      s.id === step.id
-        ? {
-            ...s,
-            operationCode: editValues.operationCode,
-            operationName: op?.name ?? s.operationName,
-            machineType:   op?.machineType ?? s.machineType,
-            workCenter:    op?.workCenter ?? s.workCenter,
-            setupTimeMin:  Number(editValues.setupTimeMin) || 0,
-            cycleTimeSec:  Number(editValues.cycleTimeSec) || 0,
-          }
-        : s
-    ));
-    setEditingId(null);
-  }
+  const operationOptions = useMemo(
+    () => operations.filter((o) => o.isActive).map((o) => ({ code: o.operationCode, name: o.operationName })),
+    [operations],
+  );
 
-  function handleDelete() {
-    if (deleteTarget) {
-      setSteps((prev) => prev.filter((s) => s.id !== deleteTarget.id));
-      setDeleteTarget(null);
-    }
-  }
+  const workCenterOptions = useMemo(
+    () => workCenters.filter((w) => w.isActive).map((w) => ({ id: Number(w.workCenterID), code: w.workCenterCode, name: w.workCenterName })),
+    [workCenters],
+  );
 
-  function moveStep(step: RoutingStep, direction: 'up' | 'down') {
-    const sorted = [...steps].sort((a, b) => a.seq - b.seq);
-    const idx = sorted.findIndex((s) => s.id === step.id);
-    if (direction === 'up' && idx === 0) return;
-    if (direction === 'down' && idx === sorted.length - 1) return;
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    const newSeq = sorted[swapIdx].seq;
-    const swapSeq = sorted[idx].seq;
-    setSteps((prev) => prev.map((s) => {
-      if (s.id === step.id) return { ...s, seq: newSeq };
-      if (s.id === sorted[swapIdx].id) return { ...s, seq: swapSeq };
-      return s;
-    }));
-  }
+  const steps = useMemo(
+    () => [...(routing?.steps ?? [])].sort((a, b) => Number(a.stepNumber) - Number(b.stepNumber)),
+    [routing?.steps],
+  );
 
-  function addStep() {
-    const maxSeq = steps.length > 0 ? Math.max(...steps.map((s) => s.seq)) : 0;
-    const newStep: RoutingStep = {
-      id:            String(Date.now()),
-      seq:           maxSeq + 10,
-      operationCode: 'OP-001',
-      operationName: 'CNC Turning',
-      machineType:   'Lathe',
-      workCenter:    'WC-009',
-      setupTimeMin:  0,
-      cycleTimeSec:  0,
-      isActive:      true,
-    };
-    setSteps((prev) => [...prev, newStep]);
-    setEditingId(newStep.id);
-    setEditValues({ operationCode: 'OP-001', setupTimeMin: '0', cycleTimeSec: '0' });
-  }
+  const nextStepNumber = useMemo(
+    () => steps.length > 0 ? Math.max(...steps.map((s) => Number(s.stepNumber))) + 10 : 10,
+    [steps],
+  );
 
-  const sorted = [...steps].sort((a, b) => a.seq - b.seq);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getGetApiV1RoutingsIdQueryKey(routingId) });
+
+  const addMutation = useMutation({
+    mutationFn: (data: StepFormValues) =>
+      postApiV1RoutingsIdSteps(routingId, {
+        stepNumber:          data.stepNumber,
+        operationCode:       data.operationCode,
+        defaultWorkCenterId: data.defaultWorkCenterId,
+        standardCycleTime:   data.standardCycleTime,
+        isQcRequired:        data.isQcRequired,
+      }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (stepId: number) => deleteApiV1RoutingsStepsStepId(stepId),
+    onSuccess: () => { invalidate(); setDeleteTarget(null); },
+  });
+
+  function openAdd() { setSaveError(''); setDrawerOpen(true); }
+  function handleSave(data: StepFormValues) { setSaveError(''); addMutation.mutate(data); }
+
+  if (isLoading) return <TablePageSkeleton />;
+  if (error || !routing) return (
+    <PageRoot>
+      <PageHeader
+        title="Routing Steps"
+        breadcrumbs={[{ label: 'Master Data' }, { label: 'Routings', href: '/master/routings' }, { label: id ?? '' }, { label: 'Steps' }]}
+      />
+      <EmptyState icon="emptyTable" title="Failed to load routing" description={error ? getErrorMessage(error) : 'Routing not found'} />
+    </PageRoot>
+  );
 
   return (
     <PageRoot>
       <PageHeader
-        title={`Routing Steps — ${meta.code}`}
-        subtitle={`${meta.productName} · ${meta.version}`}
+        title={`Steps — ${routing.routingCode}`}
+        subtitle={`${routing.routingName} · Product: ${routing.productCode}`}
         breadcrumbs={[
           { label: 'Master Data' },
           { label: 'Routings', href: '/master/routings' },
-          { label: meta.code, href: `/master/routings` },
+          { label: routing.routingCode },
           { label: 'Steps' },
         ]}
         actions={
           <>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<SolarIcon name="back" size={16} />}
-              onClick={() => navigate('/master/routings')}
-            >
+            <Button variant="outlined" size="small" startIcon={<SolarIcon name="back" size={16} />} onClick={() => navigate(-1)}>
               Back
             </Button>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<SolarIcon name="add" size={16} />}
-              onClick={addStep}
-            >
+            <Button variant="contained" size="small" startIcon={<SolarIcon name="add" size={16} />} onClick={openAdd}>
               Add Step
             </Button>
           </>
@@ -204,246 +274,179 @@ export default function RoutingStepsPage() {
 
       <Card variant="outlined" sx={{ borderRadius: 2 }}>
         <CardContent sx={{ pb: '12px !important' }}>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
-            <Typography
-              variant="subtitle2"
-              sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.6875rem', letterSpacing: 0.5 }}
-            >
-              Step List
-            </Typography>
-            <Chip
-              label={`${sorted.length} steps`}
-              size="small"
-              sx={(theme) => ({
-                height: 18,
-                fontSize: '0.625rem',
-                fontWeight: 600,
-                bgcolor: alpha(theme.palette.primary.main, 0.08),
-                color: 'primary.main',
-                border: 'none',
-                '& .MuiChip-label': { px: 0.5 },
-              })}
-            />
+          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.6875rem', letterSpacing: 0.5 }}>
+                Routing Steps
+              </Typography>
+              <Chip
+                label={`${steps.length} step${steps.length !== 1 ? 's' : ''}`}
+                size="small"
+                sx={(theme) => ({ height: 18, fontSize: '0.625rem', fontWeight: 600, bgcolor: alpha(theme.palette.primary.main, 0.08), color: 'primary.main', border: 'none', '& .MuiChip-label': { px: 0.5 } })}
+              />
+              {routing.isDefault && (
+                <Chip
+                  label="Default Routing"
+                  size="small"
+                  sx={{ height: 18, fontSize: '0.625rem', fontWeight: 600, bgcolor: alpha('#7C3AED', 0.1), color: '#7C3AED', border: 'none', '& .MuiChip-label': { px: 0.5 } }}
+                />
+              )}
+            </Stack>
+            <Tooltip title="Refresh">
+              <IconButton size="small" onClick={() => refetch()} sx={{ color: 'text.secondary' }}>
+                <SolarIcon name="refresh" size={16} />
+              </IconButton>
+            </Tooltip>
           </Stack>
 
-          <Table size="small">
-            <TableHead>
-              <TableRow
-                sx={{ '& th': { py: 0.75, fontWeight: 600, fontSize: '0.75rem', borderColor: 'divider', color: 'text.secondary', bgcolor: (t) => alpha(t.palette.primary.main, 0.03) } }}
-              >
-                <TableCell width={60}>Seq #</TableCell>
-                <TableCell width={130}>Operation Code</TableCell>
-                <TableCell>Operation Name</TableCell>
-                <TableCell width={120}>Machine Type</TableCell>
-                <TableCell width={110}>Work Center</TableCell>
-                <TableCell width={100} align="right">Setup (min)</TableCell>
-                <TableCell width={100} align="right">Cycle (sec)</TableCell>
-                <TableCell width={70} align="center">Active</TableCell>
-                <TableCell width={130} align="center">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {sorted.map((step, idx) => {
-                const isEditing = editingId === step.id;
-                return (
-                  <TableRow
-                    key={step.id}
-                    sx={{
-                      '& td': { py: 0.5, fontSize: '0.8125rem', borderColor: 'divider' },
-                      '&:last-child td': { border: 0 },
-                      bgcolor: isEditing ? (t) => alpha(t.palette.primary.main, 0.03) : 'transparent',
-                    }}
-                  >
-                    {/* Seq */}
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 600, color: 'text.secondary' }}>
-                        {step.seq}
-                      </Typography>
-                    </TableCell>
-
-                    {/* Operation Code */}
-                    <TableCell>
-                      {isEditing ? (
-                        <TextField
-                          select
-                          size="small"
-                          value={editValues.operationCode}
-                          onChange={(e) => {
-                            const op = AVAILABLE_OPS.find((o) => o.code === e.target.value);
-                            setEditValues((prev) => ({ ...prev, operationCode: e.target.value }));
-                            if (op) {
-                              setSteps((prev) => prev.map((s) =>
-                                s.id === step.id
-                                  ? { ...s, operationName: op.name, machineType: op.machineType, workCenter: op.workCenter }
-                                  : s
-                              ));
-                            }
-                          }}
-                          sx={{ width: 120 }}
-                          slotProps={{ htmlInput: { style: { fontSize: 12, fontFamily: 'ui-monospace, monospace' } } }}
-                        >
-                          {AVAILABLE_OPS.map((o) => (
-                            <MenuItem key={o.code} value={o.code} sx={{ fontSize: 12, fontFamily: 'ui-monospace, monospace' }}>{o.code}</MenuItem>
-                          ))}
-                        </TextField>
-                      ) : (
+          {steps.length === 0 ? (
+            <Box sx={{ py: 4 }}>
+              <EmptyState
+                icon="emptyTable"
+                title="No steps yet"
+                description="Click 'Add Step' to define the operations in sequence for this routing."
+                action={<Button variant="contained" size="small" onClick={openAdd}>Add Step</Button>}
+                compact
+              />
+            </Box>
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ '& th': { py: 0.75, fontWeight: 600, fontSize: '0.75rem', borderColor: 'divider', color: 'text.secondary', bgcolor: (t) => alpha(t.palette.primary.main, 0.03) } }}>
+                  <TableCell width={60}>Step #</TableCell>
+                  <TableCell width={140}>Operation</TableCell>
+                  <TableCell>Operation Name</TableCell>
+                  <TableCell width={170}>Work Center</TableCell>
+                  <TableCell width={120} align="right">Cycle Time</TableCell>
+                  <TableCell width={80} align="center">QC</TableCell>
+                  <TableCell width={60} align="center" />
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {steps.map((step) => {
+                  const wc = workCenterMap.get(Number(step.defaultWorkCenterID));
+                  return (
+                    <TableRow
+                      key={String(step.routingStepID)}
+                      sx={{
+                        '& td': { py: 0.5, fontSize: '0.8125rem', borderColor: 'divider' },
+                        '&:last-child td': { border: 0 },
+                        '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.02) },
+                      }}
+                    >
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 600, color: 'text.secondary' }}>
+                          {Number(step.stepNumber)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
                         <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 600, color: 'primary.main' }}>
                           {step.operationCode}
                         </Typography>
-                      )}
-                    </TableCell>
-
-                    {/* Operation Name */}
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontSize: 12 }}>{step.operationName}</Typography>
-                    </TableCell>
-
-                    {/* Machine Type */}
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>{step.machineType}</Typography>
-                    </TableCell>
-
-                    {/* Work Center */}
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, color: 'text.secondary' }}>
-                        {step.workCenter}
-                      </Typography>
-                    </TableCell>
-
-                    {/* Setup Time */}
-                    <TableCell align="right">
-                      {isEditing ? (
-                        <TextField
-                          size="small"
-                          type="number"
-                          value={editValues.setupTimeMin}
-                          onChange={(e) => setEditValues((prev) => ({ ...prev, setupTimeMin: e.target.value }))}
-                          sx={{ width: 70 }}
-                          slotProps={{ htmlInput: { style: { fontSize: 12, textAlign: 'right' }, min: 0 } }}
-                        />
-                      ) : (
-                        <Typography variant="body2" sx={{ fontSize: 12 }}>{step.setupTimeMin}</Typography>
-                      )}
-                    </TableCell>
-
-                    {/* Cycle Time */}
-                    <TableCell align="right">
-                      {isEditing ? (
-                        <TextField
-                          size="small"
-                          type="number"
-                          value={editValues.cycleTimeSec}
-                          onChange={(e) => setEditValues((prev) => ({ ...prev, cycleTimeSec: e.target.value }))}
-                          sx={{ width: 70 }}
-                          slotProps={{ htmlInput: { style: { fontSize: 12, textAlign: 'right' }, min: 0 } }}
-                        />
-                      ) : (
+                      </TableCell>
+                      <TableCell>
                         <Typography variant="body2" sx={{ fontSize: 12 }}>
-                          {step.cycleTimeSec > 0 ? step.cycleTimeSec : '—'}
+                          {operationMap.get(step.operationCode) ?? (
+                            <Box component="span" sx={{ color: 'text.disabled', fontStyle: 'italic' }}>Unknown</Box>
+                          )}
                         </Typography>
-                      )}
-                    </TableCell>
-
-                    {/* Active */}
-                    <TableCell align="center">
-                      <Chip
-                        label={step.isActive ? 'Yes' : 'No'}
-                        size="small"
-                        sx={{
-                          height: 18,
-                          fontSize: '0.625rem',
-                          fontWeight: 600,
-                          bgcolor: step.isActive ? alpha('#15803D', 0.1) : alpha('#94A3B8', 0.1),
-                          color: step.isActive ? '#15803D' : '#94A3B8',
-                          border: 'none',
-                          '& .MuiChip-label': { px: 0.5 },
-                        }}
-                      />
-                    </TableCell>
-
-                    {/* Actions */}
-                    <TableCell align="center">
-                      <Stack direction="row" spacing={0.25} sx={{ justifyContent: 'center' }}>
-                        {isEditing ? (
-                          <>
-                            <Tooltip title="Save">
-                              <IconButton size="small" onClick={() => saveEdit(step)} sx={{ color: '#15803D' }}>
-                                <SolarIcon name="success" size={15} />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Cancel">
-                              <IconButton size="small" onClick={cancelEdit} sx={{ color: 'text.secondary' }}>
-                                <SolarIcon name="close" size={15} />
-                              </IconButton>
-                            </Tooltip>
-                          </>
+                      </TableCell>
+                      <TableCell>
+                        {wc ? (
+                          <Stack>
+                            <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, fontWeight: 600, color: 'text.secondary' }}>
+                              {wc.code}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                              {wc.name}
+                            </Typography>
+                          </Stack>
                         ) : (
-                          <>
-                            <Tooltip title="Edit">
-                              <IconButton size="small" onClick={() => startEdit(step)} sx={{ color: 'text.secondary' }}>
-                                <SolarIcon name="edit" size={15} />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Move Up">
-                              <span>
-                                <IconButton size="small" onClick={() => moveStep(step, 'up')} disabled={idx === 0} sx={{ color: 'text.secondary' }}>
-                                  <SolarIcon name="collapse" size={15} />
-                                </IconButton>
-                              </span>
-                            </Tooltip>
-                            <Tooltip title="Move Down">
-                              <span>
-                                <IconButton size="small" onClick={() => moveStep(step, 'down')} disabled={idx === sorted.length - 1} sx={{ color: 'text.secondary' }}>
-                                  <SolarIcon name="expand" size={15} />
-                                </IconButton>
-                              </span>
-                            </Tooltip>
-                            <Tooltip title="Delete">
-                              <IconButton size="small" onClick={() => setDeleteTarget(step)} sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}>
-                                <SolarIcon name="delete" size={15} />
-                              </IconButton>
-                            </Tooltip>
-                          </>
+                          <Typography variant="body2" sx={{ fontSize: 12, color: 'text.disabled', fontStyle: 'italic' }}>
+                            ID: {String(step.defaultWorkCenterID)}
+                          </Typography>
                         )}
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-
-              {sorted.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={9} sx={{ textAlign: 'center', py: 4, color: 'text.secondary', fontSize: 13 }}>
-                    No steps defined yet. Click "Add Step" to create the first step.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-
-          {sorted.length > 0 && (
-            <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1, bgcolor: (t) => alpha(t.palette.warning.main, 0.06), border: '1px solid', borderColor: (t) => alpha(t.palette.warning.main, 0.2) }}>
-              <Typography variant="caption" color="text.secondary">
-                BOM changes take effect from next released Work Order
-              </Typography>
-            </Box>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2" sx={{ fontSize: 12, color: Number(step.standardCycleTime) > 0 ? 'text.primary' : 'text.disabled' }}>
+                          {Number(step.standardCycleTime) > 0 ? Number(step.standardCycleTime) : '—'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Chip
+                          label={step.isQcRequired ? 'Yes' : 'No'}
+                          size="small"
+                          sx={{
+                            height: 18,
+                            fontSize: '0.625rem',
+                            fontWeight: 600,
+                            bgcolor: step.isQcRequired ? alpha('#D97706', 0.1) : alpha('#94A3B8', 0.1),
+                            color: step.isQcRequired ? '#D97706' : '#94A3B8',
+                            border: 'none',
+                            '& .MuiChip-label': { px: 0.5 },
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Tooltip title="Delete Step">
+                          <IconButton size="small" onClick={() => setDeleteTarget(step)} sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}>
+                            <SolarIcon name="delete" size={14} />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           )}
+
+          <Box sx={{ mt: 2, p: 1.5, borderRadius: 1, bgcolor: (t) => alpha(t.palette.warning.main, 0.06), border: '1px solid', borderColor: (t) => alpha(t.palette.warning.main, 0.2) }}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <SolarIcon name="warning" size={14} color="#D97706" />
+              <Typography variant="caption" color="text.secondary">
+                Routing changes take effect from the next released Work Order.
+              </Typography>
+            </Stack>
+          </Box>
         </CardContent>
       </Card>
 
+      {/* Add Step Drawer */}
+      <FormDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title="Add Step"
+        subtitle={`Step ${nextStepNumber} — ${routing.routingCode}`}
+        onSubmit={() => document.getElementById('step-form')?.dispatchEvent(new Event('submit', { bubbles: true }))}
+        submitLabel="Add Step"
+        loading={addMutation.isPending}
+      >
+        {saveError && <Alert severity="error" sx={{ mb: 2 }}>{saveError}</Alert>}
+        <StepForm
+          key={String(drawerOpen)}
+          defaultValues={{ stepNumber: nextStepNumber }}
+          operationOptions={operationOptions}
+          workCenterOptions={workCenterOptions}
+          onSubmit={handleSave}
+        />
+      </FormDrawer>
+
+      {/* Confirm delete */}
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(Number(deleteTarget.routingStepID))}
         title="Delete Step"
         description={
           <>
-            Delete step <strong>#{deleteTarget?.seq} — {deleteTarget?.operationName}</strong>?
-            This will remove it from the routing sequence.
+            Delete step <strong>#{Number(deleteTarget?.stepNumber)}</strong> ({deleteTarget?.operationCode}) from this routing?
+            This cannot be undone.
           </>
         }
         confirmLabel="Delete"
         confirmColor="error"
+        loading={deleteMutation.isPending}
       />
     </PageRoot>
   );
