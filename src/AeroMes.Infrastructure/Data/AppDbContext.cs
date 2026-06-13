@@ -117,6 +117,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<ProductionOrder> ProductionOrders => Set<ProductionOrder>();
 
     // prod schema
+    public DbSet<ProductionSchedule> ProductionSchedules => Set<ProductionSchedule>();
+    public DbSet<ProductionScheduleLine> ProductionScheduleLines => Set<ProductionScheduleLine>();
     public DbSet<WorkOrder> WorkOrders => Set<WorkOrder>();
     public DbSet<Job> Jobs => Set<Job>();
     public DbSet<ProductionLog> ProductionLogs => Set<ProductionLog>();
@@ -2370,6 +2372,28 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Ignore(x => x.ForecastedClosingBalance);
             e.Ignore(x => x.HasShortfall);
             e.HasIndex(x => x.MrpID);
+        });
+
+        b.Entity<ProductionSchedule>(e =>
+        {
+            e.ToTable("ProductionSchedules", "prod");
+            e.HasKey(x => x.ScheduleId);
+            e.Property(x => x.ScheduleId).UseIdentityColumn();
+            e.Property(x => x.ScheduleName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.FacilityCode).HasMaxLength(50);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.HasMany(x => x.Lines).WithOne().HasForeignKey(x => x.ScheduleId).OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines).HasField("_lines").UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<ProductionScheduleLine>(e =>
+        {
+            e.ToTable("ProductionScheduleLines", "prod");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).UseIdentityColumn();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasIndex(x => x.ScheduleId);
+            e.HasIndex(x => new { x.ScheduleId, x.POID });
         });
 
         b.Entity<MaterialPurchaseRequest>(e =>

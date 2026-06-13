@@ -2,6 +2,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using AeroMes.Api.Controllers;
 using AeroMes.Application.Interfaces;
+using AeroMes.Application.Production.Schedule.Commands.UpdateScheduleLines;
+using AeroMes.Domain.Production.Repositories;
 using AeroMes.Api.Middleware;
 using AeroMes.Application.Inventory.Queries.GetInventoryStock;
 using AeroMes.Application.Inventory.Queries.GetLotTrace;
@@ -1302,6 +1304,23 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(ProcessApplicationScope))]
 [JsonSerializable(typeof(StageCapacityType))]
 [JsonSerializable(typeof(PlannedTimeSource))]
+
+// Production Schedule
+[JsonSerializable(typeof(ScheduleListDto))]
+[JsonSerializable(typeof(PagedResult<ScheduleListDto>))]
+[JsonSerializable(typeof(ScheduleLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<ScheduleLineDto>))]
+[JsonSerializable(typeof(List<ScheduleLineDto>))]
+[JsonSerializable(typeof(ScheduleDetailDto))]
+[JsonSerializable(typeof(PendingOrderDto))]
+[JsonSerializable(typeof(IReadOnlyList<PendingOrderDto>))]
+[JsonSerializable(typeof(List<PendingOrderDto>))]
+[JsonSerializable(typeof(ScheduleLineInput))]
+[JsonSerializable(typeof(IReadOnlyList<ScheduleLineInput>))]
+[JsonSerializable(typeof(List<ScheduleLineInput>))]
+[JsonSerializable(typeof(CreateScheduleRequest))]
+[JsonSerializable(typeof(UpdateScheduleLinesRequest))]
+[JsonSerializable(typeof(ScheduleStatus))]
 
 // Overview Dashboard
 [JsonSerializable(typeof(IncompleteOrdersResult))]
