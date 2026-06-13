@@ -196,7 +196,7 @@ Tablet-specific overrides:
 | `PageHeader` | `title, breadcrumbs?, actions?` | Consistent page top |
 | `SectionCard` | `title, collapsible?` | Content grouping card |
 | `ConfirmDialog` | `title, message, onConfirm` | Reused for destructive actions |
-| `FormDrawer` | `open, title, onClose` | Right-side drawer for create/edit forms |
+| `FormActionBar` | `onCancel, onSubmit, isSubmitting, isDirty` | Sticky bottom bar on create/edit pages; shows unsaved-changes dot when `isDirty` |
 
 ---
 
@@ -219,20 +219,35 @@ Tablet-specific overrides:
 
 ### 3.3 Master Data (`/master/`)
 
-All views: list + inline create + detail/edit drawer.
+All entities follow: **list page → separate create page → separate edit page**.
+No drawers or dialogs for data entry; every form is a full route.
 
-| Route | Entities | Key fields shown in list |
-|-------|----------|--------------------------|
-| `/master/work-centers` | WorkCenters | Code, Name, Machine count, Active |
-| `/master/work-centers/:id` | WorkCenter + Machines sub-list | — |
-| `/master/machines` | Machines | Code, Name, WorkCenter, Status, Brand |
-| `/master/products` | Products | Code, Name, Unit, FinishedGood flag |
+| Route | View | Notes |
+|-------|------|-------|
+| `/master/work-centers` | WorkCenters list | Code, Name, Machine count, Active |
+| `/master/work-centers/new` | Create WorkCenter | Full-page form |
+| `/master/work-centers/:id` | WorkCenter detail + Machines sub-list | — |
+| `/master/work-centers/:id/edit` | Edit WorkCenter | Full-page form, pre-filled |
+| `/master/machines` | Machines list | Code, Name, WorkCenter, Status, Brand |
+| `/master/machines/new` | Create Machine | Full-page form |
+| `/master/machines/:id/edit` | Edit Machine | Full-page form, pre-filled |
+| `/master/products` | Products list | Code, Name, Unit, FinishedGood flag |
+| `/master/products/new` | Create Product | Full-page form |
+| `/master/products/:id/edit` | Edit Product | Full-page form, pre-filled |
 | `/master/products/:id/bom` | BOM tree editor | Parent → Children + Qty + Scrap% |
-| `/master/operations` | Operations | Code, Name, Active |
-| `/master/routings` | Routings | Code, Name, Product, Default flag |
+| `/master/operations` | Operations list | Code, Name, Active |
+| `/master/operations/new` | Create Operation | Full-page form |
+| `/master/operations/:id/edit` | Edit Operation | Full-page form, pre-filled |
+| `/master/routings` | Routings list | Code, Name, Product, Default flag |
+| `/master/routings/new` | Create Routing | Full-page form |
+| `/master/routings/:id/edit` | Edit Routing | Full-page form, pre-filled |
 | `/master/routings/:id/steps` | RoutingSteps editor | Step# → Operation → WorkCenter → CycleTime + QC flag |
-| `/master/storage-locations` | StorageLocations | Code, Name, Type color, WorkCenter link |
-| `/master/defect-codes` | DefectCodes | Code, Name, Category, Active |
+| `/master/storage-locations` | StorageLocations list | Code, Name, Type color, WorkCenter link |
+| `/master/storage-locations/new` | Create StorageLocation | Full-page form |
+| `/master/storage-locations/:id/edit` | Edit StorageLocation | Full-page form, pre-filled |
+| `/master/defect-codes` | DefectCodes list | Code, Name, Category, Active |
+| `/master/defect-codes/new` | Create DefectCode | Full-page form |
+| `/master/defect-codes/:id/edit` | Edit DefectCode | Full-page form, pre-filled |
 
 ### 3.4 Integration / Planning (`/integration/`)
 
@@ -288,8 +303,12 @@ All barcode scanning, warehouse receiving/issuing, and handheld QA flows are han
 | Route | View |
 |-------|------|
 | `/admin/users` | User list: name, email, roles, MFA status, last login |
-| `/admin/users/:id` | User detail: edit roles, force password change, revoke sessions |
+| `/admin/users/new` | Create User — full-page form |
+| `/admin/users/:id` | User detail: roles, MFA status, session list |
+| `/admin/users/:id/edit` | Edit User — full-page form, pre-filled |
 | `/admin/roles` | Roles × Permissions matrix |
+| `/admin/roles/new` | Create Role — full-page form |
+| `/admin/roles/:id/edit` | Edit Role — full-page form |
 | `/admin/audit-log` | Security audit log: immutable event list with filter |
 
 ---
@@ -451,31 +470,31 @@ Until real images are generated, the `<Illustration>` component renders a colore
 
 ---
 
-## 5. UX Patterns
+## 6. UX Patterns
 
-### 5.1 Offline-first (Tablet Production Output)
+### 6.1 Offline-first (Tablet Production Output)
 1. User submits output → generate UUID idempotency key
 2. Optimistic UI: immediately show "Submitted" state
 3. If API fails → store in IndexedDB queue
 4. Background sync on reconnect → replay queue in order
 5. `SyncStatusBar` shows `N pending` when queue > 0
 
-### 5.2 Idempotency Key Flow
+### 6.2 Idempotency Key Flow
 - Key generated per `ProductionOutputForm` mount: `crypto.randomUUID()`
 - Sent as `X-Idempotency-Key` header
 - Duplicate server response (409/200) handled same as success
 - Key is reset only on explicit new form session
 
-### 5.3 Confirmation Pattern
+### 6.3 Confirmation Pattern
 - All destructive/irreversible actions (Cancel WO, End Downtime, Delete record) use `ConfirmDialog`
 - Tablet: full-screen confirm step (not a small modal)
 
-### 5.4 Loading & Error States
+### 6.4 Loading & Error States
 - All data fetches: skeleton loaders (not spinners) for content areas
 - API errors: MUI `Alert` inline + toast notification
 - RFC 7807 `ProblemDetails` response → extract `title` + `detail` for display
 
-### 5.5 Real-time Dashboard
+### 6.5 Real-time Dashboard
 - OEE dashboard polls every 30s (or SSE if added later)
 - Machine status grid uses local state updated per poll
 - "Last updated: Xs ago" indicator in dashboard header
@@ -578,7 +597,7 @@ npm install react-router-dom @mui/x-data-grid @mui/x-date-pickers dayjs \
 - [ ] `PageHeader.tsx` — title + breadcrumbs + action slot
 - [ ] `SectionCard.tsx` — MUI Card wrapper with title prop
 - [ ] `ConfirmDialog.tsx` — reusable destructive-action confirm modal
-- [ ] `FormDrawer.tsx` — right-side drawer for create/edit forms
+- [ ] `FormActionBar.tsx` — sticky bottom bar for create/edit pages (Cancel + Save, dirty indicator)
 - [ ] `AppDataGrid.tsx` — MUI X DataGrid wrapper with search toolbar + consistent empty state
 - [ ] `SyncStatusBar.tsx` — tablet: shows N pending offline submissions
 
@@ -591,14 +610,22 @@ npm install react-router-dom @mui/x-data-grid @mui/x-date-pickers dayjs \
 
 ### Step 9: Page stubs (`web/src/pages/`)
 Each page: just the `PageHeader` + layout shell + `TODO: wire API` placeholder.
+Create/edit pages also render `<FormActionBar>` stub.
 - [ ] `Dashboard/index.tsx`
 - [ ] `auth/Login.tsx`, `auth/MfaChallenge.tsx`, `auth/SetupMfa.tsx`
-- [ ] `master/WorkCenters.tsx`, `Machines.tsx`, `Products.tsx`, `Bom.tsx`, `Operations.tsx`, `Routings.tsx`, `StorageLocations.tsx`, `DefectCodes.tsx`
+- [ ] `master/WorkCentersPage.tsx`, `WorkCenterCreatePage.tsx`, `WorkCenterEditPage.tsx`
+- [ ] `master/MachinesPage.tsx`, `MachineCreatePage.tsx`, `MachineEditPage.tsx`
+- [ ] `master/ProductsPage.tsx`, `ProductCreatePage.tsx`, `ProductEditPage.tsx`, `BomEditorPage.tsx`
+- [ ] `master/OperationsPage.tsx`, `OperationCreatePage.tsx`, `OperationEditPage.tsx`
+- [ ] `master/RoutingsPage.tsx`, `RoutingCreatePage.tsx`, `RoutingEditPage.tsx`, `RoutingStepsPage.tsx`
+- [ ] `master/StorageLocationsPage.tsx`, `StorageLocationCreatePage.tsx`, `StorageLocationEditPage.tsx`
+- [ ] `master/DefectCodesPage.tsx`, `DefectCodeCreatePage.tsx`, `DefectCodeEditPage.tsx`
 - [ ] `integration/SalesOrders.tsx`, `ProductionOrders.tsx`
 - [ ] `production/WorkOrders.tsx`, `WorkOrderDetail.tsx`, `Jobs.tsx`, `Downtime.tsx`, `Inventory.tsx`
 - [ ] `tablet/Station.tsx`, `OutputForm.tsx`, `DowntimeFlow.tsx`
 - [ ] `reports/Production.tsx`, `Oee.tsx`, `Downtime.tsx`, `Quality.tsx`
-- [ ] `admin/Users.tsx`, `Roles.tsx`, `AuditLog.tsx`
+- [ ] `admin/UsersPage.tsx`, `UserCreatePage.tsx`, `UserEditPage.tsx`
+- [ ] `admin/RolesPage.tsx`, `RoleCreatePage.tsx`, `RoleEditPage.tsx`, `AuditLogPage.tsx`
 
 ---
 
@@ -722,18 +749,30 @@ WebLayout (fills viewport 100vh)
 </PageRoot>
 ```
 
-### 10.4 Detail/form page pattern
+### 10.4 Detail page pattern (view-only)
+
+Detail pages show a record's full state with context cards. They do **not** embed edit forms.
 
 ```
 <PageRoot>
   <PageHeader
     title="WO-2026-0089"
     subtitle="Frame Assembly A · Released 08 Jun 2026"
-    breadcrumbs={[{ label: 'Production' }, { label: 'Work Orders', href: '/production/work-orders' }, { label: 'WO-2026-0089' }]}
-    actions={<Button color="error">Cancel WO</Button>}
+    breadcrumbs={[
+      { label: 'Production' },
+      { label: 'Work Orders', href: '/production/work-orders' },
+      { label: 'WO-2026-0089' },
+    ]}
+    actions={
+      <>
+        <Button variant="outlined" startIcon={<SolarIcon name="pen" />}
+          onClick={() => navigate('edit')}>Edit</Button>
+        <Button color="error">Cancel WO</Button>
+      </>
+    }
   />
   <Grid container spacing={2.5}>
-    <Grid size={{ xs: 12, md: 8 }}>   {/* main info card */}
+    <Grid size={{ xs: 12, md: 8 }}>  {/* main info card */}
       <Card>…</Card>
     </Grid>
     <Grid size={{ xs: 12, md: 4 }}>  {/* status / metadata card */}
@@ -741,22 +780,31 @@ WebLayout (fills viewport 100vh)
     </Grid>
   </Grid>
 </PageRoot>
-
-{/* Create / edit via right-side drawer — never inline form */}
-<FormDrawer open={open} onClose={…} title="Edit Work Order" onSubmit={…} />
 ```
 
-### 10.5 Create/edit form rules
+The "Edit" button navigates to `/:id/edit` — it never opens a drawer.
+
+### 10.5 Create/edit page rules
+
+Create and edit actions are always **full-page routes** (`/new`, `/:id/edit`). Drawers and dialogs are never used for data entry.
 
 | Rule | Detail |
 |------|--------|
-| Form always in `<FormDrawer>` | width 480px; never inline on the page |
-| Drawer header | 56px — close button + title + optional subtitle |
-| Form body | `p: 2.5`, `overflowY: auto`, `flex: 1` |
-| Drawer footer | `Cancel` (outlined) + `Save` (contained), sticky bottom |
-| Field layout | `Grid container spacing={2}` inside drawer |
+| Route pattern | `<list-path>/new` (create), `<list-path>/:id/edit` (edit) |
+| Page title | "New `<Entity>`" for create; "`<Entity Name>`" for edit |
+| Breadcrumbs | `…Context > List page > New` or `…Context > List page > Record name > Edit` |
+| Form width | `<Container maxWidth="md">` (960px) for most forms; `"lg"` (1280px) for complex multi-section forms (e.g. BOM, RoutingSteps) |
+| Section grouping | Use `<SectionCard>` per logical group — one card per concern (basic info, configuration, relationships) |
+| Field layout | `<Grid container spacing={2.5}>` inside each `SectionCard` |
 | Field sizing | `size="small"` (default via theme) |
 | Form library | `react-hook-form` + `zod` + `@hookform/resolvers` |
+| Per-field errors | Always use `helperText={errors.field?.message}` — no toast-only validation |
+| Action bar | `<FormActionBar>` stuck to the viewport bottom — Cancel (outlined) + Save (contained) |
+| Cancel behaviour | Navigate back to list or detail page; browser Back also works |
+| Unsaved changes | `<FormActionBar isDirty={isDirty}>` shows a yellow dot; browser `beforeunload` warning |
+| Edit pre-fill | Load record via `useQuery`, pass to `reset(data)` in `useEffect` |
+| Submit — create | On success navigate to the new record's detail page |
+| Submit — edit | On success navigate back to the detail page |
 | Destructive action | Always requires `<ConfirmDialog>` before executing |
 
 ### 10.6 Loading states
@@ -800,3 +848,125 @@ Body text:      body2 (14px, 400)
 Metadata/label: caption (12px, 400–600)
 Code / ID:      ui-monospace, 0.8125rem (13px)
 ```
+
+---
+
+### 10.10 Create/edit page anatomy
+
+#### Visual structure
+
+```
+WebLayout
+└── Scroll area
+    └── <PageRoot pb={10}>       ← extra bottom padding clears FormActionBar
+        ├── <PageHeader>          title, breadcrumbs (back to list), no action buttons
+        └── <Container maxWidth="md">  (or "lg" for wide forms)
+            └── <Stack spacing={3}>
+                ├── <SectionCard title="Basic Information">
+                │   └── <Grid container spacing={2.5}>
+                │       ├── <Grid size={{ xs: 12, sm: 6 }}> <TextField …/> </Grid>
+                │       └── …
+                ├── <SectionCard title="Configuration">
+                │   └── …
+                └── <SectionCard title="…">     (as many as needed)
+
+<FormActionBar>   ← position: fixed, bottom: 0, left: sidebarWidth, right: 0
+  Cancel (outlined, onClick: navigate(-1))
+  Save   (contained, type: submit, loading: isSubmitting)
+```
+
+#### Container width guide
+
+| Form complexity | `maxWidth` | Examples |
+|-----------------|-----------|---------|
+| Simple (≤ 8 fields) | `"sm"` (600px) | DefectCode, Operation |
+| Standard (8–20 fields) | `"md"` (960px) | WorkCenter, Machine, Product |
+| Complex / multi-section | `"lg"` (1280px) | Routing+Steps, BOM, User with permissions |
+
+#### `FormActionBar` spec
+
+```tsx
+<FormActionBar isDirty={isDirty} isSubmitting={isSubmitting}
+               onCancel={() => navigate(-1)} onSubmit={handleSubmit(onSubmit)} />
+```
+
+- Position: `fixed`, bottom 0, left = sidebar width (240px expanded / 64px collapsed), right 0
+- Height: 64px, `bgcolor: background.paper`, `borderTop: 1px solid divider`, `backdropFilter: blur(8px)`
+- Content: right-aligned row — Cancel button + Save button
+- `isDirty = true` → yellow dot on Cancel button label + `beforeunload` event registered
+- `isSubmitting = true` → Save button shows `CircularProgress size={16}` and is disabled
+- Sidebar collapse: `FormActionBar` subscribes to sidebar state and adjusts `left` with the same 220ms transition
+
+#### Unsaved-changes guard
+
+```tsx
+useBeforeUnload(isDirty, 'You have unsaved changes. Leave anyway?');
+// Also block react-router navigation:
+useBlocker(isDirty);
+```
+
+Show `<ConfirmDialog>` when the blocker activates (not a native browser confirm).
+
+#### Edit page data loading
+
+```tsx
+const { data, isLoading } = useGetEntityById(id);
+const form = useForm({ resolver: zodResolver(schema) });
+
+useEffect(() => {
+  if (data) form.reset(mapToFormValues(data));
+}, [data]);
+
+if (isLoading) return <DetailPageSkeleton />;
+```
+
+Never pre-populate form default values from the URL or cache without going through `form.reset` — avoids stale dirty-state bugs.
+
+#### Page examples
+
+**Create — simple entity (`/master/defect-codes/new`)**
+
+```
+PageHeader: "New Defect Code"
+Breadcrumbs: Master Data > Defect Codes > New
+Container: maxWidth="sm"
+  SectionCard "Defect Code Details"
+    Code (TextField, required, monospace font)
+    Name (TextField, required, fullWidth)
+    Category (Autocomplete/Select)
+    Active (Switch, default true)
+FormActionBar
+```
+
+**Edit — standard entity (`/master/machines/:id/edit`)**
+
+```
+PageHeader: "<Machine Name>"
+Breadcrumbs: Master Data > Machines > MCH-CNC-04 > Edit
+Container: maxWidth="md"
+  SectionCard "Identity"
+    Code (read-only chip + helper "Code cannot change after creation")
+    Name  Brand  Model
+  SectionCard "Assignment"
+    WorkCenter (Select)
+    IsActive (Switch)
+  SectionCard "Capacity"
+    DesignedCycleTime  CycleTimeUnit
+    CapacityPerShift
+FormActionBar
+```
+
+**Create — complex entity (`/master/routings/new`)**
+
+```
+PageHeader: "New Routing"
+Breadcrumbs: Master Data > Routings > New
+Container: maxWidth="lg"
+  SectionCard "Routing Header"      (Code, Name, Product, IsDefault)
+  SectionCard "Steps"               (inline step editor — add/remove rows)
+    Step# | Operation | WorkCenter | CycleTime | IsQCStep | [delete row]
+    [+ Add Step] button at bottom of section
+FormActionBar
+```
+
+The step editor inside `SectionCard "Steps"` is an inline row editor (not a nested drawer), since we're already on a full page with plenty of vertical space.

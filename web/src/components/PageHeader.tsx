@@ -6,6 +6,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 
 // ─── Page-level breadcrumb item ──────────────────────────────────────────────
@@ -122,9 +123,11 @@ interface PageRootProps {
   children: ReactNode;
   /** Remove horizontal padding for full-bleed tables/grids */
   noPadding?: boolean;
+  /** Extra sx overrides — use to add bottom padding on form pages with FormActionBar */
+  sx?: SxProps<Theme>;
 }
 
-export function PageRoot({ children, noPadding = false }: PageRootProps) {
+export function PageRoot({ children, noPadding = false, sx }: PageRootProps) {
   return (
     <Box
       sx={{
@@ -133,6 +136,7 @@ export function PageRoot({ children, noPadding = false }: PageRootProps) {
         flexDirection: 'column',
         p: noPadding ? 0 : 3,
         minHeight: 0,
+        ...sx,
       }}
     >
       {children}

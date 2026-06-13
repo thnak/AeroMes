@@ -48,3 +48,4 @@ export function oeeZoneColor(value: number): string {
 }
 
 export const APPBAR_HEIGHT = 48;
+export const FORM_ACTION_BAR_HEIGHT = 64;
