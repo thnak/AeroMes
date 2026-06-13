@@ -251,11 +251,24 @@ export default function MachinesPage() {
       field: 'workCenterName',
       headerName: 'Work Center',
       width: 180,
-      renderCell: (params: GridRenderCellParams<MachineDto>) => (
-        <Typography variant="body2" sx={{ fontSize: 12, color: params.value ? 'text.primary' : 'text.disabled', fontStyle: params.value ? 'normal' : 'italic' }}>
-          {params.value ?? '—'}
-        </Typography>
-      ),
+      renderCell: (params: GridRenderCellParams<MachineDto>) =>
+        params.value
+          ? (
+            <Chip
+              label={params.value}
+              size="small"
+              sx={{
+                height: 20,
+                fontSize: '0.6875rem',
+                fontWeight: 600,
+                bgcolor: (t) => alpha(t.palette.primary.main, 0.08),
+                color: 'primary.main',
+                border: 'none',
+                '& .MuiChip-label': { px: 0.75 },
+              }}
+            />
+          )
+          : <Typography variant="body2" color="text.disabled" sx={{ fontSize: 12, fontStyle: 'italic' }}>—</Typography>,
     },
     {
       field: 'brand',
