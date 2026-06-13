@@ -57,11 +57,13 @@ const NCRPage = lazy(() => import('./pages/quality/NCRPage'));
 const DefectAnalysisPage = lazy(() => import('./pages/quality/DefectAnalysisPage'));
 
 // IoT
-const IotAdaptersPage      = lazy(() => import('./pages/iot/IotAdaptersPage'));
-const IotSignalsPage       = lazy(() => import('./pages/iot/IotSignalsPage'));
-const IotStateRulesPage    = lazy(() => import('./pages/iot/IotStateRulesPage'));
-const IotTagsPage          = lazy(() => import('./pages/iot/IotTagsPage'));
-const IotAdapterHealthPage = lazy(() => import('./pages/iot/IotAdapterHealthPage'));
+const IotAdaptersPage          = lazy(() => import('./pages/iot/IotAdaptersPage'));
+const IotSignalsPage           = lazy(() => import('./pages/iot/IotSignalsPage'));
+const IotStateRulesPage        = lazy(() => import('./pages/iot/IotStateRulesPage'));
+const IotTagsPage              = lazy(() => import('./pages/iot/IotTagsPage'));
+const IotAdapterHealthPage     = lazy(() => import('./pages/iot/IotAdapterHealthPage'));
+const MachineFleetsPage        = lazy(() => import('./pages/iot/MachineFleetsPage'));
+const MachineSignalMonitorPage = lazy(() => import('./pages/iot/MachineSignalMonitorPage'));
 
 // Maintenance
 const MaintenancePage = lazy(() => import('./pages/maintenance/MaintenancePage'));
@@ -190,11 +192,13 @@ export default function App() {
 
           {/* ── IoT module ───────────────────────────────────── */}
           <Route element={<ModuleLayout />}>
-            <Route path="iot/tags"                              element={<IotTagsPage />} />
-            <Route path="iot/adapter-health"                    element={<IotAdapterHealthPage />} />
-            <Route path="iot/machines/:machineCode/adapters"    element={<IotAdaptersPage />} />
-            <Route path="iot/adapters/:adapterId/signals"       element={<IotSignalsPage />} />
-            <Route path="iot/machines/:machineCode/state-rules" element={<IotStateRulesPage />} />
+            <Route path="iot/tags"                                element={<IotTagsPage />} />
+            <Route path="iot/adapter-health"                      element={<IotAdapterHealthPage />} />
+            <Route path="iot/machines"                            element={<MachineFleetsPage />} />
+            <Route path="iot/machines/:machineCode/signals"       element={<MachineSignalMonitorPage />} />
+            <Route path="iot/machines/:machineCode/adapters"      element={<IotAdaptersPage />} />
+            <Route path="iot/adapters/:adapterId/signals"         element={<IotSignalsPage />} />
+            <Route path="iot/machines/:machineCode/state-rules"   element={<IotStateRulesPage />} />
           </Route>
 
           {/* ── Maintenance module ────────────────────────────── */}

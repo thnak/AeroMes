@@ -157,9 +157,10 @@ export const MODULES: ModuleConfig[] = [
     path: '/iot',
     available: true,
     tabs: [
-      { label: 'Machines & Adapters', path: '/master/machines' },
+      { label: 'Fleet Monitor',       path: '/iot/machines' },
       { label: 'Signal Tag Catalog',  path: '/iot/tags' },
       { label: 'Adapter Health',      path: '/iot/adapter-health' },
+      { label: 'Machines & Adapters', path: '/master/machines' },
     ],
   },
   {

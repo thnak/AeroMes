@@ -658,6 +658,9 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<SignalAggPoint>))]
 [JsonSerializable(typeof(RetentionPolicyDto))]
 [JsonSerializable(typeof(UpdateRetentionRequest))]
+// live signals
+[JsonSerializable(typeof(LiveSignalDto))]
+[JsonSerializable(typeof(IReadOnlyList<LiveSignalDto>))]
 // adapter health
 [JsonSerializable(typeof(AdapterHealthDto))]
 [JsonSerializable(typeof(IReadOnlyList<AdapterHealthDto>))]

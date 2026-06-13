@@ -199,7 +199,8 @@ public static class DependencyInjection
                 sp.GetRequiredService<ISignalIngestionPipeline>(),
                 sp.GetRequiredService<IServiceScopeFactory>(),
                 sp.GetRequiredService<IOptions<IotPipelineOptions>>().Value,
-                sp.GetRequiredService<ILogger<PipelineConsumerService>>()));
+                sp.GetRequiredService<ILogger<PipelineConsumerService>>(),
+                sp.GetService<IIotSignalNotifier>()));
 
         // MQTT adapter manager — starts one MqttAdapterService per enabled MQTT adapter
         services.AddHostedService(sp =>
@@ -228,7 +229,12 @@ public static class DependencyInjection
         // Machine State Engine
         services.AddSingleton<SignalValueCache>();
         services.AddSingleton<MachineStateEvaluator>();
-        services.AddScoped<MachineSignalStateHandler>();
+        services.AddScoped<MachineSignalStateHandler>(sp => new MachineSignalStateHandler(
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            sp.GetRequiredService<SignalValueCache>(),
+            sp.GetRequiredService<MachineStateEvaluator>(),
+            sp.GetRequiredService<ILogger<MachineSignalStateHandler>>(),
+            sp.GetService<IIotSignalNotifier>()));
         services.AddScoped<IEventHandler<MachineSignalIngestedEvent>>(
             sp => sp.GetRequiredService<MachineSignalStateHandler>());
         services.AddHostedService<StaleSignalWatchdog>();

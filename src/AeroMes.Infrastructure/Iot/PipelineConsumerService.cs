@@ -1,3 +1,4 @@
+using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Iot;
 using AeroMes.Domain.Iot.Events;
 using AeroMes.Infrastructure.Data;
@@ -12,7 +13,8 @@ public class PipelineConsumerService(
     ISignalIngestionPipeline pipeline,
     IServiceScopeFactory scopeFactory,
     IotPipelineOptions options,
-    ILogger<PipelineConsumerService> logger) : BackgroundService
+    ILogger<PipelineConsumerService> logger,
+    IIotSignalNotifier? hubNotifier = null) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -104,6 +106,17 @@ public class PipelineConsumerService(
 
             if (pipeline is SignalIngestionPipeline concrete)
                 concrete.RecordBatch(batch.Count, now);
+
+            // Broadcast live signals via SignalR (best-effort — fire-and-forget per message)
+            if (hubNotifier is not null)
+            {
+                foreach (var msg in batch)
+                {
+                    _ = hubNotifier.SendSignalAsync(
+                        msg.MachineCode, msg.TagKey, msg.Value, msg.Unit,
+                        msg.Timestamp, msg.IsBadQuality, CancellationToken.None);
+                }
+            }
 
             logger.LogDebug("IoT batch flushed: {Count} messages.", batch.Count);
         }

@@ -1174,6 +1174,35 @@ public class IotController(
         return Ok(new RetentionPolicyDto(policy.RawRetentionDays, policy.Agg1minRetentionDays, policy.Agg1hrRetentionDays));
     }
 
+    // ── Live Signals ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the most recent signal value per tag for a machine (for initial page load before SignalR takes over).
+    /// </summary>
+    [HttpGet("signals/live")]
+    [RequirePermission(Permissions.IotRead)]
+    [ProducesResponseType<IReadOnlyList<LiveSignalDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLiveSignals([FromQuery] string machineCode, CancellationToken ct)
+    {
+        var cutoff = DateTimeOffset.UtcNow.AddMinutes(-5);
+
+        var recent = await db.MachineSignalLogs
+            .AsNoTracking()
+            .Where(l => l.MachineCode == machineCode && l.Timestamp >= cutoff)
+            .OrderByDescending(l => l.Timestamp)
+            .Take(2000)
+            .ToListAsync(ct);
+
+        // Group in memory — latest value per tag
+        var latestPerTag = recent
+            .GroupBy(l => l.TagKey)
+            .Select(g => g.OrderByDescending(l => l.Timestamp).First())
+            .Select(l => new LiveSignalDto(l.TagKey, l.Value, l.Unit, l.Timestamp))
+            .ToList();
+
+        return Ok((IReadOnlyList<LiveSignalDto>)latestPerTag);
+    }
+
     // ── Adapter Health ────────────────────────────────────────────────────
 
     [HttpGet("adapters/health")]
@@ -1253,6 +1282,8 @@ public record SignalHistoryPoint(decimal Value, string? Unit, DateTimeOffset Tim
 public record SignalAggPoint(DateTimeOffset BucketAt, int Count, decimal Min, decimal Max, decimal Avg, decimal Last);
 public record RetentionPolicyDto(int RawRetentionDays, int Agg1minRetentionDays, int Agg1hrRetentionDays);
 public record UpdateRetentionRequest(int RawRetentionDays, int Agg1minRetentionDays, int Agg1hrRetentionDays);
+// live signals
+public record LiveSignalDto(string TagKey, decimal Value, string? Unit, DateTimeOffset Timestamp);
 // adapter health
 public record AdapterHealthDto(
     int AdapterId, string MachineCode, string AdapterType, string Status,

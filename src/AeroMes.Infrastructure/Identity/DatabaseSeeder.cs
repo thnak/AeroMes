@@ -22,6 +22,17 @@ public class DatabaseSeeder(
         await SeedRolePermissionsAsync(ct);
         await SeedDefaultAdminAsync(ct);
         await SignalTagSeeder.SeedAsync(db, ct);
+        await SeedRetentionPolicyAsync(ct);
+    }
+
+    private async Task SeedRetentionPolicyAsync(CancellationToken ct)
+    {
+        if (!await db.RetentionPolicies.AnyAsync(ct))
+        {
+            db.RetentionPolicies.Add(AeroMes.Domain.Iot.RetentionPolicy.CreateGlobal(30, 90, 730));
+            await db.SaveChangesAsync(ct);
+            logger.LogInformation("Seeded global retention policy (raw=30d, agg1min=90d, agg1hr=730d).");
+        }
     }
 
     private async Task SeedRolesAsync(CancellationToken ct)

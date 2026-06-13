@@ -1,3 +1,4 @@
+using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Iot;
 using AeroMes.Domain.Iot.Events;
 using AeroMes.Domain.Production;
@@ -13,7 +14,8 @@ public class MachineSignalStateHandler(
     IServiceScopeFactory scopeFactory,
     SignalValueCache cache,
     MachineStateEvaluator evaluator,
-    ILogger<MachineSignalStateHandler> logger)
+    ILogger<MachineSignalStateHandler> logger,
+    IIotSignalNotifier? hubNotifier = null)
     : IEventHandler<MachineSignalIngestedEvent>
 {
     private static readonly HashSet<string> DownStates = ["DOWN", "FAULT"];
@@ -70,9 +72,14 @@ public class MachineSignalStateHandler(
                     @event.MachineCode, previousState, targetState);
             }
 
+            var changedAt = DateTimeOffset.UtcNow;
             await eventMediator.PublishAsync(new MachineStateChangedEvent(
-                @event.MachineCode, targetState!, previousState, DateTimeOffset.UtcNow,
+                @event.MachineCode, targetState!, previousState, changedAt,
                 matchedRule?.SignalTagKey, matchedValue), null, ct);
+
+            // Best-effort SignalR broadcast
+            if (hubNotifier is not null)
+                _ = hubNotifier.SendStateChangedAsync(@event.MachineCode, targetState!, previousState, changedAt, CancellationToken.None);
         }
 
         await db.SaveChangesAsync(ct);

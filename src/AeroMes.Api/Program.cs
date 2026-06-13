@@ -59,6 +59,9 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IModuleStatusNotifier, ModuleStatusNotifier>();
+builder.Services.AddSingleton<IotHubNotifier>();
+builder.Services.AddSingleton<IIotHubNotifier>(sp => sp.GetRequiredService<IotHubNotifier>());
+builder.Services.AddSingleton<AeroMes.Application.Interfaces.IIotSignalNotifier>(sp => sp.GetRequiredService<IotHubNotifier>());
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddHttpContextAccessor();
@@ -172,6 +175,7 @@ app.Use(ForcePasswordChangeMiddleware.InvokeAsync);
 app.Use(MfaEnforcementMiddleware.InvokeAsync);
 app.MapControllers();
 app.MapHub<ModuleStatusHub>("/hubs/module-status");
+app.MapHub<IotHub>("/hubs/iot");
 app.MapFallbackToFile("index.html");
 
 app.Run();
