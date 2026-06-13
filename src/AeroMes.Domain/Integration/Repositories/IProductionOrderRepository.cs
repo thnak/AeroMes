@@ -10,4 +10,5 @@ public interface IProductionOrderRepository
         int? soId, string? poCode, string? productCode,
         ProductionOrderStatus? status, CancellationToken ct = default);
     Task AddAsync(ProductionOrder entity, CancellationToken ct = default);
+    Task<int> CountAsync(CancellationToken ct = default);
 }

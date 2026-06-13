@@ -3,6 +3,7 @@ using AeroMes.Api.Extensions;
 using AeroMes.Application.Common;
 using AeroMes.Application.Integration.Commands.SaveErpSettings;
 using AeroMes.Application.Integration.Commands.SyncProductionOrders;
+using AeroMes.Application.Integration.Commands.BatchCreateProductionOrders;
 using AeroMes.Application.Integration.Commands.SyncSalesOrders;
 using AeroMes.Application.Integration.Commands.TestErpConnection;
 using AeroMes.Application.Integration.Queries.GetErpSettings;
@@ -139,6 +140,26 @@ public class IntegrationController(
         return Ok(new ApiResponse<ErpSyncResult>(true, "Sync complete", result.Value!));
     }
 
+    // ── Batch Production Order Creation ──────────────────────────────────────
+
+    [HttpPost("production-orders/batch")]
+    [RequirePermission(Permissions.IntegrationSync)]
+    [ProducesResponseType<BatchCreateResult>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> BatchCreateProductionOrders(
+        [FromBody] BatchCreateProductionOrdersRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new BatchCreateProductionOrdersCommand(
+                [.. req.Items.Select(i => new BatchOrderItem(
+                    i.ProductCode, i.TargetQuantity,
+                    i.PlannedStartDate, i.PlannedEndDate, i.ProductionDeadline,
+                    i.Priority, i.AssignedTo))],
+                User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return StatusCode(StatusCodes.Status201Created, result.Value!);
+    }
+
     [HttpPost("test-connection")]
     [RequirePermission(Permissions.IntegrationConfigure)]
     [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
@@ -156,3 +177,14 @@ public record SaveErpSettingsRequest(
     string? ErpBaseUrl,
     string? ErpApiKey,
     int ErpSyncIntervalMinutes);
+
+public record BatchOrderItemRequest(
+    string ProductCode,
+    int TargetQuantity,
+    DateTime? PlannedStartDate,
+    DateTime? PlannedEndDate,
+    DateTime? ProductionDeadline,
+    byte Priority,
+    string? AssignedTo);
+
+public record BatchCreateProductionOrdersRequest(IReadOnlyList<BatchOrderItemRequest> Items);

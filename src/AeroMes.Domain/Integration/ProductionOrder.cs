@@ -14,9 +14,14 @@ public class ProductionOrder : Entity
     public int TargetQuantity { get; private set; }
     public DateTime? PlannedStartDate { get; private set; }
     public DateTime? PlannedEndDate { get; private set; }
+    public DateTime? ProductionDeadline { get; private set; }
     public DateTime? ActualStartDate { get; private set; }
     public DateTime? ActualEndDate { get; private set; }
     public ProductionOrderStatus Status { get; private set; } = ProductionOrderStatus.Released;
+    public byte Priority { get; private set; } = 5;    // 1-10, lower = higher priority
+    public string? AssignedTo { get; private set; }
+    public string? CreatedBy { get; private set; }
+    public DateTime? CreatedAt { get; private set; }
     public DateTime SyncedAt { get; private set; }
 
     // EF navigation
@@ -44,6 +49,37 @@ public class ProductionOrder : Entity
             PlannedStartDate = plannedStart,
             PlannedEndDate = plannedEnd,
             Status = ProductionOrderStatus.Released,
+            SyncedAt = DateTime.UtcNow,
+        };
+    }
+
+    public static ProductionOrder CreateInternal(
+        string poCode,
+        string productCode,
+        int targetQuantity,
+        DateTime? plannedStart,
+        DateTime? plannedEnd,
+        DateTime? deadline,
+        byte priority,
+        string? assignedTo,
+        string? createdBy)
+    {
+        if (targetQuantity <= 0)
+            throw new DomainException($"Target quantity must be positive. Got: {targetQuantity}.");
+
+        return new ProductionOrder
+        {
+            POCode = poCode.Trim().ToUpperInvariant(),
+            ProductCode = productCode.Trim().ToUpperInvariant(),
+            TargetQuantity = targetQuantity,
+            PlannedStartDate = plannedStart,
+            PlannedEndDate = plannedEnd,
+            ProductionDeadline = deadline,
+            Priority = priority,
+            AssignedTo = assignedTo,
+            Status = ProductionOrderStatus.Released,
+            CreatedBy = createdBy,
+            CreatedAt = DateTime.UtcNow,
             SyncedAt = DateTime.UtcNow,
         };
     }

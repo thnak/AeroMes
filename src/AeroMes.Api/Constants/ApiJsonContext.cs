@@ -11,6 +11,7 @@ using AeroMes.Application.Storage.Queries.GetFileMetadata;
 using AeroMes.Application.Reports.Queries.GetDowntimeReport;
 using AeroMes.Application.Reports.Queries.GetProductionReport;
 using AeroMes.Application.Reports.Queries.GetQualityReport;
+using AeroMes.Application.Integration.Commands.BatchCreateProductionOrders;
 using AeroMes.Application.Integration.Commands.SaveErpSettings;
 using AeroMes.Application.Integration.Commands.SyncSalesOrders;
 using AeroMes.Application.Integration.Queries.GetErpSettings;
@@ -319,6 +320,12 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<DowntimeReportRowDto>))]
 [JsonSerializable(typeof(QualityReportDto))]
 [JsonSerializable(typeof(IReadOnlyList<QualityReportRowDto>))]
+// integration — batch production orders
+[JsonSerializable(typeof(BatchOrderItem))]
+[JsonSerializable(typeof(BatchCreateResult))]
+[JsonSerializable(typeof(BatchOrderItemRequest))]
+[JsonSerializable(typeof(BatchCreateProductionOrdersRequest))]
+[JsonSerializable(typeof(IReadOnlyList<BatchOrderItemRequest>))]
 // integration
 [JsonSerializable(typeof(IReadOnlyList<SalesOrderDto>))]
 [JsonSerializable(typeof(SalesOrderDetailDto))]

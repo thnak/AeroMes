@@ -45,4 +45,7 @@ public class ProductionOrderRepository(AppDbContext db) : IProductionOrderReposi
         db.ProductionOrders.Add(entity);
         return Task.CompletedTask;
     }
+
+    public Task<int> CountAsync(CancellationToken ct) =>
+        db.ProductionOrders.CountAsync(ct);
 }

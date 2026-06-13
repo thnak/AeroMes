@@ -1579,6 +1579,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.POCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.ProductionDeadline).HasColumnType("datetime2");
+            e.Property(x => x.Priority).HasDefaultValue((byte)5);
+            e.Property(x => x.AssignedTo).HasMaxLength(256);
+            e.Property(x => x.CreatedBy).HasMaxLength(256);
+            e.Property(x => x.CreatedAt).HasColumnType("datetime2");
             e.HasIndex(x => x.POCode).IsUnique();
 
             e.HasOne(x => x.SalesOrder)
