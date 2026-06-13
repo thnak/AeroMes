@@ -8,6 +8,8 @@ public class Operation : AuditableEntity
     public string OperationName { get; private set; } = string.Empty;
     public string? Description { get; private set; }
     public bool IsActive { get; private set; } = true;
+    public decimal? SAM_Minutes { get; private set; }
+    public string? OperationCategory { get; private set; }
 
     private Operation() { }
 

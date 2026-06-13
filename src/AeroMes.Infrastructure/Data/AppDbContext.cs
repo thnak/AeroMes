@@ -85,6 +85,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<CutOrderLine> CutOrderLines => Set<CutOrderLine>();
     public DbSet<CutOrderFabricUsage> CutOrderFabricUsages => Set<CutOrderFabricUsage>();
     public DbSet<Bundle> Bundles => Set<Bundle>();
+    public DbSet<BundleMovement> BundleMovements => Set<BundleMovement>();
     public DbSet<Tool> Tools => Set<Tool>();
     public DbSet<BomHeader> BomHeaders => Set<BomHeader>();
     public DbSet<BomByProduct> BomByProducts => Set<BomByProduct>();
@@ -762,6 +763,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.OperationCode).HasMaxLength(30).ValueGeneratedNever();
             e.Property(x => x.OperationName).HasMaxLength(100).IsRequired();
             e.Property(x => x.Description).HasMaxLength(255);
+            e.Property(x => x.SAM_Minutes).HasColumnType("DECIMAL(8,4)");
+            e.Property(x => x.OperationCategory).HasMaxLength(20);
             e.HasQueryFilter(x => !x.IsDeleted);
         });
 
@@ -1486,11 +1489,45 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.ToTable("Bundles", "prod");
             e.HasKey(x => x.BundleID);
             e.Property(x => x.BundleID).ValueGeneratedOnAdd();
+            e.Property(x => x.BundleBarcode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.StyleCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ColorCode).HasMaxLength(20).IsRequired();
             e.Property(x => x.SizeCode).HasMaxLength(10).IsRequired();
+            e.Property(x => x.CurrentOperationCode).HasMaxLength(30);
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
             e.Property(x => x.CreatedAt).HasColumnType("datetime2").IsRequired()
                 .HasDefaultValueSql("SYSUTCDATETIME()");
-            e.HasIndex(x => x.CutOrderID);
+            e.HasIndex(x => x.BundleBarcode).IsUnique();
+            e.HasIndex(x => x.CutOrderID).HasDatabaseName("IX_Bundle_CutOrder");
+            e.HasIndex(x => new { x.StyleCode, x.ColorCode, x.SizeCode })
+                .HasDatabaseName("IX_Bundle_Style");
+            e.HasIndex(x => new { x.Status, x.CurrentWorkCenterID })
+                .HasFilter("[Status] NOT IN ('Packed')")
+                .HasDatabaseName("IX_Bundle_Status");
+        });
+
+        b.Entity<BundleMovement>(e =>
+        {
+            e.ToTable("BundleMovements", "prod");
+            e.HasKey(x => x.MovementID);
+            e.Property(x => x.MovementID).ValueGeneratedOnAdd();
+            e.Property(x => x.OperationCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.OperatorID).HasMaxLength(50).IsRequired();
+            e.Property(x => x.StartTime).HasColumnType("datetime2").IsRequired();
+            e.Property(x => x.EndTime).HasColumnType("datetime2");
+            e.Property(x => x.SAM_Minutes).HasColumnType("DECIMAL(8,4)");
+            e.Property(x => x.DefectCodes).HasMaxLength(500);
+            e.Property(x => x.ActualMinsPerPiece)
+                .HasColumnType("DECIMAL(8,4)")
+                .HasComputedColumnSql(
+                    "CASE WHEN [EndTime] IS NOT NULL AND [QtyOK] > 0 THEN CAST(DATEDIFF(SECOND, [StartTime], [EndTime]) AS float) / 60.0 / NULLIF([QtyOK], 0) ELSE NULL END");
+            e.Property(x => x.EfficiencyPct)
+                .HasColumnType("DECIMAL(8,4)")
+                .HasComputedColumnSql(
+                    "CASE WHEN [SAM_Minutes] > 0 AND [EndTime] IS NOT NULL AND [QtyOK] > 0 THEN [SAM_Minutes] / (CAST(DATEDIFF(SECOND, [StartTime], [EndTime]) AS float) / 60.0 / NULLIF([QtyOK], 0)) * 100.0 ELSE NULL END");
+            e.HasIndex(x => x.BundleID).HasDatabaseName("IX_BundleMovement_Bundle");
+            e.HasIndex(x => new { x.WorkCenterID, x.StartTime }).HasDatabaseName("IX_BundleMovement_WC");
+            e.HasIndex(x => new { x.OperatorID, x.StartTime }).HasDatabaseName("IX_BundleMovement_Operator");
         });
 
         b.Entity<Tool>(e =>

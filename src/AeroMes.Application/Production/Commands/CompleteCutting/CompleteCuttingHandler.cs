@@ -27,7 +27,7 @@ public class CompleteCuttingHandler(
                 cmd.MarkerEfficiencyPct,
                 cmd.Lines.Select(l => (l.SizeCode, l.QuantityCut)));
 
-            var bundles = GenerateBundles(cutOrder.CutOrderID, cmd.Lines, cmd.BundleSize);
+            var bundles = GenerateBundles(cutOrder, cmd.Lines, cmd.BundleSize);
             await repo.AddBundlesAsync(bundles, ct);
             await repo.SaveChangesAsync(ct);
             return ValidationResult<Unit>.Ok(Unit.Value);
@@ -39,7 +39,7 @@ public class CompleteCuttingHandler(
     }
 
     private static IEnumerable<Bundle> GenerateBundles(
-        int cutOrderId, IReadOnlyList<CompleteCuttingLineInput> lines, int bundleSize)
+        CutOrder cutOrder, IReadOnlyList<CompleteCuttingLineInput> lines, int bundleSize)
     {
         foreach (var line in lines.Where(l => l.QuantityCut > 0))
         {
@@ -48,7 +48,11 @@ public class CompleteCuttingHandler(
             while (remaining > 0)
             {
                 var pcs = Math.Min(remaining, bundleSize);
-                yield return Bundle.Create(cutOrderId, line.SizeCode, bundleNum++, pcs);
+                var barcode = $"B-{cutOrder.CutOrderID}-{line.SizeCode}-{bundleNum:D4}";
+                yield return Bundle.Create(
+                    cutOrder.CutOrderID, cutOrder.StyleCode, cutOrder.ColorCode,
+                    line.SizeCode, bundleNum, pcs, barcode);
+                bundleNum++;
                 remaining -= pcs;
             }
         }
