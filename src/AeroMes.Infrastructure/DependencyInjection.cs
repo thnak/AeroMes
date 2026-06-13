@@ -71,6 +71,9 @@ public static class DependencyInjection
         services.AddScoped<IDefectCodeRepository, DefectCodeRepository>();
         services.AddScoped<IDefectDetailRepository, DefectDetailRepository>();
 
+        // cross-cutting
+        services.AddScoped<IModuleStatusRepository, ModuleStatusRepository>();
+
         services.AddMemoryCache();
         services.AddSingleton<IdempotencyStore>();
 

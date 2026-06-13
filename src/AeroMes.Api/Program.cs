@@ -1,7 +1,9 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Hubs;
 using AeroMes.Api.Identity;
 using AeroMes.Api.Middleware;
 using AeroMes.Api.OpenApi;
+using AeroMes.Api.Services;
 using Scalar.AspNetCore;
 using AeroMes.Application;
 using AeroMes.Application.Interfaces;
@@ -50,6 +52,9 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddApplication();        // MediatR + FluentValidation + ValidationBehavior
 builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IModuleStatusNotifier, ModuleStatusNotifier>();
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddHttpContextAccessor();
@@ -161,6 +166,7 @@ app.UseAuthorization();
 app.Use(ForcePasswordChangeMiddleware.InvokeAsync);
 app.Use(MfaEnforcementMiddleware.InvokeAsync);
 app.MapControllers();
+app.MapHub<ModuleStatusHub>("/hubs/module-status");
 app.MapFallbackToFile("index.html");
 
 app.Run();

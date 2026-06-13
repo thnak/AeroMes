@@ -11,7 +11,10 @@ using AeroMes.Application.Integration.Queries.GetProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetProductionOrders;
 using AeroMes.Application.Integration.Queries.GetSalesOrderDetail;
 using AeroMes.Application.Integration.Queries.GetSalesOrders;
+using AeroMes.Application.Common;
 using AeroMes.Application.Master.AlertThresholds.Queries.GetAlertThresholds;
+using AeroMes.Application.Modules.Queries.GetModuleStatus;
+using AeroMes.Api.Services;
 using AeroMes.Application.Quality.DefectCodes.Queries.GetDefectCodes;
 using AeroMes.Application.Downtime.Queries.GetDowntimeLogs;
 using AeroMes.Application.Jobs.Queries.GetJobDetail;
@@ -139,6 +142,17 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(DowntimeReasonCodeCreatedResult))]
 [JsonSerializable(typeof(CreateDowntimeReasonCodeRequest))]
 [JsonSerializable(typeof(UpdateDowntimeReasonCodeRequest))]
+// module status
+[JsonSerializable(typeof(ApiResponse<ModuleStatusResponse>))]
+[JsonSerializable(typeof(ApiResponse<ModuleStatusDto>))]
+[JsonSerializable(typeof(ModuleStatusResponse))]
+[JsonSerializable(typeof(ModuleStatusDto))]
+[JsonSerializable(typeof(IReadOnlyList<ModuleStatusDto>))]
+[JsonSerializable(typeof(BadgeDto))]
+[JsonSerializable(typeof(IReadOnlyList<BadgeDto>))]
+[JsonSerializable(typeof(AlertItemDto))]
+[JsonSerializable(typeof(IReadOnlyList<AlertItemDto>))]
+[JsonSerializable(typeof(ModuleStatusUpdatedPayload))]
 // alert thresholds
 [JsonSerializable(typeof(IReadOnlyList<AlertThresholdDto>))]
 [JsonSerializable(typeof(AlertThresholdCreatedResult))]

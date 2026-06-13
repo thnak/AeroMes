@@ -8,8 +8,10 @@
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="LiteBus.Commands" Version="5.0.0" />
+    <PackageReference Include="LiteBus.Events" Version="5.0.0" />
     <PackageReference Include="LiteBus.Extensions.Microsoft.DependencyInjection" Version="5.0.0" />
     <PackageReference Include="LiteBus.Queries" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.9" />
   </ItemGroup>
 
   <ItemGroup>
