@@ -9,4 +9,5 @@ public record DefectCodeDto(
     string Code,
     string DefectName,
     string? DefectCategory,
-    bool IsActive);
+    bool IsActive,
+    bool IsRepairable);

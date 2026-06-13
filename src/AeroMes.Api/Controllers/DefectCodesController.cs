@@ -43,7 +43,7 @@ public class DefectCodesController(ICommandMediator commandMediator, IQueryMedia
     public async Task<IActionResult> Update(int id, [FromBody] UpdateDefectCodeRequest req, CancellationToken ct)
     {
         var result = await commandMediator.SendAsync(
-            new UpdateDefectCodeCommand(id, req.DefectName, req.DefectCategory, req.IsActive,
+            new UpdateDefectCodeCommand(id, req.DefectName, req.DefectCategory, req.IsActive, req.IsRepairable,
                 User.Identity?.Name), null, ct);
         if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
@@ -63,5 +63,5 @@ public class DefectCodesController(ICommandMediator commandMediator, IQueryMedia
 }
 
 public record CreateDefectCodeRequest(string Code, string DefectName, string? DefectCategory);
-public record UpdateDefectCodeRequest(string DefectName, string? DefectCategory, bool IsActive);
+public record UpdateDefectCodeRequest(string DefectName, string? DefectCategory, bool IsActive, bool IsRepairable = false);
 public record DefectCodeCreatedResult(int DefectCodeId);

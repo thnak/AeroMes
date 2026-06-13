@@ -19,7 +19,7 @@ public class CreateDefectCodeHandler(
             return ValidationResult<int>.Invalid(validation.ToErrorDictionary());
         try
         {
-            var entity = DefectCode.Create(cmd.Code, cmd.DefectName, cmd.DefectCategory, cmd.CreatedBy);
+            var entity = DefectCode.Create(cmd.Code, cmd.DefectName, cmd.DefectCategory, createdBy: cmd.CreatedBy);
             await repo.AddAsync(entity, ct);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<int>.Ok(entity.DefectCodeID);

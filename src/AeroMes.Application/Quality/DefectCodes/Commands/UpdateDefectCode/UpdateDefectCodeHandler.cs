@@ -23,7 +23,7 @@ public class UpdateDefectCodeHandler(
             var entity = await repo.GetByIdAsync(cmd.Id, ct);
             if (entity is null) return ValidationResult<Unit>.NotFound($"DefectCode '{cmd.Id}' was not found.");
 
-            entity.UpdateDetails(cmd.DefectName, cmd.DefectCategory, cmd.IsActive, cmd.UpdatedBy);
+            entity.UpdateDetails(cmd.DefectName, cmd.DefectCategory, cmd.IsActive, cmd.IsRepairable, cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
 
             return ValidationResult<Unit>.Ok(Unit.Value);

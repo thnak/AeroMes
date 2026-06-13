@@ -86,6 +86,9 @@ const QualityReportPage = lazy(() => import('./pages/reports/QualityReportPage')
 // Labels
 const LabelTemplatesPage = lazy(() => import('./pages/labels/LabelTemplatesPage'));
 
+// Reminders
+const RemindersPage = lazy(() => import('./pages/RemindersPage'));
+
 // Admin
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
@@ -272,6 +275,9 @@ export default function App() {
             <Route path="admin/settings" element={<SettingsPage />} />
             <Route path="admin/release-notes" element={<ReleasePage />} />
           </Route>
+
+          {/* Reminders */}
+          <Route path="reminders" element={<RemindersPage />} />
 
           {/* Errors */}
           <Route path="403" element={<ErrorPage code={403} />} />

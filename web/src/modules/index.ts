@@ -201,4 +201,14 @@ export const MODULES: ModuleConfig[] = [
     available: false,
     tabs: [],
   },
+  {
+    id: 'reminders',
+    label: 'Reminders',
+    description: 'Smart alerts for overdue production orders and approaching deadlines',
+    icon: 'reports',
+    color: '#D97706',
+    path: '/reminders',
+    available: true,
+    tabs: [],
+  },
 ];

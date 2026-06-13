@@ -8,4 +8,5 @@ public record UpdateDefectCodeCommand(
     string DefectName,
     string? DefectCategory,
     bool IsActive,
+    bool IsRepairable,
     string? UpdatedBy) : ICommand<ValidationResult<Unit>>;
