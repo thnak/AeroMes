@@ -962,6 +962,16 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(LotConsumptionDto))]
 [JsonSerializable(typeof(IReadOnlyList<LotConsumptionDto>))]
 [JsonSerializable(typeof(List<LotConsumptionDto>))]
+// material blend / regrind tracking
+[JsonSerializable(typeof(RecordBlendRequest))]
+[JsonSerializable(typeof(ApproveBlendRequest))]
+[JsonSerializable(typeof(MaterialBlendLogDto))]
+[JsonSerializable(typeof(IReadOnlyList<MaterialBlendLogDto>))]
+[JsonSerializable(typeof(List<MaterialBlendLogDto>))]
+[JsonSerializable(typeof(PagedResult<MaterialBlendLogDto>))]
+[JsonSerializable(typeof(RegrindUsageSummaryDto))]
+[JsonSerializable(typeof(IReadOnlyList<RegrindUsageSummaryDto>))]
+[JsonSerializable(typeof(List<RegrindUsageSummaryDto>))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

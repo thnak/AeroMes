@@ -78,6 +78,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<MoldMachineCompatibility> MoldMachineCompatibilities => Set<MoldMachineCompatibility>();
     public DbSet<MoldAssignment> MoldAssignments => Set<MoldAssignment>();
     public DbSet<MoldShotLog> MoldShotLogs => Set<MoldShotLog>();
+    public DbSet<MaterialBlendLog> MaterialBlendLogs => Set<MaterialBlendLog>();
     public DbSet<Tool> Tools => Set<Tool>();
     public DbSet<BomHeader> BomHeaders => Set<BomHeader>();
     public DbSet<BomByProduct> BomByProducts => Set<BomByProduct>();
@@ -1353,6 +1354,29 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.RecordedAt).HasColumnType("datetime2").IsRequired()
                 .HasDefaultValueSql("SYSUTCDATETIME()");
             e.HasIndex(x => new { x.MoldCode, x.RecordedAt });
+        });
+
+        b.Entity<MaterialBlendLog>(e =>
+        {
+            e.ToTable("MaterialBlendLog", "prod");
+            e.HasKey(x => x.BlendLogID);
+            e.Property(x => x.BlendLogID).ValueGeneratedOnAdd();
+            e.Property(x => x.ResinProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.VirginLotNumber).HasMaxLength(100).IsRequired();
+            e.Property(x => x.VirginQtyKg).HasColumnType("DECIMAL(18,4)").IsRequired();
+            e.Property(x => x.RegrindLotNumber).HasMaxLength(100);
+            e.Property(x => x.RegrindQtyKg).HasColumnType("DECIMAL(18,4)").IsRequired();
+            e.Property(x => x.MaxAllowedPct).HasColumnType("DECIMAL(5,2)").IsRequired();
+            e.Property(x => x.ApprovedBy).HasMaxLength(100);
+            e.Property(x => x.ApprovedAt).HasColumnType("datetime2");
+            e.Property(x => x.ApprovalNotes).HasMaxLength(500);
+            e.Property(x => x.RecordedAt).HasColumnType("datetime2").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.Ignore(x => x.TotalQtyKg);
+            e.Ignore(x => x.RegrindRatioPct);
+            e.Ignore(x => x.IsCompliant);
+            e.HasIndex(x => new { x.JobID, x.RecordedAt });
+            e.HasIndex(x => x.ResinProductCode);
         });
 
         b.Entity<Tool>(e =>
