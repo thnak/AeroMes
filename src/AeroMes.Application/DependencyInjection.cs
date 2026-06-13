@@ -1,4 +1,3 @@
-using AeroMes.Application.Common.Behaviors;
 using FluentValidation;
 using LiteBus.Commands;
 using LiteBus.Events;
@@ -18,7 +17,6 @@ public static class DependencyInjection
         {
             liteBus.AddCommandModule(module =>
             {
-                module.Register(typeof(FluentValidationPreHandler<>));
                 module.RegisterFromAssembly(assembly);
             });
             liteBus.AddQueryModule(module =>
