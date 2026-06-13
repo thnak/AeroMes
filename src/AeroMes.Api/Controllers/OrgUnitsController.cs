@@ -1,4 +1,5 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.OrgUnits.Commands.SyncOrgUnits;
 using AeroMes.Application.Master.OrgUnits.Queries.GetOrgUnitById;
 using AeroMes.Application.Master.OrgUnits.Queries.GetOrgUnits;
@@ -51,7 +52,8 @@ public class OrgUnitsController(ICommandMediator commandMediator, IQueryMediator
     {
         var result = await commandMediator.SendAsync(
             new SyncOrgUnitsCommand(req.Units, User.Identity?.Name), null, ct);
-        return Ok(result);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return Ok(result.Value!);
     }
 }
 
