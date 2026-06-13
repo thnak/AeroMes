@@ -4,6 +4,8 @@ using AeroMes.Api.Identity;
 using AeroMes.Api.Middleware;
 using AeroMes.Api.OpenApi;
 using AeroMes.Api.Services;
+using AeroMes.Api.Hangfire;
+using Hangfire;
 using Scalar.AspNetCore;
 using AeroMes.Application;
 using AeroMes.Application.Interfaces;
@@ -159,6 +161,13 @@ if (!app.Configuration.GetValue<bool>("SKIP_MIGRATIONS"))
     await seeder.SeedAsync();
 }
 
+// Register Hangfire recurring jobs (idempotent — safe to call on every startup)
+using (var scope = app.Services.CreateScope())
+{
+    var jobScheduler = scope.ServiceProvider.GetRequiredService<AeroMes.Application.Jobs.IJobScheduler>();
+    jobScheduler.RegisterRecurringJobs();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -186,6 +195,13 @@ app.UseRequestLocalization(opts =>
 app.UseAuthorization();
 app.Use(ForcePasswordChangeMiddleware.InvokeAsync);
 app.Use(MfaEnforcementMiddleware.InvokeAsync);
+
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = [new HangfireAdminAuthorizationFilter()],
+    DashboardTitle = "AeroMes — Job Scheduler",
+});
+
 app.MapControllers();
 app.MapHub<ModuleStatusHub>("/hubs/module-status");
 app.MapHub<IotHub>("/hubs/iot");

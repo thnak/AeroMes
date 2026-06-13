@@ -24,10 +24,13 @@ public class ProductionController(ICommandMediator commandMediator,
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ApiResponse<SubmitOutputResult>>> SubmitOutput(
-        [FromHeader(Name = "X-Idempotency-Key")] string? idempotencyKey,
+        [FromHeader(Name = "X-Idempotency-Key")] string idempotencyKey,
         [FromBody] SubmitOutputRequest request,
         CancellationToken ct)
     {
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+            return BadRequest("X-Idempotency-Key header is required.");
+
         var cmd = new SubmitOutputCommand(
             request.JobId,
             request.QtyOk,

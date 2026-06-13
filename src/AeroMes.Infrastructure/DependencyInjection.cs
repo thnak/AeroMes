@@ -34,7 +34,11 @@ using AeroMes.Infrastructure.Reminders;
 using AeroMes.Infrastructure.Storage;
 using AeroMes.Infrastructure.Rules;
 using AeroMes.Infrastructure.Sop;
+using AeroMes.Infrastructure.Jobs;
 using AeroMes.Infrastructure.Services;
+using AeroMes.Application.Jobs;
+using Hangfire;
+using Hangfire.SqlServer;
 using LiteBus.Events.Abstractions;
 using LiteBus.Extensions.Microsoft.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
@@ -175,7 +179,7 @@ public static class DependencyInjection
             AllowAutoRedirect = false,
         });
         services.AddScoped<IErpClient, HttpErpClient>();
-        services.AddHostedService<ErpSyncBackgroundService>();
+        // ErpSyncBackgroundService replaced by SyncErpOrdersJob (Hangfire recurring job)
 
         // prod repositories
         services.AddScoped<IWorkOrderRepository, WorkOrderRepository>();
@@ -363,6 +367,31 @@ public static class DependencyInjection
         // Excel import
         services.AddScoped<AeroMes.Application.Import.IImportService, Import.ImportService>();
         services.AddScoped<AeroMes.Application.Import.IImportRepository, Import.ImportRepository>();
+
+        // Hangfire — SQL Server storage, DI-aware job activator
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("DefaultConnection is not configured.");
+        services.AddHangfire(cfg => cfg
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseSqlServerStorage(connectionString, new SqlServerStorageOptions
+            {
+                CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+                SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+                QueuePollInterval = TimeSpan.Zero,
+                UseRecommendedIsolationLevel = true,
+                DisableGlobalLocks = true,
+            }));
+        services.AddHangfireServer();
+
+        // Recurring job classes
+        services.AddScoped<SyncErpOrdersJob>();
+        services.AddScoped<GenerateMaintenanceScheduleJob>();
+        services.AddScoped<AccumulateMachineRuntimeJob>();
+        services.AddScoped<AlertEvaluationTimerJob>();
+        services.AddScoped<PurgeOldIdempotencyKeysJob>();
+        services.AddSingleton<IJobScheduler, HangfireJobScheduler>();
 
         return services;
     }
