@@ -109,7 +109,7 @@ export const Icons = {
   serverError:     'solar:server-2-broken',
 
   // Release / system info
-  release:         'solar:history-bold-duotone',
+  releaseInfo:     'solar:history-bold-duotone',
   sparkles:        'solar:stars-minimalistic-bold',
   version:         'solar:tag-bold-duotone',
   server:          'solar:server-2-bold-duotone',
