@@ -145,6 +145,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<SignalMapping> SignalMappings => Set<SignalMapping>();
     public DbSet<MachineStateRule> MachineStateRules => Set<MachineStateRule>();
     public DbSet<SignalTag> SignalTags => Set<SignalTag>();
+    public DbSet<MachineSignalLog> MachineSignalLogs => Set<MachineSignalLog>();
 
     // settings
     public DbSet<SystemOptions> SystemOptions => Set<SystemOptions>();
@@ -2568,6 +2569,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.TypicalMin).HasColumnType("decimal(18,4)");
             e.Property(x => x.TypicalMax).HasColumnType("decimal(18,4)");
             e.Property(x => x.Description).HasMaxLength(500);
+        });
+
+        b.Entity<MachineSignalLog>(e =>
+        {
+            e.ToTable("MachineSignalLogs", "iot");
+            e.HasKey(x => x.LogId);
+            e.Property(x => x.LogId).UseIdentityColumn();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.TagKey).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Value).HasColumnType("decimal(18,6)");
+            e.Property(x => x.Unit).HasMaxLength(30);
+            e.Property(x => x.Source).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => new { x.MachineCode, x.TagKey, x.Timestamp });
         });
     }
 

@@ -16,6 +16,13 @@ public class SignalMappingRepository(AppDbContext db) : ISignalMappingRepository
             .OrderBy(x => x.TagKey)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<SignalMapping>> GetAllEnabledAsync(CancellationToken ct) =>
+        await db.SignalMappings
+            .Include(x => x.Adapter)
+            .Where(x => x.IsEnabled && x.Adapter != null && x.Adapter.IsEnabled)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
     public Task<bool> TagKeyExistsAsync(int adapterId, string tagKey, CancellationToken ct) =>
         db.SignalMappings.AnyAsync(x => x.AdapterID == adapterId && x.TagKey == tagKey, ct);
 

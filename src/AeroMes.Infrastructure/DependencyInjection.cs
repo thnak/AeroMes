@@ -8,6 +8,7 @@ using AeroMes.Domain.Quality.Repositories;
 using AeroMes.Domain.Wms.Repositories;
 using AeroMes.Infrastructure.Data;
 using AeroMes.Infrastructure.Identity;
+using AeroMes.Infrastructure.Iot;
 using AeroMes.Infrastructure.Repositories;
 using AeroMes.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
@@ -15,6 +16,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace AeroMes.Infrastructure;
 
@@ -177,6 +180,19 @@ public static class DependencyInjection
         services.AddSingleton<DbAuditLogger>();
         services.AddSingleton<IAuditLogger>(sp => sp.GetRequiredService<DbAuditLogger>());
         services.AddHostedService(sp => sp.GetRequiredService<DbAuditLogger>());
+
+        // IoT Pipeline
+        services.Configure<IotPipelineOptions>(configuration.GetSection("IoT:Pipeline"));
+        services.AddSingleton<ISignalConfigCache, SignalConfigCache>();
+        services.AddSingleton<DeadbandFilter>();
+        services.AddSingleton<ISignalIngestionPipeline, SignalIngestionPipeline>();
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<IotPipelineOptions>>().Value);
+        services.AddHostedService(sp =>
+            new PipelineConsumerService(
+                sp.GetRequiredService<ISignalIngestionPipeline>(),
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                sp.GetRequiredService<IOptions<IotPipelineOptions>>().Value,
+                sp.GetRequiredService<ILogger<PipelineConsumerService>>()));
 
         return services;
     }

@@ -22,6 +22,7 @@ using AeroMes.Application.Iot.StateRules.Commands.ReorderStateRules;
 using AeroMes.Application.Iot.StateRules.Commands.UpdateStateRule;
 using AeroMes.Application.Iot.StateRules.Queries.GetStateRules;
 using AeroMes.Domain.Iot;
+using AeroMes.Infrastructure.Iot;
 using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
@@ -32,7 +33,10 @@ namespace AeroMes.Api.Controllers;
 [ApiController]
 [Route("api/v1/iot")]
 [Authorize]
-public class IotController(ICommandMediator commandMediator, IQueryMediator queryMediator) : ControllerBase
+public class IotController(
+    ICommandMediator commandMediator,
+    IQueryMediator queryMediator,
+    ISignalIngestionPipeline pipeline) : ControllerBase
 {
     // ── Signal Tags ───────────────────────────────────────────────────────
 
@@ -296,6 +300,20 @@ public class IotController(ICommandMediator commandMediator, IQueryMediator quer
         if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
+
+    // ── Pipeline ──────────────────────────────────────────────────────────
+
+    [HttpGet("pipeline/stats")]
+    [RequirePermission(Permissions.IotRead)]
+    [ProducesResponseType<PipelineStats>(StatusCodes.Status200OK)]
+    public IActionResult GetPipelineStats()
+        => Ok(pipeline.GetStats());
+
+    [HttpPost("pipeline/flush")]
+    [RequirePermission(Permissions.IotWrite)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult FlushPipeline()
+        => Ok(new { message = "Flush acknowledged. Consumer flushes automatically on interval." });
 }
 
 public record CreateSignalTagRequest(string Key, string DisplayName, string Category, string DataType,
