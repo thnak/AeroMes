@@ -66,6 +66,9 @@ const MachineFleetsPage        = lazy(() => import('./pages/iot/MachineFleetsPag
 const MachineSignalMonitorPage = lazy(() => import('./pages/iot/MachineSignalMonitorPage'));
 const RuleEnginePage           = lazy(() => import('./pages/iot/RuleEnginePage'));
 
+// Dashboard (TV mode — no sidebar)
+const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
+
 // Lab
 const LabRequestsPage = lazy(() => import('./pages/lab/LabRequestsPage'));
 const SopDocumentsPage = lazy(() => import('./pages/lab/SopDocumentsPage'));
@@ -143,6 +146,16 @@ export default function App() {
           }
         />
 
+        {/* Dashboard — full-bleed TV mode, no sidebar */}
+        <Route
+          path="/dashboard"
+          element={
+            <AuthGuard>
+              <DashboardPage />
+            </AuthGuard>
+          }
+        />
+
         {/* Module routes — all share ModuleLayout chrome (AppBar + tabs) */}
         <Route
           element={
@@ -152,7 +165,6 @@ export default function App() {
           }
         >
           {/* Legacy redirects */}
-          <Route path="dashboard" element={<Navigate to="/" replace />} />
           <Route path="production/inventory" element={<Navigate to="/warehouse/inventory" replace />} />
           <Route path="master/defect-codes" element={<Navigate to="/quality/defect-catalog" replace />} />
           <Route path="reports/quality" element={<Navigate to="/quality/reports" replace />} />

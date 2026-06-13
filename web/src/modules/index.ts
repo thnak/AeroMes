@@ -23,6 +23,16 @@ export interface ModuleConfig {
 
 export const MODULES: ModuleConfig[] = [
   {
+    id: 'dashboard',
+    label: 'Dashboard',
+    description: 'Live production dashboard — machine status, OEE gauges & active work orders',
+    icon: 'reports',
+    color: '#044A42',
+    path: '/dashboard',
+    available: true,
+    tabs: [],
+  },
+  {
     id: 'production',
     label: 'Production',
     description: 'Work orders, jobs, downtime & inventory',
@@ -178,16 +188,6 @@ export const MODULES: ModuleConfig[] = [
       { label: 'Adapter Health',      path: '/iot/adapter-health' },
       { label: 'Machines & Adapters', path: '/master/machines' },
     ],
-  },
-  {
-    id: 'lab',
-    label: 'Lab',
-    description: 'Test requests, measurement results & certificates',
-    icon: 'qualityOee',
-    color: '#BE185D',
-    path: '/lab',
-    available: false,
-    tabs: [],
   },
   {
     id: 'traceability',
