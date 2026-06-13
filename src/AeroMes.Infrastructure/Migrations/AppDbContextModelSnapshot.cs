@@ -3099,6 +3099,9 @@ namespace AeroMes.Infrastructure.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CustomAttributes")
+                        .HasColumnType("NVARCHAR(MAX)");
+
                     b.Property<string>("CustomerPartNo")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -3176,6 +3179,13 @@ namespace AeroMes.Infrastructure.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
+                    b.Property<string>("ProductClass")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValueSql("'Standard'");
+
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -3202,6 +3212,13 @@ namespace AeroMes.Infrastructure.Migrations
                     b.Property<decimal?>("SafetyStock")
                         .HasColumnType("NUMERIC(18,4)");
 
+                    b.Property<string>("SecondaryUnit")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("SecondaryUnitConversionFactor")
+                        .HasColumnType("NUMERIC(18,6)");
+
                     b.Property<bool>("SerialControlled")
                         .HasColumnType("bit");
 
@@ -3215,6 +3232,13 @@ namespace AeroMes.Infrastructure.Migrations
                     b.Property<string>("ThumbnailUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("TrackingMethod")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValueSql("'None'");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -4690,6 +4714,16 @@ namespace AeroMes.Infrastructure.Migrations
                     b.Property<DateTime>("ReceivedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("ReservedQty")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("NUMERIC(18,4)")
+                        .HasDefaultValueSql("0");
+
+                    b.Property<decimal>("SecondaryQty")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("NUMERIC(18,4)")
+                        .HasDefaultValueSql("0");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -4697,6 +4731,9 @@ namespace AeroMes.Infrastructure.Migrations
 
                     b.HasIndex("BinId")
                         .HasFilter("[BinId] IS NOT NULL");
+
+                    b.HasIndex("ExpiryDate")
+                        .HasFilter("[ExpiryDate] IS NOT NULL");
 
                     b.HasIndex("ProductCode", "LotNumber");
 
@@ -4779,11 +4816,26 @@ namespace AeroMes.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<decimal>("PrimaryQty")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("NUMERIC(18,4)")
+                        .HasDefaultValueSql("1");
+
+                    b.Property<string>("ProcessParameters")
+                        .HasColumnType("NVARCHAR(MAX)");
+
                     b.Property<int>("QtyNG")
                         .HasColumnType("int");
 
                     b.Property<int>("QtyOK")
                         .HasColumnType("int");
+
+                    b.Property<decimal?>("SecondaryQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<string>("SerialNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
@@ -6104,6 +6156,66 @@ namespace AeroMes.Infrastructure.Migrations
                     b.HasIndex("RoutingStepId", "Status");
 
                     b.ToTable("SopDocuments", "sop");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Storage.FileObject", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Checksum")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("OwnerType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UploadedBy")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerType", "OwnerId");
+
+                    b.ToTable("FileObjects", "storage");
                 });
 
             modelBuilder.Entity("AeroMes.Domain.Wms.Aisle", b =>

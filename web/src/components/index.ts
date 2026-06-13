@@ -10,3 +10,5 @@ export { KpiRowSkeleton, TablePageSkeleton, DetailPageSkeleton } from './Loading
 export { default as NewFeatureBadge } from './NewFeatureBadge';
 export { default as QrCodeDialog } from './QrCodeDialog';
 export { default as NotificationsDrawer } from './NotificationsDrawer';
+export { default as FileUpload } from './FileUpload';
+export { default as AttachmentList } from './AttachmentList';

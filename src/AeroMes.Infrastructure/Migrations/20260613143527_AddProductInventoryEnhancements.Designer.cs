@@ -3187,7 +3187,7 @@ namespace AeroMes.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)")
-                        .HasDefaultValue("Standard");
+                        .HasDefaultValueSql("'Standard'");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
@@ -3241,7 +3241,7 @@ namespace AeroMes.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("None");
+                        .HasDefaultValueSql("'None'");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -4720,12 +4720,12 @@ namespace AeroMes.Infrastructure.Migrations
                     b.Property<decimal>("ReservedQty")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("NUMERIC(18,4)")
-                        .HasDefaultValue(0m);
+                        .HasDefaultValueSql("0");
 
                     b.Property<decimal>("SecondaryQty")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("NUMERIC(18,4)")
-                        .HasDefaultValue(0m);
+                        .HasDefaultValueSql("0");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -4822,7 +4822,7 @@ namespace AeroMes.Infrastructure.Migrations
                     b.Property<decimal>("PrimaryQty")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("NUMERIC(18,4)")
-                        .HasDefaultValue(1m);
+                        .HasDefaultValueSql("1");
 
                     b.Property<string>("ProcessParameters")
                         .HasColumnType("NVARCHAR(MAX)");
