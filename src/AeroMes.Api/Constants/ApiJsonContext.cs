@@ -77,6 +77,9 @@ using AeroMes.Application.Master.WorkShifts.Queries.GetWorkShifts;
 using AeroMes.Application.Master.Machines.Queries.GetMachines;
 using AeroMes.Application.Master.Machines.Queries.GetMachinesByType;
 using AeroMes.Application.Master.Machines.Queries.GetCompatibleMachinesForMold;
+using AeroMes.Application.Master.ProductFamilies.Queries.GetProductFamilies;
+using AeroMes.Application.Master.ProductFamilies.Queries.GetVariantMatrix;
+using AeroMes.Application.Master.ProductFamilies.Queries.GetVariantByAttributes;
 using AeroMes.Application.Master.MachineProductConfigs.Queries.GetMachineProductConfigs;
 using AeroMes.Application.Master.MachineProductParams.Queries.GetMachineSetupSheet;
 using AeroMes.Application.Master.OperatorCertifications.Queries.CheckOperatorEligibility;
@@ -459,6 +462,24 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(WarehouseCreatedResult))]
 [JsonSerializable(typeof(CreateWarehouseRequest))]
 [JsonSerializable(typeof(UpdateWarehouseRequest))]
+// variant groups (product families)
+[JsonSerializable(typeof(IReadOnlyList<ProductFamilySummaryDto>))]
+[JsonSerializable(typeof(VariantMatrixDto))]
+[JsonSerializable(typeof(DimensionDto))]
+[JsonSerializable(typeof(IReadOnlyList<DimensionDto>))]
+[JsonSerializable(typeof(DimensionValueDto))]
+[JsonSerializable(typeof(IReadOnlyList<DimensionValueDto>))]
+[JsonSerializable(typeof(VariantRowDto))]
+[JsonSerializable(typeof(IReadOnlyList<VariantRowDto>))]
+[JsonSerializable(typeof(VariantResolvedDto))]
+[JsonSerializable(typeof(CreateProductFamilyRequest))]
+[JsonSerializable(typeof(AddDimensionRequest))]
+[JsonSerializable(typeof(AddDimensionValueRequest))]
+[JsonSerializable(typeof(GenerateVariantRequest))]
+[JsonSerializable(typeof(FamilyCreatedResult))]
+[JsonSerializable(typeof(DimensionCreatedResult))]
+[JsonSerializable(typeof(DimensionValueCreatedResult))]
+[JsonSerializable(typeof(GenerateVariantResult))]
 // machine additions
 [JsonSerializable(typeof(DuplicateMachineRequest))]
 // beginning inventory

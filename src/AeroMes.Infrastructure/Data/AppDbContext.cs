@@ -88,6 +88,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<MachineProductParam> MachineProductParams => Set<MachineProductParam>();
     public DbSet<OperatorCertification> OperatorCertifications => Set<OperatorCertification>();
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
+    public DbSet<ProductFamily> ProductFamilies => Set<ProductFamily>();
+    public DbSet<VariantDimension> VariantDimensions => Set<VariantDimension>();
+    public DbSet<VariantDimensionValue> VariantDimensionValues => Set<VariantDimensionValue>();
+    public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -563,6 +567,66 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.PurchaseUoMCode)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<ProductFamily>(e =>
+        {
+            e.ToTable("ProductFamilies", "master");
+            e.HasKey(x => x.FamilyCode);
+            e.Property(x => x.FamilyCode).HasMaxLength(50).ValueGeneratedNever();
+            e.Property(x => x.FamilyName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.BaseProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Industry).HasMaxLength(20).IsRequired().HasDefaultValueSql("'GENERAL'");
+            e.Property(x => x.IsActive).HasDefaultValue(true);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            e.HasMany(x => x.Dimensions)
+                .WithOne()
+                .HasForeignKey(x => x.FamilyCode)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Dimensions).HasField("_dimensions").UsePropertyAccessMode(PropertyAccessMode.Field);
+            e.HasMany(x => x.Variants)
+                .WithOne()
+                .HasForeignKey(x => x.FamilyCode)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.Navigation(x => x.Variants).HasField("_variants").UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<VariantDimension>(e =>
+        {
+            e.ToTable("VariantDimensions", "master");
+            e.HasKey(x => x.DimensionID);
+            e.Property(x => x.DimensionID).ValueGeneratedOnAdd();
+            e.Property(x => x.FamilyCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.DimensionName).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => new { x.FamilyCode, x.DimensionName }).IsUnique();
+            e.HasMany(x => x.Values)
+                .WithOne()
+                .HasForeignKey(x => x.DimensionID)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Values).HasField("_values").UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<VariantDimensionValue>(e =>
+        {
+            e.ToTable("VariantDimensionValues", "master");
+            e.HasKey(x => x.ValueID);
+            e.Property(x => x.ValueID).ValueGeneratedOnAdd();
+            e.Property(x => x.ValueCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.ValueLabel).HasMaxLength(100).IsRequired();
+            e.HasIndex(x => new { x.DimensionID, x.ValueCode }).IsUnique();
+        });
+
+        b.Entity<ProductVariant>(e =>
+        {
+            e.ToTable("ProductVariants", "master");
+            e.HasKey(x => x.VariantID);
+            e.Property(x => x.VariantID).ValueGeneratedOnAdd();
+            e.Property(x => x.FamilyCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.VariantKey).HasMaxLength(200).IsRequired();
+            e.Property(x => x.VariantAttributes).HasColumnType("NVARCHAR(MAX)").HasDefaultValueSql("'{}'").IsRequired();
+            e.HasIndex(x => new { x.FamilyCode, x.VariantKey }).IsUnique();
+            e.HasIndex(x => x.ProductCode);
         });
 
         b.Entity<ProductSpecification>(e =>
