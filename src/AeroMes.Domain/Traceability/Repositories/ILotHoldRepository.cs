@@ -38,5 +38,6 @@ public interface ILotHoldRepository
     Task<LotHoldStatusDto> GetStatusAsync(string lotNumber, CancellationToken ct = default);
     Task<(IReadOnlyList<LotHoldDto> Items, int Total)> GetActiveHoldsAsync(string? lotNumber, string? holdReason, int page, int pageSize, CancellationToken ct = default);
     Task<IReadOnlyList<LotHoldDto>> GetHistoryAsync(string lotNumber, CancellationToken ct = default);
+    Task<IReadOnlyList<LotHoldDto>> GetHistoryByRecallAsync(string recallCode, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

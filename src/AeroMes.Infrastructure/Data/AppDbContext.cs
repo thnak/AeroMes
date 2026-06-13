@@ -115,6 +115,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<LotLineage> LotLineages => Set<LotLineage>();
     public DbSet<LotEvent> LotEvents => Set<LotEvent>();
     public DbSet<LotHold> LotHolds => Set<LotHold>();
+    public DbSet<Recall> Recalls => Set<Recall>();
+    public DbSet<RecallScopeLot> RecallScopeLots => Set<RecallScopeLot>();
+    public DbSet<RecallAuditEntry> RecallAuditEntries => Set<RecallAuditEntry>();
     public DbSet<ProcessRecord> ProcessRecords => Set<ProcessRecord>();
     public DbSet<ProcessParameter> ProcessParameters => Set<ProcessParameter>();
 
@@ -257,6 +260,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureStorageSchema(b);
         ConfigureTraceabilitySchema(b);
         ConfigureLotHoldSchema(b);
+        ConfigureRecallSchema(b);
         ConfigureProcessRecordSchema(b);
     }
 
@@ -3350,6 +3354,66 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasDatabaseName("IX_LH_WO_Active");
             e.HasIndex(x => new { x.HoldStatus, x.HoldReason, x.HoldInitiatedAt })
                 .HasDatabaseName("IX_LH_Status_Reason");
+        });
+    }
+
+    // ── recalls ───────────────────────────────────────────────────────────
+    private static void ConfigureRecallSchema(ModelBuilder b)
+    {
+        b.Entity<Recall>(e =>
+        {
+            e.ToTable("Recalls", "trace");
+            e.HasKey(x => x.RecallID);
+            e.Property(x => x.RecallID).HasColumnType("uniqueidentifier").ValueGeneratedNever();
+            e.Property(x => x.RecallCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.Title).HasMaxLength(200).IsRequired();
+            e.Property(x => x.RecallType).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.AnchorLotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.AnchorDirection).HasConversion<string>().HasMaxLength(15).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(1000);
+            e.Property(x => x.RegulatoryRef).HasMaxLength(100);
+            e.Property(x => x.InitiatedBy).HasMaxLength(50).IsRequired();
+            e.Property(x => x.InitiatedAt).HasColumnType("datetime2(3)").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.Property(x => x.ScopeIdentifiedAt).HasColumnType("datetime2(3)");
+            e.Property(x => x.ClosedAt).HasColumnType("datetime2(3)");
+            e.Property(x => x.ClosedBy).HasMaxLength(50);
+            e.HasIndex(x => new { x.Status, x.InitiatedAt });
+            e.HasIndex(x => x.RecallCode).IsUnique();
+        });
+
+        b.Entity<RecallScopeLot>(e =>
+        {
+            e.ToTable("RecallScopeLots", "trace");
+            e.HasKey(x => x.RecallScopeLotID);
+            e.Property(x => x.RecallScopeLotID).ValueGeneratedOnAdd();
+            e.Property(x => x.RecallID).HasColumnType("uniqueidentifier").IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50);
+            e.Property(x => x.LotCategory).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.CurrentLocationCode).HasMaxLength(50);
+            e.Property(x => x.QtyOnHand).HasColumnType("NUMERIC(18,6)");
+            e.Property(x => x.ShipmentRef).HasMaxLength(100);
+            e.Property(x => x.CustomerRef).HasMaxLength(100);
+            e.Property(x => x.HoldID).HasColumnType("uniqueidentifier");
+            e.Property(x => x.AddedAt).HasColumnType("datetime2(3)").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.HasIndex(x => new { x.RecallID, x.LotNumber }).IsUnique();
+        });
+
+        b.Entity<RecallAuditEntry>(e =>
+        {
+            e.ToTable("RecallAuditLog", "trace");
+            e.HasKey(x => x.AuditID);
+            e.Property(x => x.AuditID).ValueGeneratedOnAdd();
+            e.Property(x => x.RecallID).HasColumnType("uniqueidentifier").IsRequired();
+            e.Property(x => x.ActionType).HasMaxLength(40).IsRequired();
+            e.Property(x => x.ActionDetail).HasMaxLength(1000);
+            e.Property(x => x.PerformedBy).HasMaxLength(50).IsRequired();
+            e.Property(x => x.PerformedAt).HasColumnType("datetime2(3)").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.HasIndex(x => x.RecallID);
         });
     }
 

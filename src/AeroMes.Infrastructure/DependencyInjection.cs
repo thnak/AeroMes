@@ -125,6 +125,7 @@ public static class DependencyInjection
         services.AddScoped<IProductionStatisticsSheetRepository, ProductionStatisticsSheetRepository>();
         services.AddScoped<ILotTraceabilityRepository, LotTraceabilityRepository>();
         services.AddScoped<ILotHoldRepository, LotHoldRepository>();
+        services.AddScoped<IRecallRepository, RecallRepository>();
         services.AddScoped<IProcessRecordRepository, ProcessRecordRepository>();
         services.AddScoped<ILotHoldEnforcementService, LotHoldEnforcementService>();
         services.AddScoped<IESignatureService, ESignatureService>();

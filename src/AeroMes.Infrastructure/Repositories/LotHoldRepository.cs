@@ -69,6 +69,16 @@ public class LotHoldRepository(AppDbContext db) : ILotHoldRepository
         return [.. holds.Select(ToDto)];
     }
 
+    public async Task<IReadOnlyList<LotHoldDto>> GetHistoryByRecallAsync(string recallCode, CancellationToken ct)
+    {
+        var holds = await db.LotHolds.AsNoTracking()
+            .Where(h => h.HoldReference == recallCode)
+            .OrderByDescending(h => h.HoldInitiatedAt)
+            .ToListAsync(ct);
+
+        return [.. holds.Select(ToDto)];
+    }
+
     public Task SaveChangesAsync(CancellationToken ct) => db.SaveChangesAsync(ct);
 
     private static LotHoldDto ToDto(LotHold h) => new(
