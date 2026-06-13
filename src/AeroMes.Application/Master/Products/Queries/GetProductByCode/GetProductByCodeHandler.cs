@@ -23,6 +23,8 @@ public class GetProductByCodeHandler(IProductRepository repo)
             x.FixedPurchasePrice, x.TechnicalStandard, x.QuantityFormula,
             [.. x.UoMConversions
                 .OrderBy(c => c.UoMCode)
-                .Select(c => new ProductUoMConversionDto(c.ConversionId, c.UoMCode, c.ToBaseFactor, c.Notes))]);
+                .Select(c => new ProductUoMConversionDto(c.ConversionId, c.UoMCode, c.ToBaseFactor, c.Notes))],
+            x.TrackingMethod, x.SecondaryUnit, x.SecondaryUnitConversionFactor,
+            x.ProductClass, x.CustomAttributes);
     }
 }

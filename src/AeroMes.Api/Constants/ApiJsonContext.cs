@@ -4,6 +4,8 @@ using AeroMes.Api.Controllers;
 using AeroMes.Api.Middleware;
 using AeroMes.Application.Inventory.Queries.GetInventoryStock;
 using AeroMes.Application.Inventory.Queries.GetLotTrace;
+using AeroMes.Application.Production.Queries.GetAvailableStock;
+using AeroMes.Application.Production.Queries.GetInventoryByExpiry;
 using AeroMes.Application.Reports.Queries.GetDowntimeReport;
 using AeroMes.Application.Reports.Queries.GetProductionReport;
 using AeroMes.Application.Reports.Queries.GetQualityReport;
@@ -255,10 +257,15 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(CreateProductRequest))]
 [JsonSerializable(typeof(UpdateProductRequest))]
 [JsonSerializable(typeof(ChangeLifecycleRequest))]
+[JsonSerializable(typeof(UpdateTrackingRequest))]
+[JsonSerializable(typeof(UpdateCustomAttributesRequest))]
 [JsonSerializable(typeof(IReadOnlyList<ProductUoMConversionDto>))]
 [JsonSerializable(typeof(AddUoMConversionRequest))]
 [JsonSerializable(typeof(UpdateUoMConversionRequest))]
 [JsonSerializable(typeof(UoMConversionCreatedResult))]
+// inventory extensions
+[JsonSerializable(typeof(IReadOnlyList<AvailableStockDto>))]
+[JsonSerializable(typeof(IReadOnlyList<ExpiringStockDto>))]
 // variants / specification codes
 [JsonSerializable(typeof(IReadOnlyList<ProductVariantDto>))]
 [JsonSerializable(typeof(IReadOnlyList<ProductSpecificationDto>))]

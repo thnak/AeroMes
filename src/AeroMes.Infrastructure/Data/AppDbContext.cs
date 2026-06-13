@@ -507,6 +507,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.TechnicalStandard).HasMaxLength(200);
             e.Property(x => x.QuantityFormula).HasMaxLength(500);
             e.Property(x => x.PickingStrategy).HasConversion<string>().HasMaxLength(10);
+            e.Property(x => x.TrackingMethod).HasConversion<string>().HasMaxLength(20).HasDefaultValue(TrackingMethod.None);
+            e.Property(x => x.SecondaryUnit).HasMaxLength(20);
+            e.Property(x => x.SecondaryUnitConversionFactor).HasColumnType("NUMERIC(18,6)");
+            e.Property(x => x.ProductClass).HasConversion<string>().HasMaxLength(30).HasDefaultValue(ProductClass.Standard);
+            e.Property(x => x.CustomAttributes).HasColumnType("NVARCHAR(MAX)");
             e.HasQueryFilter(x => !x.IsDeleted);
 
             e.HasMany(x => x.UoMConversions)
@@ -1585,6 +1590,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.DeviceIP).HasMaxLength(30);
             e.Property(x => x.Notes).HasMaxLength(255);
             e.Property(x => x.IdempotencyKey).HasMaxLength(36);
+            e.Property(x => x.PrimaryQty).HasColumnType("NUMERIC(18,4)").HasDefaultValue(1m);
+            e.Property(x => x.SecondaryQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.SerialNumber).HasMaxLength(100);
+            e.Property(x => x.ProcessParameters).HasColumnType("NVARCHAR(MAX)");
             e.HasIndex(x => x.IdempotencyKey).IsUnique()
                 .HasFilter("[IdempotencyKey] IS NOT NULL");
             e.HasIndex(x => x.JobID);
@@ -1634,11 +1643,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.LotNumber).HasMaxLength(50).IsRequired();
             e.Property(x => x.Quantity).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.SecondaryQty).HasColumnType("NUMERIC(18,4)").HasDefaultValue(0m);
+            e.Property(x => x.ReservedQty).HasColumnType("NUMERIC(18,4)").HasDefaultValue(0m);
+            e.Ignore(x => x.AvailableQty);
             e.Property(x => x.ExpiryDate).HasColumnType("date");
             e.Property(x => x.ManufacturedDate).HasColumnType("date");
             e.HasIndex(x => new { x.LocationID, x.ProductCode, x.LotNumber }).IsUnique();
             e.HasIndex(x => new { x.ProductCode, x.LotNumber });
             e.HasIndex(x => x.BinId).HasFilter("[BinId] IS NOT NULL");
+            e.HasIndex(x => x.ExpiryDate).HasFilter("[ExpiryDate] IS NOT NULL");
 
             e.HasOne(x => x.StorageLocation)
                 .WithMany()

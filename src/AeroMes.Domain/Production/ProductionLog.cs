@@ -11,6 +11,11 @@ public class ProductionLog : Entity
     public DateTime Timestamp { get; private set; }
     public int QtyOK { get; private set; }
     public int QtyNG { get; private set; }
+    // Extended qty fields (issue #121) — retained QtyOK/QtyNG for backward compatibility
+    public decimal PrimaryQty { get; private set; } = 1m;
+    public decimal? SecondaryQty { get; private set; }
+    public string? SerialNumber { get; private set; }
+    public string? ProcessParameters { get; private set; }
     public string? DeviceIP { get; private set; }
     public string? Notes { get; private set; }
     public string? IdempotencyKey { get; private set; }
@@ -30,7 +35,11 @@ public class ProductionLog : Entity
         string? deviceIp = null,
         string? idempotencyKey = null,
         string? notes = null,
-        DateTime? timestamp = null)
+        DateTime? timestamp = null,
+        decimal? primaryQty = null,
+        decimal? secondaryQty = null,
+        string? serialNumber = null,
+        string? processParameters = null)
     {
         if (qtyOk < 0) throw new DomainException($"QtyOK cannot be negative. Got: {qtyOk}.");
         if (qtyNg < 0) throw new DomainException($"QtyNG cannot be negative. Got: {qtyNg}.");
@@ -40,6 +49,10 @@ public class ProductionLog : Entity
             JobID = jobId,
             QtyOK = qtyOk,
             QtyNG = qtyNg,
+            PrimaryQty = primaryQty ?? qtyOk,
+            SecondaryQty = secondaryQty,
+            SerialNumber = serialNumber?.Trim(),
+            ProcessParameters = processParameters?.Trim(),
             DeviceIP = deviceIp,
             Notes = notes,
             IdempotencyKey = idempotencyKey,

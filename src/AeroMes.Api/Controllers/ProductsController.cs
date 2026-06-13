@@ -5,6 +5,8 @@ using AeroMes.Application.Master.Products.Commands.UpdateProductUoMConversion;
 using AeroMes.Application.Master.Products.Commands.CreateProduct;
 using AeroMes.Application.Master.Products.Commands.DeleteProduct;
 using AeroMes.Application.Master.Products.Commands.UpdateProduct;
+using AeroMes.Application.Master.Products.Commands.UpdateProductTracking;
+using AeroMes.Application.Master.Products.Commands.UpdateProductCustomAttributes;
 using AeroMes.Application.Master.Products.Queries.GetProductByCode;
 using AeroMes.Application.Master.Products.Queries.GetProducts;
 using AeroMes.Domain.Master;
@@ -107,6 +109,32 @@ public class ProductsController(ICommandMediator commandMediator,
         return NoContent();
     }
 
+    [HttpPut("{code}/tracking")]
+    [RequirePermission(Permissions.MasterDataWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateTracking(string code, [FromBody] UpdateTrackingRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new UpdateProductTrackingCommand(code, req.TrackingMethod, req.SecondaryUnit,
+                req.SecondaryUnitConversionFactor, req.ProductClass, User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpPut("{code}/custom-attributes")]
+    [RequirePermission(Permissions.MasterDataWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateCustomAttributes(string code, [FromBody] UpdateCustomAttributesRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new UpdateProductCustomAttributesCommand(code, req.CustomAttributesJson, User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
     // ── UoM conversions sub-resource ────────────────────────────────────────
 
     [HttpPost("{code}/uom-conversions")]
@@ -201,3 +229,11 @@ public record UoMConversionCreatedResult(int ConversionId);
 
 public record ChangeLifecycleRequest(LifecycleStatus Status);
 public record ProductCreatedResult(string ProductCode);
+
+public record UpdateTrackingRequest(
+    TrackingMethod TrackingMethod,
+    ProductClass ProductClass,
+    string? SecondaryUnit = null,
+    decimal? SecondaryUnitConversionFactor = null);
+
+public record UpdateCustomAttributesRequest(string? CustomAttributesJson);

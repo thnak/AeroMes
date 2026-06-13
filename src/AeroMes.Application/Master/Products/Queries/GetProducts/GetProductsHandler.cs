@@ -17,7 +17,8 @@ public class GetProductsHandler(IProductRepository repo)
                 x.ProductCode, x.ProductName, x.BaseUoMCode, x.ItemType,
                 x.CategoryId, x.LifecycleStatus, x.LotControlled, x.SerialControlled,
                 x.ProcurementType, x.IsActive, x.BarcodePattern,
-                x.CustomerPartNo, x.DrawingNo, x.Revision))
+                x.CustomerPartNo, x.DrawingNo, x.Revision,
+                x.TrackingMethod, x.ProductClass))
             .ToList();
     }
 }

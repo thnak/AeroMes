@@ -44,7 +44,7 @@ import {
   useGetApiV1ProductsCode,
 } from '../../api/products/products';
 import type { ProductDto } from '../../api/model';
-import { ItemType, ProcurementType } from '../../api/model';
+import { ItemType, ProcurementType, TrackingMethod, ProductClass } from '../../api/model';
 import { getErrorMessage } from '../../lib/apiClient';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -71,6 +71,15 @@ const LIFECYCLE_COLORS: Record<string, string> = {
 
 const UOM_OPTIONS = ['EA', 'PCS', 'SET', 'KG', 'G', 'M', 'M2', 'M3', 'L', 'BOX', 'ROLL'];
 
+const TRACKING_COLORS: Record<string, string> = {
+  None: '#64748B', Lot: '#1D4ED8', Serial: '#7C3AED',
+};
+
+const PRODUCT_CLASS_LABELS: Record<string, string> = {
+  Standard: 'Standard', RawMaterial: 'Raw Material', Fabric: 'Fabric',
+  Resin: 'Resin', FinishedGood: 'Finished Good', SemiFinished: 'Semi-Finished', Consumable: 'Consumable',
+};
+
 // ─── Form schema ──────────────────────────────────────────────────────────────
 
 const ProductSchema = z.object({
@@ -85,6 +94,8 @@ const ProductSchema = z.object({
   customerPartNo:   z.string().max(100).optional(),
   drawingNo:        z.string().max(100).optional(),
   revision:         z.string().max(50).optional(),
+  trackingMethod:   z.string().optional(),
+  productClass:     z.string().optional(),
 });
 
 type ProductFormValues = z.infer<typeof ProductSchema>;
@@ -221,6 +232,44 @@ function ProductForm({
             fullWidth
             error={!!errors.revision}
             helperText={errors.revision?.message}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Controller
+            name="trackingMethod"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? 'None'}
+                select
+                label="Tracking Method"
+                fullWidth
+              >
+                {Object.values(TrackingMethod).map((t) => (
+                  <MenuItem key={t} value={t}>{t}</MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Controller
+            name="productClass"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                value={field.value ?? 'Standard'}
+                select
+                label="Product Class"
+                fullWidth
+              >
+                {Object.values(ProductClass).map((c) => (
+                  <MenuItem key={c} value={c}>{PRODUCT_CLASS_LABELS[c] ?? c}</MenuItem>
+                ))}
+              </TextField>
+            )}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
@@ -416,6 +465,26 @@ export default function ProductsPage() {
         return (
           <Chip
             label={LIFECYCLE_LABELS[params.value as string] ?? params.value}
+            size="small"
+            sx={{
+              height: 20, fontSize: '0.6875rem', fontWeight: 600,
+              bgcolor: alpha(color, 0.1), color, border: 'none',
+              '& .MuiChip-label': { px: 0.75 },
+            }}
+          />
+        );
+      },
+    },
+    {
+      field: 'trackingMethod',
+      headerName: 'Tracking',
+      width: 90,
+      renderCell: (params: GridRenderCellParams<ProductDto>) => {
+        const val = (params.value as string) ?? 'None';
+        const color = TRACKING_COLORS[val] ?? '#64748B';
+        return (
+          <Chip
+            label={val}
             size="small"
             sx={{
               height: 20, fontSize: '0.6875rem', fontWeight: 600,

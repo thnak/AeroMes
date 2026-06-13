@@ -23,7 +23,9 @@ public record ProductDto(
     string? BarcodePattern,
     string? CustomerPartNo,
     string? DrawingNo,
-    string? Revision);
+    string? Revision,
+    TrackingMethod TrackingMethod = TrackingMethod.None,
+    ProductClass ProductClass = ProductClass.Standard);
 
 public record ProductDetailDto(
     string ProductCode,
@@ -58,7 +60,12 @@ public record ProductDetailDto(
     decimal? FixedPurchasePrice,
     string? TechnicalStandard,
     string? QuantityFormula,
-    IReadOnlyList<ProductUoMConversionDto> UoMConversions);
+    IReadOnlyList<ProductUoMConversionDto> UoMConversions,
+    TrackingMethod TrackingMethod = TrackingMethod.None,
+    string? SecondaryUnit = null,
+    decimal? SecondaryUnitConversionFactor = null,
+    ProductClass ProductClass = ProductClass.Standard,
+    string? CustomAttributes = null);
 
 public record ProductUoMConversionDto(
     int ConversionId,

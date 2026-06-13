@@ -65,6 +65,17 @@ public class Product : AuditableEntity
     public PickingStrategy PickingStrategy { get; private set; } = PickingStrategy.Fefo;
     public int? MinShelfLifeDaysOnIssue { get; private set; }
 
+    // Tracking & dual UOM (issue #121)
+    public TrackingMethod TrackingMethod { get; private set; } = TrackingMethod.None;
+    public string? SecondaryUnit { get; private set; }
+    public decimal? SecondaryUnitConversionFactor { get; private set; }
+
+    // Industry classification
+    public ProductClass ProductClass { get; private set; } = ProductClass.Standard;
+
+    // Freeform industry-specific attributes (JSON)
+    public string? CustomAttributes { get; private set; }
+
     // Navigation
     public ProductCategory? Category { get; private set; }
 
@@ -256,6 +267,33 @@ public class Product : AuditableEntity
 
     public void Activate() => IsActive = true;
     public void Deactivate() => IsActive = false;
+
+    public void UpdateTracking(
+        TrackingMethod trackingMethod,
+        string? secondaryUnit,
+        decimal? secondaryUnitConversionFactor,
+        ProductClass productClass,
+        string updatedBy)
+    {
+        if (secondaryUnit is not null && secondaryUnitConversionFactor is null)
+            throw new DomainException("SecondaryUnitConversionFactor is required when SecondaryUnit is specified.");
+        if (secondaryUnit is null && secondaryUnitConversionFactor is not null)
+            throw new DomainException("SecondaryUnit is required when SecondaryUnitConversionFactor is specified.");
+        if (secondaryUnitConversionFactor <= 0)
+            throw new DomainException("SecondaryUnitConversionFactor must be positive.");
+
+        TrackingMethod = trackingMethod;
+        SecondaryUnit = secondaryUnit?.Trim();
+        SecondaryUnitConversionFactor = secondaryUnitConversionFactor;
+        ProductClass = productClass;
+        Touch(updatedBy);
+    }
+
+    public void UpdateCustomAttributes(string? customAttributesJson, string updatedBy)
+    {
+        CustomAttributes = customAttributesJson?.Trim();
+        Touch(updatedBy);
+    }
 
     public void UpdatePickingConfig(PickingStrategy strategy, int? minShelfLifeDays, string updatedBy)
     {
