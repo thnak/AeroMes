@@ -24,6 +24,7 @@ using AeroMes.Application.Traceability.Services;
 using AeroMes.Application.Traceability.Commands.CommissionSerialUnits;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production.Repositories;
+using AeroMes.Application.Production.Commands.CreateProductionPlan;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrders;
 using AeroMes.Application.Integration.Commands.SyncSalesOrders;
@@ -1064,6 +1065,24 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<DefectParetoDto>))]
 [JsonSerializable(typeof(List<DefectParetoDto>))]
 [JsonSerializable(typeof(QualitySummaryByStyleDto))]
+// production planning (order-based) — #135
+[JsonSerializable(typeof(CreateProductionPlanRequest))]
+[JsonSerializable(typeof(PlanLineInput))]
+[JsonSerializable(typeof(IReadOnlyList<PlanLineInput>))]
+[JsonSerializable(typeof(List<PlanLineInput>))]
+[JsonSerializable(typeof(UpdatePlanStatusRequest))]
+[JsonSerializable(typeof(UpdatePlanLineRequest))]
+[JsonSerializable(typeof(ProductionPlanDto))]
+[JsonSerializable(typeof(PagedResult<ProductionPlanDto>))]
+[JsonSerializable(typeof(ProductionPlanLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<ProductionPlanLineDto>))]
+[JsonSerializable(typeof(List<ProductionPlanLineDto>))]
+[JsonSerializable(typeof(GanttTeamDto))]
+[JsonSerializable(typeof(IReadOnlyList<GanttTeamDto>))]
+[JsonSerializable(typeof(List<GanttTeamDto>))]
+[JsonSerializable(typeof(GanttIntervalDto))]
+[JsonSerializable(typeof(IReadOnlyList<GanttIntervalDto>))]
+[JsonSerializable(typeof(List<GanttIntervalDto>))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

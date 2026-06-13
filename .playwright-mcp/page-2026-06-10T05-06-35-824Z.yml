@@ -1,0 +1,24 @@
+- generic [ref=e5]:
+  - generic [ref=e8]:
+    - heading "AeroMes" [level=6] [ref=e9]
+    - text: Manufacturing Execution System
+  - heading "Sign in" [level=5] [ref=e10]
+  - paragraph [ref=e11]: Enter your credentials to continue
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e14]: Email
+      - generic [ref=e15]:
+        - textbox "Email" [active] [ref=e16]
+        - group:
+          - generic: Email
+    - generic [ref=e17]:
+      - generic: Password
+      - generic [ref=e18]:
+        - textbox "Password" [ref=e19]
+        - button "Show password" [ref=e21] [cursor=pointer]
+        - group:
+          - generic: Password
+  - button "Sign in" [ref=e22] [cursor=pointer]
+  - separator [ref=e23]:
+    - generic [ref=e24]: or
+  - button "Sign in with Passkey" [ref=e25] [cursor=pointer]: Sign in with Passkey

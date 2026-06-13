@@ -1,0 +1,314 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - banner [ref=e6]:
+      - button "Open Menu" [ref=e7] [cursor=pointer]:
+        - img [ref=e8]
+        - generic [ref=e11]: Open Menu
+    - main "Open API Documentation for AeroMes.Api | v1" [ref=e13]:
+      - generic [ref=e14]:
+        - region "Introduction" [ref=e16]:
+          - generic [ref=e17]:
+            - generic [ref=e18]:
+              - generic [ref=e19]: v1.0.0
+              - generic [ref=e20]: OpenAPI 3.1.1
+            - heading "AeroMes.Api | v1" [level=1] [ref=e23]
+            - generic [ref=e25]:
+              - generic [ref=e27]:
+                - button "Download OpenAPI Document" [ref=e28] [cursor=pointer]:
+                  - generic [ref=e29]: Download OpenAPI Document
+                - button "Download OpenAPI Document" [ref=e30] [cursor=pointer]:
+                  - generic [ref=e31]: Download OpenAPI Document
+              - generic [ref=e34]:
+                - generic [ref=e35]:
+                  - generic [ref=e36]: Server
+                  - generic [ref=e38]:
+                    - generic [ref=e39]: "Server:"
+                    - generic [ref=e40]: http://localhost:5170
+                - region "Authentication" [ref=e43]:
+                  - generic [ref=e44]:
+                    - button "Authentication" [disabled] [expanded] [ref=e45]:
+                      - heading "Authentication" [level=2] [ref=e46]:
+                        - generic [ref=e49]: Authentication
+                    - button "Select Auth Type" [ref=e52] [cursor=pointer]:
+                      - generic [ref=e53]: Select
+                      - text: Auth Type
+                      - img [ref=e54]
+                  - generic [ref=e59]: No authentication selected
+                - generic [ref=e61]:
+                  - generic [ref=e62]: Client Libraries
+                  - tablist "Client Libraries" [ref=e63]:
+                    - generic [ref=e64]:
+                      - tab "Shell" [selected] [ref=e65] [cursor=pointer]:
+                        - img [ref=e67]
+                        - generic [ref=e69]: Shell
+                      - tab "Ruby" [ref=e70] [cursor=pointer]:
+                        - img [ref=e72]
+                        - generic [ref=e74]: Ruby
+                      - tab "Node.js" [ref=e75] [cursor=pointer]:
+                        - img [ref=e77]
+                        - generic [ref=e80]: Node.js
+                      - tab "PHP" [ref=e81] [cursor=pointer]:
+                        - img [ref=e83]
+                        - generic [ref=e85]: PHP
+                      - tab "Python" [ref=e86] [cursor=pointer]:
+                        - img [ref=e88]
+                        - generic [ref=e90]: Python
+                      - button "More Select from all clients" [ref=e92] [cursor=pointer]:
+                        - generic [ref=e96]: More
+                        - generic [ref=e97]: Select from all clients
+                  - tabpanel "Shell" [ref=e99]: Shell Curl
+        - region "AuditLog" [ref=e101]:
+          - generic [ref=e104]:
+            - heading "AuditLog" [level=2] [ref=e106]
+            - button "Copy link" [ref=e107] [cursor=pointer]:
+              - img [ref=e108]
+              - generic [ref=e111]: Copy link
+          - group "AuditLog Operations" [ref=e115]:
+            - generic [ref=e117]:
+              - generic [ref=e118]: AuditLog
+              - text: Operations
+            - list "AuditLog endpoints" [ref=e120]:
+              - listitem [ref=e121]:
+                - generic [ref=e122] [cursor=pointer]:
+                  - generic [ref=e123]: get
+                  - generic [ref=e124]: /api/v1/audit-log
+              - listitem [ref=e125]:
+                - generic [ref=e126] [cursor=pointer]:
+                  - generic [ref=e127]: get
+                  - generic [ref=e128]: "/api/v1/audit-log/user/{userId}"
+              - listitem [ref=e129]:
+                - generic [ref=e130] [cursor=pointer]:
+                  - generic [ref=e131]: get
+                  - generic [ref=e132]: /api/v1/audit-log/export
+          - region "/api/v1/audit-log" [ref=e135]:
+            - generic [ref=e137]:
+              - generic [ref=e139]:
+                - heading "/api/v1/audit-log" [level=3] [ref=e141]
+                - button "Copy link" [ref=e142] [cursor=pointer]:
+                  - img [ref=e143]
+                  - generic [ref=e146]: Copy link
+              - button "Auth Optional" [ref=e149] [cursor=pointer]:
+                - img [ref=e150]
+                - generic [ref=e153]: Auth Optional
+              - generic:
+                - group "Operation Description"
+              - generic [ref=e154]:
+                - generic [ref=e155]:
+                  - generic [ref=e156]: Query Parameters
+                  - list "Query Parameters" [ref=e157]:
+                    - listitem [ref=e158]:
+                      - generic [ref=e161]:
+                        - generic [ref=e163]:
+                          - text: actor
+                          - text: Id
+                          - button "Copy link to actorId" [ref=e164] [cursor=pointer]:
+                            - img [ref=e165]
+                            - generic [ref=e168]:
+                              - text: Copy link to actor
+                              - text: Id
+                        - generic [ref=e170]:
+                          - generic [ref=e171]: "Type:"
+                          - text: string
+                    - listitem [ref=e172]:
+                      - generic [ref=e175]:
+                        - generic [ref=e177]:
+                          - text: event
+                          - text: Type
+                          - button "Copy link to eventType" [ref=e178] [cursor=pointer]:
+                            - img [ref=e179]
+                            - generic [ref=e182]:
+                              - text: Copy link to event
+                              - text: Type
+                        - generic [ref=e184]:
+                          - generic [ref=e185]: "Type:"
+                          - text: string
+                    - listitem [ref=e186]:
+                      - generic [ref=e188]:
+                        - generic [ref=e189]:
+                          - generic [ref=e191]:
+                            - text: from
+                            - button "Copy link to from" [ref=e192] [cursor=pointer]:
+                              - img [ref=e193]
+                              - generic [ref=e196]: Copy link to from
+                          - generic [ref=e198]:
+                            - generic [ref=e199]: "Type:"
+                            - text: string
+                          - generic [ref=e200]:
+                            - text: ·
+                            - generic [ref=e201]:
+                              - generic [ref=e202]: "Format:"
+                              - text: date-time
+                        - paragraph [ref=e205]: the date-time notation as defined by RFC 3339, section 5.6, for example, 2017-07-21T17:32:28Z
+                    - listitem [ref=e206]:
+                      - generic [ref=e208]:
+                        - generic [ref=e209]:
+                          - generic [ref=e211]:
+                            - text: to
+                            - button "Copy link to to" [ref=e212] [cursor=pointer]:
+                              - img [ref=e213]
+                              - generic [ref=e216]: Copy link to to
+                          - generic [ref=e218]:
+                            - generic [ref=e219]: "Type:"
+                            - text: string
+                          - generic [ref=e220]:
+                            - text: ·
+                            - generic [ref=e221]:
+                              - generic [ref=e222]: "Format:"
+                              - text: date-time
+                        - paragraph [ref=e225]: the date-time notation as defined by RFC 3339, section 5.6, for example, 2017-07-21T17:32:28Z
+                    - listitem [ref=e226]:
+                      - generic [ref=e229]:
+                        - generic [ref=e231]:
+                          - text: target
+                          - text: Type
+                          - button "Copy link to targetType" [ref=e232] [cursor=pointer]:
+                            - img [ref=e233]
+                            - generic [ref=e236]:
+                              - text: Copy link to target
+                              - text: Type
+                        - generic [ref=e238]:
+                          - generic [ref=e239]: "Type:"
+                          - text: string
+                    - listitem [ref=e240]:
+                      - generic [ref=e242]:
+                        - generic [ref=e243]:
+                          - generic [ref=e245]:
+                            - text: page
+                            - button "Copy link to page" [ref=e246] [cursor=pointer]:
+                              - img [ref=e247]
+                              - generic [ref=e250]: Copy link to page
+                          - generic [ref=e252]:
+                            - generic [ref=e253]: "Type:"
+                            - text: integer | string
+                          - generic [ref=e254]:
+                            - text: ·
+                            - code [ref=e255]:
+                              - generic [ref=e256]: "Pattern:"
+                              - text: ^-?(?:0|[1-9]\d*)$
+                          - generic [ref=e257]:
+                            - text: ·
+                            - generic [ref=e258]:
+                              - generic [ref=e259]: "Format:"
+                              - text: int32
+                          - button "Default" [ref=e261] [cursor=pointer]
+                        - paragraph [ref=e264]: Signed 32-bit integers (commonly used integer type).
+                    - listitem [ref=e265]:
+                      - generic [ref=e267]:
+                        - generic [ref=e268]:
+                          - generic [ref=e270]:
+                            - text: page
+                            - text: Size
+                            - button "Copy link to pageSize" [ref=e271] [cursor=pointer]:
+                              - img [ref=e272]
+                              - generic [ref=e275]:
+                                - text: Copy link to page
+                                - text: Size
+                          - generic [ref=e277]:
+                            - generic [ref=e278]: "Type:"
+                            - text: integer | string
+                          - generic [ref=e279]:
+                            - text: ·
+                            - code [ref=e280]:
+                              - generic [ref=e281]: "Pattern:"
+                              - text: ^-?(?:0|[1-9]\d*)$
+                          - generic [ref=e282]:
+                            - text: ·
+                            - generic [ref=e283]:
+                              - generic [ref=e284]: "Format:"
+                              - text: int32
+                          - button "Default" [ref=e286] [cursor=pointer]
+                        - paragraph [ref=e289]: Signed 32-bit integers (commonly used integer type).
+                - generic [ref=e290]:
+                  - generic [ref=e291]: Responses
+                  - list "Responses" [ref=e292]:
+                    - listitem [ref=e293]:
+                      - button "200 OK" [ref=e294] [cursor=pointer]:
+                        - generic [ref=e295]:
+                          - img [ref=e296]
+                          - generic [ref=e299]: "200"
+                        - paragraph [ref=e302]: OK
+                      - 'button "Selected Content Type: text/plain" [ref=e306] [cursor=pointer]':
+                        - generic [ref=e307]: "Selected Content Type:"
+                        - generic [ref=e308]: text/plain
+                        - img [ref=e309]
+                    - listitem [ref=e312]:
+                      - button "401 Unauthorized" [ref=e313] [cursor=pointer]:
+                        - generic [ref=e314]:
+                          - img [ref=e315]
+                          - generic [ref=e318]: "401"
+                        - paragraph [ref=e321]: Unauthorized
+                      - 'button "Selected Content Type: text/plain" [ref=e325] [cursor=pointer]':
+                        - generic [ref=e326]: "Selected Content Type:"
+                        - generic [ref=e327]: text/plain
+                        - img [ref=e328]
+              - generic [ref=e331]:
+                - group "Request Example for get/api/v1/audit-log" [ref=e332]:
+                  - generic [ref=e333]:
+                    - generic [ref=e334]:
+                      - generic [ref=e335]: Request Example for
+                      - generic [ref=e336]: get
+                      - generic [ref=e337]: /api/v1/audit-log
+                    - button "Shell Curl" [ref=e340] [cursor=pointer]:
+                      - text: Shell Curl
+                      - img [ref=e341]
+                  - generic [ref=e346]:
+                    - code [ref=e349]:
+                      - generic [ref=e350]: curl 'http://localhost:5170/api/v1/audit-log?actorId=&eventType=&from=&to=&targetType=&page=1&pageSize=50'
+                    - button [ref=e351] [cursor=pointer]:
+                      - img [ref=e352]
+                  - generic [ref=e361]:
+                    - generic [ref=e362] [cursor=pointer]:
+                      - img [ref=e363]
+                      - generic [ref=e366]: Ask AI Agent
+                      - textbox "Ask AI Agent"
+                    - button "Test Request (get /api/v1/audit-log)" [ref=e367] [cursor=pointer]:
+                      - img [ref=e368]
+                      - generic [ref=e371]: Test Request
+                      - generic [ref=e372]: (get /api/v1/audit-log)
+                - 'region "Status: 200 Status: 401" [ref=e373]':
+                  - generic [ref=e374]:
+                    - tablist [ref=e376]:
+                      - 'tab "Status: 200" [selected] [ref=e377] [cursor=pointer]':
+                        - generic [ref=e378]:
+                          - generic [ref=e379]: "Status:"
+                          - text: "200"
+                      - 'tab "Status: 401" [ref=e380] [cursor=pointer]':
+                        - generic [ref=e381]:
+                          - generic [ref=e382]: "Status:"
+                          - text: "401"
+                    - generic [ref=e384] [cursor=pointer]:
+                      - text: Show Schema
+                      - checkbox "Show Schema"
+                  - generic [ref=e387]:
+                    - code [ref=e390]:
+                      - text: "{ \"items\": [ { \"auditId\": 1, \"eventType\": \"string\", \"actorId\":"
+                      - generic [ref=e391]: "null"
+                      - text: ", \"actorType\":"
+                      - generic [ref=e392]: "null"
+                      - text: ", \"actorIp\":"
+                      - generic [ref=e393]: "null"
+                      - text: ", \"actorUserAgent\":"
+                      - generic [ref=e394]: "null"
+                      - text: ", \"targetType\":"
+                      - generic [ref=e395]: "null"
+                      - text: ", \"targetId\":"
+                      - generic [ref=e396]: "null"
+                      - text: ", \"oldValues\":"
+                      - generic [ref=e397]: "null"
+                      - text: ", \"newValues\":"
+                      - generic [ref=e398]: "null"
+                      - text: ", \"outcome\": \"string\", \"failureReason\":"
+                      - generic [ref=e399]: "null"
+                      - text: ", \"occurredAt\": \"2026-06-10T04:04:03.616Z\" } ], \"total\": 1, \"page\": 1, \"pageSize\": 1 }"
+                    - button [ref=e400] [cursor=pointer]:
+                      - img [ref=e401]
+                  - paragraph [ref=e412]: OK
+    - generic:
+      - generic:
+        - generic: Cookies
+        - generic: Headers
+        - generic: Query Parameters
+        - generic: Code Snippet
+        - text: ctrl ↵
+  - region "Notifications alt+T":
+    - list

@@ -139,6 +139,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<PackagingOrder> PackagingOrders => Set<PackagingOrder>();
     public DbSet<PackagingLabel> PackagingLabels => Set<PackagingLabel>();
     public DbSet<DisassemblyOrder> DisassemblyOrders => Set<DisassemblyOrder>();
+    public DbSet<ProductionPlanByOrder> ProductionPlansByOrder => Set<ProductionPlanByOrder>();
+    public DbSet<ProductionPlanOrderLine> ProductionPlanOrderLines => Set<ProductionPlanOrderLine>();
 
     // wms schema
     public DbSet<WarehouseZone> WarehouseZones => Set<WarehouseZone>();
@@ -2196,6 +2198,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.ExpectedQty).HasColumnType("DECIMAL(18,4)");
             e.Property(x => x.ActualQty).HasColumnType("DECIMAL(18,4)");
+        });
+
+        b.Entity<ProductionPlanByOrder>(e =>
+        {
+            e.ToTable("ProductionPlansByOrder", "prod");
+            e.HasKey(x => x.PlanId);
+            e.Property(x => x.PlanCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.AllocationMethod).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.HasIndex(x => x.PlanCode).IsUnique();
+            e.HasMany(x => x.Lines).WithOne()
+                .HasForeignKey(x => x.PlanId).OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines).HasField("_lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<ProductionPlanOrderLine>(e =>
+        {
+            e.ToTable("ProductionPlanOrderLines", "prod");
+            e.HasKey(x => x.PlanLineId);
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.TeamCode).HasMaxLength(50);
+            e.Property(x => x.PlannedQty).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.ActualQty).HasColumnType("DECIMAL(18,4)");
+            e.Ignore(x => x.IsLate);
         });
     }
 

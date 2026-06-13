@@ -20,6 +20,10 @@ public static class Permissions
     public const string ProductionRead = "Production:Read";
     public const string ProductionSubmitOutput = "Production:SubmitOutput";
 
+    // Production Planning (Order-Based)
+    public const string ProductionPlanningRead = "ProductionPlanning:Read";
+    public const string ProductionPlanningWrite = "ProductionPlanning:Write";
+
     // Downtime
     public const string DowntimeDeclare = "Downtime:Declare";
     public const string DowntimeRead = "Downtime:Read";
@@ -180,6 +184,7 @@ public static class Permissions
         WorkOrderRead, WorkOrderCreate, WorkOrderUpdate, WorkOrderDelete, WorkOrderStart, WorkOrderComplete, WorkOrderApprove,
         JobRead, JobStart, JobComplete,
         ProductionRead, ProductionSubmitOutput,
+        ProductionPlanningRead, ProductionPlanningWrite,
         DowntimeDeclare, DowntimeRead,
         InventoryRead, InventoryAdjust, BeginningInventoryWrite,
         FactoryWarehouseReceiptRead, FactoryWarehouseReceiptCreate, FactoryWarehouseReceiptUpdate, FactoryWarehouseReceiptDelete,
