@@ -15,6 +15,9 @@ using AeroMes.Application.Integration.Commands.BatchCreateProductionOrders;
 using AeroMes.Application.Integration.Commands.CreateMultiProductionOrder;
 using AeroMes.Application.Integration.Commands.SaveErpSettings;
 using AeroMes.Application.Production.Queries.GetProductionOrderProgress;
+using AeroMes.Application.Production.Statistics.Commands.CreateProductionStatisticsSheet;
+using AeroMes.Application.Production.Statistics.Queries.GetProductionStatisticsSheetDetail;
+using AeroMes.Application.Production.Statistics.Queries.GetProductionStatisticsSheets;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrders;
 using AeroMes.Application.Integration.Commands.SyncSalesOrders;
@@ -330,6 +333,24 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(BatchOrderItemRequest))]
 [JsonSerializable(typeof(BatchCreateProductionOrdersRequest))]
 [JsonSerializable(typeof(IReadOnlyList<BatchOrderItemRequest>))]
+// production statistics sheets
+[JsonSerializable(typeof(StatisticsSheetCreatedResult))]
+[JsonSerializable(typeof(ProductionStatisticsSheetSummaryDto))]
+[JsonSerializable(typeof(IReadOnlyList<ProductionStatisticsSheetSummaryDto>))]
+[JsonSerializable(typeof(ProductionStatisticsSheetDetailDto))]
+[JsonSerializable(typeof(OutputLineDetailDto))]
+[JsonSerializable(typeof(IReadOnlyList<OutputLineDetailDto>))]
+[JsonSerializable(typeof(MaterialLineDetailDto))]
+[JsonSerializable(typeof(IReadOnlyList<MaterialLineDetailDto>))]
+[JsonSerializable(typeof(ByProductLineDetailDto))]
+[JsonSerializable(typeof(IReadOnlyList<ByProductLineDetailDto>))]
+[JsonSerializable(typeof(CreateProductionStatisticsSheetRequest))]
+[JsonSerializable(typeof(OutputLineRequest))]
+[JsonSerializable(typeof(IReadOnlyList<OutputLineRequest>))]
+[JsonSerializable(typeof(MaterialLineRequest))]
+[JsonSerializable(typeof(IReadOnlyList<MaterialLineRequest>))]
+[JsonSerializable(typeof(ByProductLineRequest))]
+[JsonSerializable(typeof(IReadOnlyList<ByProductLineRequest>))]
 // production order progress
 [JsonSerializable(typeof(ProductionOrderProgressDto))]
 [JsonSerializable(typeof(StageProgressDto))]

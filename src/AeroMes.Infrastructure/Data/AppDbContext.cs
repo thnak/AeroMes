@@ -107,6 +107,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<HandoverLineItem> HandoverLineItems => Set<HandoverLineItem>();
     public DbSet<MultiProductionOrder> MultiProductionOrders => Set<MultiProductionOrder>();
     public DbSet<MultiProductionOrderLine> MultiProductionOrderLines => Set<MultiProductionOrderLine>();
+    public DbSet<ProductionStatisticsSheet> ProductionStatisticsSheets => Set<ProductionStatisticsSheet>();
+    public DbSet<ProductionOutputLine> ProductionOutputLines => Set<ProductionOutputLine>();
+    public DbSet<MaterialConsumptionLine> MaterialConsumptionLines => Set<MaterialConsumptionLine>();
+    public DbSet<ByProductLine> ByProductLines => Set<ByProductLine>();
 
     // wms schema
     public DbSet<WarehouseZone> WarehouseZones => Set<WarehouseZone>();
@@ -1817,6 +1821,69 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.UoMCode).HasMaxLength(20).IsRequired();
             e.Property(x => x.BomVersion).HasMaxLength(30);
+        });
+
+        b.Entity<ProductionStatisticsSheet>(e =>
+        {
+            e.ToTable("ProductionStatisticsSheets", "prod");
+            e.HasKey(x => x.SheetId);
+            e.Property(x => x.SheetId).ValueGeneratedOnAdd();
+            e.Property(x => x.SheetNumber).HasMaxLength(30).IsRequired();
+            e.Property(x => x.SheetType).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(15).IsRequired();
+            e.Property(x => x.ProductionDate).HasColumnType("date").IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(1000);
+            e.Property(x => x.CreatedBy).HasMaxLength(256);
+            e.Property(x => x.CreatedAt).HasColumnType("datetime2");
+            e.HasIndex(x => x.SheetNumber).IsUnique();
+            e.HasIndex(x => x.POID);
+            e.HasIndex(x => x.MPOId);
+            e.HasMany(x => x.OutputLines)
+                .WithOne()
+                .HasForeignKey(l => l.SheetId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.MaterialLines)
+                .WithOne()
+                .HasForeignKey(l => l.SheetId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.ByProductLines)
+                .WithOne()
+                .HasForeignKey(l => l.SheetId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.OutputLines).HasField("_outputLines").UsePropertyAccessMode(PropertyAccessMode.Field);
+            e.Navigation(x => x.MaterialLines).HasField("_materialLines").UsePropertyAccessMode(PropertyAccessMode.Field);
+            e.Navigation(x => x.ByProductLines).HasField("_byProductLines").UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<ProductionOutputLine>(e =>
+        {
+            e.ToTable("ProductionOutputLines", "prod");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).ValueGeneratedOnAdd();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+        });
+
+        b.Entity<MaterialConsumptionLine>(e =>
+        {
+            e.ToTable("MaterialConsumptionLines", "prod");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).ValueGeneratedOnAdd();
+            e.Property(x => x.MaterialCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.BomStandardQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.ActualUsedQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.UoMCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.VarianceReason).HasMaxLength(500);
+            e.Ignore(x => x.Variance);
+        });
+
+        b.Entity<ByProductLine>(e =>
+        {
+            e.ToTable("ByProductLines", "prod");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).ValueGeneratedOnAdd();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.UoMCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.WarehouseCode).HasMaxLength(50);
         });
     }
 
