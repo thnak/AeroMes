@@ -4,6 +4,7 @@ using AeroMes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AeroMes.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260613092808_AddInspectionResults")]
+    partial class AddInspectionResults
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -729,40 +732,6 @@ namespace AeroMes.Infrastructure.Migrations
                     b.ToTable("ApprovedVendorList", "master");
                 });
 
-            modelBuilder.Entity("AeroMes.Domain.Master.BomByProduct", b =>
-                {
-                    b.Property<int>("BomByProductId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BomByProductId"));
-
-                    b.Property<int>("BomHeaderId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ByProductCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("NUMERIC(18,4)");
-
-                    b.Property<string>("UoMCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("BomByProductId");
-
-                    b.HasIndex("BomHeaderId");
-
-                    b.HasIndex("ByProductCode");
-
-                    b.ToTable("BomByProducts", "master");
-                });
-
             modelBuilder.Entity("AeroMes.Domain.Master.BomHeader", b =>
                 {
                     b.Property<int>("BomHeaderId")
@@ -780,11 +749,6 @@ namespace AeroMes.Infrastructure.Migrations
 
                     b.Property<decimal>("BaseQuantity")
                         .HasColumnType("NUMERIC(18,4)");
-
-                    b.Property<string>("BomType")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -807,11 +771,6 @@ namespace AeroMes.Infrastructure.Migrations
 
                     b.Property<DateOnly?>("EffectiveTo")
                         .HasColumnType("date");
-
-                    b.Property<bool>("IsDefault")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -1327,118 +1286,6 @@ namespace AeroMes.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("CustomerQualitySpecs", "master");
-                });
-
-            modelBuilder.Entity("AeroMes.Domain.Master.DisassemblyBom", b =>
-                {
-                    b.Property<int>("DisassemblyBomId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DisassemblyBomId"));
-
-                    b.Property<string>("BomCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("BomName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("BomType")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateOnly?>("EffectiveDate")
-                        .HasColumnType("date");
-
-                    b.Property<DateOnly?>("ExpiryDate")
-                        .HasColumnType("date");
-
-                    b.Property<bool>("IsDefault")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<decimal>("LossRatio")
-                        .HasColumnType("NUMERIC(18,4)");
-
-                    b.Property<string>("SourceProductCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("DisassemblyBomId");
-
-                    b.HasIndex("BomCode")
-                        .IsUnique();
-
-                    b.HasIndex("SourceProductCode");
-
-                    b.ToTable("DisassemblyBoms", "master");
-                });
-
-            modelBuilder.Entity("AeroMes.Domain.Master.DisassemblyBomLine", b =>
-                {
-                    b.Property<int>("LineId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LineId"));
-
-                    b.Property<string>("ComponentCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("ComponentType")
-                        .HasColumnType("int");
-
-                    b.Property<int>("DisassemblyBomId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("FixedQuantity")
-                        .HasColumnType("NUMERIC(18,4)");
-
-                    b.Property<int>("LineNo")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("RecoveryRate")
-                        .HasColumnType("NUMERIC(18,4)");
-
-                    b.Property<string>("UoMCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("LineId");
-
-                    b.HasIndex("ComponentCode");
-
-                    b.HasIndex("DisassemblyBomId");
-
-                    b.ToTable("DisassemblyBomLines", "master");
                 });
 
             modelBuilder.Entity("AeroMes.Domain.Master.DowntimeReasonCode", b =>
@@ -3028,77 +2875,6 @@ namespace AeroMes.Infrastructure.Migrations
                     b.HasIndex("WorkCenterID");
 
                     b.ToTable("StorageLocations", "master");
-                });
-
-            modelBuilder.Entity("AeroMes.Domain.Master.SubstituteMaterial", b =>
-                {
-                    b.Property<int>("SubstituteId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SubstituteId"));
-
-                    b.Property<decimal>("ConversionRatio")
-                        .HasColumnType("NUMERIC(18,6)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateOnly?>("EffectiveDate")
-                        .HasColumnType("date");
-
-                    b.Property<DateOnly?>("ExpiryDate")
-                        .HasColumnType("date");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PrimaryMaterialCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("Priority")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SubstituteCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("SubstituteMaterialCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("SubstituteId");
-
-                    b.HasIndex("PrimaryMaterialCode");
-
-                    b.HasIndex("SubstituteCode")
-                        .IsUnique();
-
-                    b.HasIndex("SubstituteMaterialCode");
-
-                    b.ToTable("SubstituteMaterials", "master");
                 });
 
             modelBuilder.Entity("AeroMes.Domain.Master.Supplier", b =>
@@ -6731,23 +6507,6 @@ namespace AeroMes.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("AeroMes.Domain.Master.BomByProduct", b =>
-                {
-                    b.HasOne("AeroMes.Domain.Master.BomHeader", null)
-                        .WithMany("ByProducts")
-                        .HasForeignKey("BomHeaderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("AeroMes.Domain.Master.Product", "ByProduct")
-                        .WithMany()
-                        .HasForeignKey("ByProductCode")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ByProduct");
-                });
-
             modelBuilder.Entity("AeroMes.Domain.Master.BomHeader", b =>
                 {
                     b.HasOne("AeroMes.Domain.Master.Product", "Product")
@@ -6880,34 +6639,6 @@ namespace AeroMes.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Product");
-                });
-
-            modelBuilder.Entity("AeroMes.Domain.Master.DisassemblyBom", b =>
-                {
-                    b.HasOne("AeroMes.Domain.Master.Product", "SourceProduct")
-                        .WithMany()
-                        .HasForeignKey("SourceProductCode")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("SourceProduct");
-                });
-
-            modelBuilder.Entity("AeroMes.Domain.Master.DisassemblyBomLine", b =>
-                {
-                    b.HasOne("AeroMes.Domain.Master.Product", "Component")
-                        .WithMany()
-                        .HasForeignKey("ComponentCode")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AeroMes.Domain.Master.DisassemblyBom", null)
-                        .WithMany("Lines")
-                        .HasForeignKey("DisassemblyBomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Component");
                 });
 
             modelBuilder.Entity("AeroMes.Domain.Master.Employee", b =>
@@ -7270,25 +7001,6 @@ namespace AeroMes.Infrastructure.Migrations
                         .HasForeignKey("WorkCenterID");
 
                     b.Navigation("WorkCenter");
-                });
-
-            modelBuilder.Entity("AeroMes.Domain.Master.SubstituteMaterial", b =>
-                {
-                    b.HasOne("AeroMes.Domain.Master.Product", "PrimaryMaterial")
-                        .WithMany()
-                        .HasForeignKey("PrimaryMaterialCode")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AeroMes.Domain.Master.Product", "SubstituteMaterialProduct")
-                        .WithMany()
-                        .HasForeignKey("SubstituteMaterialCode")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("PrimaryMaterial");
-
-                    b.Navigation("SubstituteMaterialProduct");
                 });
 
             modelBuilder.Entity("AeroMes.Domain.Master.Tool", b =>
@@ -8016,8 +7728,6 @@ namespace AeroMes.Infrastructure.Migrations
 
             modelBuilder.Entity("AeroMes.Domain.Master.BomHeader", b =>
                 {
-                    b.Navigation("ByProducts");
-
                     b.Navigation("Lines");
                 });
 
@@ -8031,11 +7741,6 @@ namespace AeroMes.Infrastructure.Migrations
                     b.Navigation("PartNumbers");
 
                     b.Navigation("QualitySpecs");
-                });
-
-            modelBuilder.Entity("AeroMes.Domain.Master.DisassemblyBom", b =>
-                {
-                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("AeroMes.Domain.Master.Employee", b =>

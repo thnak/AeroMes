@@ -136,6 +136,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<InspectionPlan> InspectionPlans => Set<InspectionPlan>();
     public DbSet<InspectionCharacteristic> InspectionCharacteristics => Set<InspectionCharacteristic>();
     public DbSet<InspectionOrder> InspectionOrders => Set<InspectionOrder>();
+    public DbSet<InspectionResult> InspectionResults => Set<InspectionResult>();
 
     // iot schema
     public DbSet<AdapterInstance> AdapterInstances => Set<AdapterInstance>();
@@ -1676,6 +1677,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.WaivedBy).HasMaxLength(100);
             e.Property(x => x.WaivedReason).HasMaxLength(500);
             e.HasOne(x => x.Plan).WithMany().HasForeignKey(x => x.PlanId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<InspectionResult>(e =>
+        {
+            e.ToTable("InspectionResults", "qual");
+            e.HasKey(x => x.ResultId);
+            e.Property(x => x.ResultId).UseIdentityColumn();
+            e.Property(x => x.MeasuredValue).HasColumnType("decimal(18,4)");
+            e.Property(x => x.AttributeResult).HasMaxLength(10);
+            e.Property(x => x.RecordedBy).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(255);
+            e.HasOne(x => x.Characteristic)
+                .WithMany()
+                .HasForeignKey(x => x.CharId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.InspectionOrderId, x.CharId });
         });
     }
 

@@ -127,6 +127,7 @@ using AeroMes.Application.Iot.Signals.Queries.GetSignals;
 using AeroMes.Application.Iot.StateRules.Queries.GetStateRules;
 using AeroMes.Application.Quality.InspectionOrders;
 using AeroMes.Application.Quality.InspectionPlans;
+using AeroMes.Application.Quality.InspectionResults;
 using AeroMes.Application.Wms.Queries.GetBeginningInventoryEntries;
 using AeroMes.Application.Wms.Commands.UpdateProductPickingConfig;
 using AeroMes.Application.Wms.Queries.GetLotAllocation;
@@ -572,6 +573,13 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(InspectionOrderDetailDto))]
 [JsonSerializable(typeof(AssignInspectionOrderRequest))]
 [JsonSerializable(typeof(WaiveInspectionOrderRequest))]
+// inspection results
+[JsonSerializable(typeof(InspectionResultDto))]
+[JsonSerializable(typeof(IReadOnlyList<InspectionResultDto>))]
+[JsonSerializable(typeof(RecordResultItem))]
+[JsonSerializable(typeof(IReadOnlyList<RecordResultItem>))]
+[JsonSerializable(typeof(RecordInspectionResultRequest))]
+[JsonSerializable(typeof(BulkRecordInspectionResultsRequest))]
 // inspection plans
 [JsonSerializable(typeof(IReadOnlyList<InspectionPlanListDto>))]
 [JsonSerializable(typeof(InspectionPlanDetailDto))]

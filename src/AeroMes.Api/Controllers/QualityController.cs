@@ -19,6 +19,10 @@ using AeroMes.Application.Quality.InspectionPlans.Commands.UpdateCharacteristic;
 using AeroMes.Application.Quality.InspectionPlans.Commands.UpdateInspectionPlan;
 using AeroMes.Application.Quality.InspectionPlans.Queries.GetInspectionPlanDetail;
 using AeroMes.Application.Quality.InspectionPlans.Queries.GetInspectionPlans;
+using AeroMes.Application.Quality.InspectionResults;
+using AeroMes.Application.Quality.InspectionResults.Commands.BulkRecordInspectionResults;
+using AeroMes.Application.Quality.InspectionResults.Commands.RecordInspectionResult;
+using AeroMes.Application.Quality.InspectionResults.Queries.GetInspectionResults;
 using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
@@ -258,6 +262,46 @@ public class QualityController(ICommandMediator commandMediator, IQueryMediator 
         if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
+
+    // ── Inspection Results ────────────────────────────────────────────────
+
+    [HttpGet("inspection-orders/{id:int}/results")]
+    [RequirePermission(Permissions.QualityRead)]
+    [ProducesResponseType<IReadOnlyList<InspectionResultDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetInspectionResults(int id, CancellationToken ct)
+        => Ok(await queryMediator.QueryAsync(new GetInspectionResultsQuery(id), null, ct));
+
+    [HttpPost("inspection-orders/{id:int}/results")]
+    [RequirePermission(Permissions.QualityWrite)]
+    [ProducesResponseType<InspectionResultDto>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> RecordInspectionResult(
+        int id, [FromBody] RecordInspectionResultRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new RecordInspectionResultCommand(
+                id, req.CharId, req.MeasuredValue, req.AttributeResult,
+                req.DefectCodeId, req.SampleIndex, req.Notes,
+                User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetInspectionResults), new { id }, result.Value!);
+    }
+
+    [HttpPost("inspection-orders/{id:int}/results/bulk")]
+    [RequirePermission(Permissions.QualityWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> BulkRecordInspectionResults(
+        int id, [FromBody] BulkRecordInspectionResultsRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new BulkRecordInspectionResultsCommand(
+                id, req.Results, User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
 }
 
 // ── Request / Result records ───────────────────────────────────────────────
@@ -321,3 +365,14 @@ public record CharacteristicCreatedResult(int CharId);
 // Inspection order requests
 public record AssignInspectionOrderRequest(string InspectorCode);
 public record WaiveInspectionOrderRequest(string WaivedBy, string Reason);
+
+// Inspection result requests
+public record RecordInspectionResultRequest(
+    int CharId,
+    decimal? MeasuredValue,
+    string? AttributeResult,
+    int? DefectCodeId,
+    int? SampleIndex,
+    string? Notes);
+
+public record BulkRecordInspectionResultsRequest(IReadOnlyList<RecordResultItem> Results);

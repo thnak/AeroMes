@@ -114,6 +114,7 @@ public static class DependencyInjection
         services.AddScoped<IInspectionPlanRepository, InspectionPlanRepository>();
         services.AddScoped<IInspectionCharacteristicRepository, InspectionCharacteristicRepository>();
         services.AddScoped<IInspectionOrderRepository, InspectionOrderRepository>();
+        services.AddScoped<IInspectionResultRepository, InspectionResultRepository>();
 
         // iot repositories
         services.AddScoped<IAdapterRepository, AdapterRepository>();
