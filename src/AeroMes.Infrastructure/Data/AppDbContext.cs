@@ -135,6 +135,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<SerialLotLineage> SerialLotLineages => Set<SerialLotLineage>();
     public DbSet<SerialAggregation> SerialAggregations => Set<SerialAggregation>();
     public DbSet<SerialEvent> SerialEvents => Set<SerialEvent>();
+    public DbSet<PackagingBom> PackagingBoms => Set<PackagingBom>();
+    public DbSet<PackagingOrder> PackagingOrders => Set<PackagingOrder>();
+    public DbSet<PackagingLabel> PackagingLabels => Set<PackagingLabel>();
 
     // wms schema
     public DbSet<WarehouseZone> WarehouseZones => Set<WarehouseZone>();
@@ -2117,6 +2120,54 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.UoMCode).HasMaxLength(20).IsRequired();
             e.Property(x => x.WarehouseCode).HasMaxLength(50);
+        });
+
+        b.Entity<PackagingBom>(e =>
+        {
+            e.ToTable("PackagingBoms", "prod");
+            e.HasKey(x => x.PackagingBomID);
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasMany(x => x.Lines).WithOne()
+                .HasForeignKey(x => x.PackagingBomID)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines)
+                .HasField("_lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<PackagingBomLine>(e =>
+        {
+            e.ToTable("PackagingBomLines", "prod");
+            e.HasKey(x => x.LineID);
+            e.Property(x => x.MaterialCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Quantity).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.UnitCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+        });
+
+        b.Entity<PackagingOrder>(e =>
+        {
+            e.ToTable("PackagingOrders", "prod");
+            e.HasKey(x => x.PackagingOrderID);
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.IdentificationCode).HasMaxLength(100).IsRequired();
+            e.Property(x => x.PlannedQty).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.PackagedQty).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasMany(x => x.Labels).WithOne()
+                .HasForeignKey(x => x.PackagingOrderID)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Labels)
+                .HasField("_labels")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+            e.HasIndex(x => x.WOID);
+        });
+
+        b.Entity<PackagingLabel>(e =>
+        {
+            e.ToTable("PackagingLabels", "prod");
+            e.HasKey(x => x.LabelID);
         });
     }
 
