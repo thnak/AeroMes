@@ -20,6 +20,8 @@ using AeroMes.Application.Production.Statistics.Queries.GetProductionStatisticsS
 using AeroMes.Application.Production.Statistics.Queries.GetProductionStatisticsSheets;
 using AeroMes.Domain.Traceability;
 using AeroMes.Domain.Traceability.Repositories;
+using AeroMes.Application.Traceability.Services;
+using AeroMes.Application.Traceability.Commands.CommissionSerialUnits;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrders;
 using AeroMes.Application.Integration.Commands.SyncSalesOrders;
@@ -925,6 +927,29 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(SupportedLanguageDto))]
 [JsonSerializable(typeof(List<SupportedLanguageDto>))]
 [JsonSerializable(typeof(ApiResponse<List<SupportedLanguageDto>>))]
+// serial unit traceability
+[JsonSerializable(typeof(CommissionSerialUnitsRequest))]
+[JsonSerializable(typeof(PackSerialsRequest))]
+[JsonSerializable(typeof(UnpackSerialsRequest))]
+[JsonSerializable(typeof(ShipSerialRequest))]
+[JsonSerializable(typeof(RecallSerialRequest))]
+[JsonSerializable(typeof(IReadOnlyList<string>))]
+[JsonSerializable(typeof(List<string>))]
+[JsonSerializable(typeof(SerialUnitDto))]
+[JsonSerializable(typeof(IReadOnlyList<SerialUnitDto>))]
+[JsonSerializable(typeof(List<SerialUnitDto>))]
+[JsonSerializable(typeof(PagedResult<SerialUnitDto>))]
+[JsonSerializable(typeof(SerialUnitDetailDto))]
+[JsonSerializable(typeof(SerialLotLineageDto))]
+[JsonSerializable(typeof(IReadOnlyList<SerialLotLineageDto>))]
+[JsonSerializable(typeof(List<SerialLotLineageDto>))]
+[JsonSerializable(typeof(SerialEventDto))]
+[JsonSerializable(typeof(IReadOnlyList<SerialEventDto>))]
+[JsonSerializable(typeof(List<SerialEventDto>))]
+[JsonSerializable(typeof(SSCCContentsDto))]
+[JsonSerializable(typeof(LotConsumptionDto))]
+[JsonSerializable(typeof(IReadOnlyList<LotConsumptionDto>))]
+[JsonSerializable(typeof(List<LotConsumptionDto>))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

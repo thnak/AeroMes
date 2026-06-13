@@ -129,6 +129,8 @@ public static class DependencyInjection
         services.AddScoped<IProcessRecordRepository, ProcessRecordRepository>();
         services.AddScoped<ILotHoldEnforcementService, LotHoldEnforcementService>();
         services.AddScoped<IESignatureService, ESignatureService>();
+        services.AddScoped<ISerialUnitRepository, SerialUnitRepository>();
+        services.AddScoped<ISerialNumberGenerationService, SerialNumberGenerationService>();
 
         // ERP client + background sync
         services.AddHttpClient("erp").ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler

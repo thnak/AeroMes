@@ -120,6 +120,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<RecallAuditEntry> RecallAuditEntries => Set<RecallAuditEntry>();
     public DbSet<ProcessRecord> ProcessRecords => Set<ProcessRecord>();
     public DbSet<ProcessParameter> ProcessParameters => Set<ProcessParameter>();
+    public DbSet<SerialUnit> SerialUnits => Set<SerialUnit>();
+    public DbSet<SerialLotLineage> SerialLotLineages => Set<SerialLotLineage>();
+    public DbSet<SerialAggregation> SerialAggregations => Set<SerialAggregation>();
+    public DbSet<SerialEvent> SerialEvents => Set<SerialEvent>();
 
     // wms schema
     public DbSet<WarehouseZone> WarehouseZones => Set<WarehouseZone>();
@@ -262,6 +266,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureLotHoldSchema(b);
         ConfigureRecallSchema(b);
         ConfigureProcessRecordSchema(b);
+        ConfigureSerialTraceabilitySchema(b);
     }
 
     // ── auth ──────────────────────────────────────────────────────────────
@@ -3505,6 +3510,82 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.SourceSystem).HasConversion<string>().HasMaxLength(20).IsRequired();
             e.HasIndex(x => new { x.LotNumber, x.EventTimestamp });
             e.HasIndex(x => x.ProductCode);
+        });
+    }
+
+    // ── serial unit traceability ──────────────────────────────────────────
+    private static void ConfigureSerialTraceabilitySchema(ModelBuilder b)
+    {
+        b.Entity<SerialUnit>(e =>
+        {
+            e.ToTable("SerialUnits", "trace");
+            e.HasKey(x => x.SerialID);
+            e.Property(x => x.SerialID).HasColumnType("uniqueidentifier").ValueGeneratedNever();
+            e.Property(x => x.SerialNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.GTIN).HasMaxLength(14);
+            e.Property(x => x.LotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ProductionDate).HasColumnType("date").IsRequired();
+            e.Property(x => x.ExpiryDate).HasColumnType("date");
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.UDI).HasMaxLength(100);
+            e.Property(x => x.CreatedAt).HasColumnType("datetime2(3)").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.HasIndex(x => x.SerialNumber).IsUnique();
+            e.HasIndex(x => x.LotNumber);
+            e.HasIndex(x => new { x.ProductCode, x.Status });
+            e.HasIndex(x => x.WorkOrderID);
+        });
+
+        b.Entity<SerialLotLineage>(e =>
+        {
+            e.ToTable("SerialLotLineage", "trace");
+            e.HasKey(x => x.ID);
+            e.Property(x => x.ID).ValueGeneratedOnAdd();
+            e.Property(x => x.SerialID).HasColumnType("uniqueidentifier").IsRequired();
+            e.Property(x => x.ComponentLotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ComponentProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.QuantityUsed).HasColumnType("NUMERIC(18,6)");
+            e.Property(x => x.UoM).HasMaxLength(20);
+            e.Property(x => x.AssembledAt).HasColumnType("datetime2(3)").IsRequired();
+            e.HasIndex(x => x.SerialID);
+            e.HasIndex(x => x.ComponentLotNumber);
+        });
+
+        b.Entity<SerialAggregation>(e =>
+        {
+            e.ToTable("SerialAggregations", "trace");
+            e.HasKey(x => x.AggregationID);
+            e.Property(x => x.AggregationID).ValueGeneratedOnAdd();
+            e.Property(x => x.ChildSerialID).HasColumnType("uniqueidentifier");
+            e.Property(x => x.ChildSSCC).HasMaxLength(20);
+            e.Property(x => x.ParentSSCC).HasMaxLength(20).IsRequired();
+            e.Property(x => x.AggregationType).HasConversion<string>().HasMaxLength(10).IsRequired();
+            e.Property(x => x.AggregatedAt).HasColumnType("datetime2(3)").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.Property(x => x.DisaggregatedAt).HasColumnType("datetime2(3)");
+            e.HasIndex(x => x.ChildSerialID).HasFilter("[IsActive] = 1")
+                .HasDatabaseName("IX_SA_Child_Active");
+            e.HasIndex(x => x.ParentSSCC).HasFilter("[IsActive] = 1")
+                .HasDatabaseName("IX_SA_Parent_Active");
+        });
+
+        b.Entity<SerialEvent>(e =>
+        {
+            e.ToTable("SerialEvents", "trace");
+            e.HasKey(x => x.EventID);
+            e.Property(x => x.EventID).ValueGeneratedOnAdd();
+            e.Property(x => x.EventType).HasConversion<string>().HasMaxLength(30).IsRequired();
+            e.Property(x => x.SerialID).HasColumnType("uniqueidentifier").IsRequired();
+            e.Property(x => x.LocationCode).HasMaxLength(50);
+            e.Property(x => x.Quantity).HasColumnType("NUMERIC(18,6)");
+            e.Property(x => x.Payload).HasColumnType("nvarchar(max)");
+            e.Property(x => x.OperatorCode).HasMaxLength(50);
+            e.Property(x => x.EventTimestamp).HasColumnType("datetime2(3)").IsRequired();
+            e.Property(x => x.RecordedAt).HasColumnType("datetime2(3)").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.HasIndex(x => new { x.SerialID, x.EventTimestamp });
+            e.HasIndex(x => x.WorkOrderID);
         });
     }
 }
