@@ -116,6 +116,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
+    public DbSet<SalesOrderLine> SalesOrderLines => Set<SalesOrderLine>();
     public DbSet<ProductionOrder> ProductionOrders => Set<ProductionOrder>();
     public DbSet<ProductionOrderMaterialLine> ProductionOrderMaterialLines => Set<ProductionOrderMaterialLine>();
     public DbSet<ProductionOrderStage> ProductionOrderStages => Set<ProductionOrderStage>();
@@ -1938,7 +1939,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.SOCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.CustomerName).HasMaxLength(150);
             e.Property(x => x.CustomerCode).HasMaxLength(30);
-            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
+            e.Property(x => x.SyncSource).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.FacilityCode).HasMaxLength(50);
+            e.Property(x => x.ConfirmedBy).HasMaxLength(256);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(256);
+            e.Property(x => x.UpdatedBy).HasMaxLength(256);
             e.HasIndex(x => x.SOCode).IsUnique();
 
             e.HasOne(x => x.Customer)
@@ -1946,6 +1953,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.CustomerCode)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasMany(x => x.Lines).WithOne()
+                .HasForeignKey(x => x.SOID)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines).HasField("_lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<SalesOrderLine>(e =>
+        {
+            e.ToTable("SalesOrderLines", "integration");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(100).IsRequired();
+            e.Property(x => x.ProductName).HasMaxLength(200);
+            e.Property(x => x.Quantity).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.UnitPrice).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.Unit).HasMaxLength(20);
+            e.Property(x => x.Notes).HasMaxLength(300);
+            e.HasIndex(x => x.SOID);
         });
 
         b.Entity<ProductionOrder>(e =>

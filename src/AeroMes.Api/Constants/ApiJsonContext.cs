@@ -202,6 +202,11 @@ using AeroMes.Application.Documents.Queries.GetDocumentPrintTemplates;
 using AeroMes.Domain.Templates;
 using AeroMes.Application.Import;
 using AeroMes.Application.Import.Commands.ValidateImport;
+using AeroMes.Application.Integration.Commands.CreateSalesOrder;
+using AeroMes.Application.Integration.Queries.GetSalesOrderDetailWithLines;
+using AeroMes.Application.Integration.Queries.GetSalesOrdersList;
+using AeroMes.Domain.Integration;
+using AeroMes.Domain.Integration.Repositories;
 using AeroMes.Application.Production.MasterPlan.Commands.CreateMasterPlan;
 using AeroMes.Application.Production.MasterPlan.Queries.GetMasterPlanDetail;
 using AeroMes.Application.Production.MasterPlan.Queries.GetMasterPlans;
@@ -1413,6 +1418,20 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<ImportJobSummaryDto>))]
 [JsonSerializable(typeof(List<ImportJobSummaryDto>))]
 [JsonSerializable(typeof(PagedResult<ImportJobSummaryDto>))]
+// sales order management (#56)
+[JsonSerializable(typeof(SalesOrderSummaryDto))]
+[JsonSerializable(typeof(IReadOnlyList<SalesOrderSummaryDto>))]
+[JsonSerializable(typeof(List<SalesOrderSummaryDto>))]
+[JsonSerializable(typeof(SalesOrderWithLinesDto))]
+[JsonSerializable(typeof(SoLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<SoLineDto>))]
+[JsonSerializable(typeof(List<SoLineDto>))]
+[JsonSerializable(typeof(SalesOrderLineInput))]
+[JsonSerializable(typeof(IReadOnlyList<SalesOrderLineInput>))]
+[JsonSerializable(typeof(List<SalesOrderLineInput>))]
+[JsonSerializable(typeof(CreateSalesOrderRequest))]
+[JsonSerializable(typeof(ConfirmSoRequest))]
+[JsonSerializable(typeof(SoSyncSource))]
 // master production schedule (#55)
 [JsonSerializable(typeof(MasterPlanSummaryDto))]
 [JsonSerializable(typeof(IReadOnlyList<MasterPlanSummaryDto>))]
