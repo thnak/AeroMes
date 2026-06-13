@@ -186,6 +186,8 @@ using AeroMes.Application.Master.DisassemblyBoms.Queries.GetDisassemblyBomById;
 using AeroMes.Application.Master.Boms.Commands.UpdateBomByProducts;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Quality.Repositories;
+using AeroMes.Domain.Energy;
+using AeroMes.Domain.Energy.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AeroMes.Api.Constants;
@@ -1133,6 +1135,19 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(VoucherDefectDto))]
 [JsonSerializable(typeof(IReadOnlyList<VoucherDefectDto>))]
 [JsonSerializable(typeof(List<VoucherDefectDto>))]
+// energy & utility consumption monitoring — #99
+[JsonSerializable(typeof(RegisterMeterRequest))]
+[JsonSerializable(typeof(RegisterReadingRequest))]
+[JsonSerializable(typeof(CloseShiftRequest))]
+[JsonSerializable(typeof(MeterDto))]
+[JsonSerializable(typeof(ShiftEnergyDto))]
+[JsonSerializable(typeof(IReadOnlyList<ShiftEnergyDto>))]
+[JsonSerializable(typeof(List<ShiftEnergyDto>))]
+[JsonSerializable(typeof(EnergyIntensityTrendDto))]
+[JsonSerializable(typeof(IReadOnlyList<EnergyIntensityTrendDto>))]
+[JsonSerializable(typeof(List<EnergyIntensityTrendDto>))]
+[JsonSerializable(typeof(UtilityType))]
+[JsonSerializable(typeof(ReadingType))]
 // production planning (order-based) — #135
 [JsonSerializable(typeof(CreateProductionPlanRequest))]
 [JsonSerializable(typeof(PlanLineInput))]

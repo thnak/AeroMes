@@ -19,6 +19,7 @@ using AeroMes.Domain.Traceability;
 using AeroMes.Domain.Wms;
 using AeroMes.Domain.Cost;
 using AeroMes.Domain.Maintenance;
+using AeroMes.Domain.Energy;
 using AeroMes.Infrastructure.Identity;
 using LiteBus.Events.Abstractions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -248,6 +249,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     // storage
     public DbSet<FileObject> FileObjects => Set<FileObject>();
 
+    // energy schema
+    public DbSet<Meter> EnergyMeters => Set<Meter>();
+    public DbSet<MeterReading> MeterReadings => Set<MeterReading>();
+    public DbSet<ShiftConsumption> ShiftConsumptions => Set<ShiftConsumption>();
+    public DbSet<EnergyTarget> EnergyTargets => Set<EnergyTarget>();
+
     // maintenance schema
     public DbSet<MaintenanceOrder> MaintenanceOrders => Set<MaintenanceOrder>();
     public DbSet<MaintCostLine> MaintCostLines => Set<MaintCostLine>();
@@ -304,6 +311,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureRecallSchema(b);
         ConfigureProcessRecordSchema(b);
         ConfigureSerialTraceabilitySchema(b);
+        ConfigureEnergySchema(b);
         ConfigureMaintenanceSchema(b);
         ConfigureCostSchema(b);
     }
@@ -4084,6 +4092,61 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasDefaultValueSql("SYSUTCDATETIME()");
             e.HasIndex(x => new { x.SerialID, x.EventTimestamp });
             e.HasIndex(x => x.WorkOrderID);
+        });
+    }
+
+    // ── energy ────────────────────────────────────────────────────────────
+    private static void ConfigureEnergySchema(ModelBuilder b)
+    {
+        b.Entity<Meter>(e =>
+        {
+            e.ToTable("Meters", "energy");
+            e.HasKey(x => x.MeterID);
+            e.Property(x => x.MeterID).UseIdentityColumn();
+            e.Property(x => x.MeterCode).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.MeterCode).IsUnique();
+            e.Property(x => x.MeterName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.UtilityType).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.Unit).HasMaxLength(20).IsRequired();
+            e.Property(x => x.MachineCode).HasMaxLength(50);
+            e.Property(x => x.OpcUaNodeId).HasMaxLength(200);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<MeterReading>(e =>
+        {
+            e.ToTable("MeterReadings", "energy");
+            e.HasKey(x => x.ReadingID);
+            e.Property(x => x.ReadingID).UseIdentityColumn();
+            e.Property(x => x.ReadingType).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.ReadingValue).HasColumnType("DECIMAL(14,3)").IsRequired();
+            e.Property(x => x.ReadingAt).HasColumnType("datetime2(3)").IsRequired();
+            e.Property(x => x.ShiftCode).HasMaxLength(20);
+            e.Property(x => x.EnteredBy).HasMaxLength(50);
+            e.Property(x => x.Notes).HasMaxLength(255);
+            e.HasIndex(x => new { x.MeterID, x.ReadingAt });
+        });
+
+        b.Entity<ShiftConsumption>(e =>
+        {
+            e.ToTable("ShiftConsumptions", "energy");
+            e.HasKey(x => x.ConsumptionID);
+            e.Property(x => x.ConsumptionID).UseIdentityColumn();
+            e.Property(x => x.ShiftCode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.ConsumedUnits).HasColumnType("DECIMAL(14,3)");
+            e.Property(x => x.EnergyCost).HasColumnType("DECIMAL(14,4)");
+            e.Property(x => x.EnergyIntensity).HasColumnType("DECIMAL(14,6)");
+            e.HasIndex(x => new { x.MeterID, x.ShiftDate });
+        });
+
+        b.Entity<EnergyTarget>(e =>
+        {
+            e.ToTable("EnergyTargets", "energy");
+            e.HasKey(x => x.TargetID);
+            e.Property(x => x.TargetID).UseIdentityColumn();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.TargetKWhPerUnit).HasColumnType("DECIMAL(10,4)");
+            e.Property(x => x.TargetKWhPerShift).HasColumnType("DECIMAL(10,2)");
         });
     }
 

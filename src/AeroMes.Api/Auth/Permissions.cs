@@ -165,6 +165,10 @@ public static class Permissions
     public const string MaintenanceCreate = "Maintenance:Create";
     public const string MaintenanceApprove = "Maintenance:Approve";
 
+    // Energy & Utility
+    public const string EnergyRead = "Energy:Read";
+    public const string EnergyWrite = "Energy:Write";
+
     // ApiKey
     public const string ApiKeyRead = "ApiKey:Read";
     public const string ApiKeyCreate = "ApiKey:Create";
@@ -205,7 +209,8 @@ public static class Permissions
         QualityRead, QualityWrite, QualityCreate, QualityUpdate, QualityApprove,
         NcrRead, NcrCreate, NcrClose,
         CostRead, CostWrite,
-        MaintenanceRead, MaintenanceWrite,
+        MaintenanceRead, MaintenanceWrite, MaintenanceExecute, MaintenanceCreate, MaintenanceApprove,
+        EnergyRead, EnergyWrite,
         WarehouseRead, WarehouseReceive, WarehousePutAway, WarehousePick, WarehouseDispatch,
         StockPolicyRead, StockPolicyWrite,
         ReplenishmentAlertRead, ReplenishmentAlertAcknowledge,
@@ -213,7 +218,6 @@ public static class Permissions
         AllocationPreview,
         RmaRead, RmaCreate, RmaAuthorize, RmaReceive, RmaDispose,
         ShipmentRead, ShipmentCreate, ShipmentPick, ShipmentPack, ShipmentDispatch,
-        MaintenanceRead, MaintenanceExecute, MaintenanceCreate, MaintenanceApprove,
         ApiKeyRead, ApiKeyCreate, ApiKeyRevoke,
         SystemConfigure, PermissionRead, PermissionManage,
         IotRead, IotWrite,
