@@ -1,12 +1,12 @@
 import {
+  Alert,
   Box,
   Button,
-  FormControlLabel,
+  Chip,
   Grid,
   IconButton,
   MenuItem,
   Stack,
-  Switch,
   TextField,
   Tooltip,
   Typography,
@@ -18,6 +18,7 @@ import { useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ConfirmDialog,
   EmptyState,
@@ -28,45 +29,24 @@ import {
   RefreshButton,
   SolarIcon,
   StatusDot,
+  TablePageSkeleton,
   TableToolbar,
 } from '../../components';
-import { machineColors, oeeZoneColor } from '../../theme/tokens';
+import { machineColors } from '../../theme/tokens';
+import {
+  useGetApiV1Machines,
+  getGetApiV1MachinesQueryKey,
+  postApiV1Machines,
+  putApiV1MachinesCode,
+  deleteApiV1MachinesCode,
+} from '../../api/machines/machines';
+import { useGetApiV1WorkCenters } from '../../api/work-centers/work-centers';
+import type { MachineDto } from '../../api/model';
+import { getErrorMessage } from '../../lib/apiClient';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-type MachineStatus = 'RUNNING' | 'IDLE' | 'SETUP' | 'DOWN' | 'OFFLINE';
-
-interface Machine {
-  id: string;
-  code: string;
-  name: string;
-  type: string;
-  workCenterCode: string;
-  workCenterName: string;
-  status: MachineStatus;
-  oee: number;
-  lastMaintenanceDate: string;
-  isActive: boolean;
-}
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const MOCK_MACHINES: Machine[] = [
-  { id: '1',  code: 'MC-01', name: 'CNC Lathe 1',    type: 'Lathe',      workCenterCode: 'WC-001', workCenterName: 'CNC Machining Bay',  status: 'RUNNING', oee: 88, lastMaintenanceDate: '2026-05-15', isActive: true  },
-  { id: '2',  code: 'MC-02', name: 'CNC Lathe 2',    type: 'Lathe',      workCenterCode: 'WC-001', workCenterName: 'CNC Machining Bay',  status: 'IDLE',    oee: 72, lastMaintenanceDate: '2026-04-20', isActive: true  },
-  { id: '3',  code: 'MC-03', name: 'CNC Mill 1',     type: 'Mill',       workCenterCode: 'WC-007', workCenterName: 'CNC Milling Center', status: 'RUNNING', oee: 91, lastMaintenanceDate: '2026-05-01', isActive: true  },
-  { id: '4',  code: 'MC-04', name: 'CNC Mill 2',     type: 'Mill',       workCenterCode: 'WC-007', workCenterName: 'CNC Milling Center', status: 'DOWN',    oee: 0,  lastMaintenanceDate: '2026-03-10', isActive: true  },
-  { id: '5',  code: 'MC-05', name: 'Welding R1',     type: 'Welding',    workCenterCode: 'WC-003', workCenterName: 'MIG Welding Bay',    status: 'RUNNING', oee: 79, lastMaintenanceDate: '2026-05-20', isActive: true  },
-  { id: '6',  code: 'MC-06', name: 'Welding R2',     type: 'Welding',    workCenterCode: 'WC-003', workCenterName: 'MIG Welding Bay',    status: 'SETUP',   oee: 0,  lastMaintenanceDate: '2026-05-18', isActive: true  },
-  { id: '7',  code: 'MC-07', name: 'Press 100T',     type: 'Press',      workCenterCode: 'WC-010', workCenterName: 'Press Shop',         status: 'RUNNING', oee: 84, lastMaintenanceDate: '2026-04-25', isActive: true  },
-  { id: '8',  code: 'MC-08', name: 'Press 200T',     type: 'Press',      workCenterCode: 'WC-010', workCenterName: 'Press Shop',         status: 'IDLE',    oee: 68, lastMaintenanceDate: '2026-03-15', isActive: true  },
-  { id: '9',  code: 'MC-09', name: 'Assembly St.1',  type: 'Assembly',   workCenterCode: 'WC-002', workCenterName: 'Assembly Station 1', status: 'RUNNING', oee: 77, lastMaintenanceDate: '2026-05-10', isActive: true  },
-  { id: '10', code: 'MC-10', name: 'Assembly St.2',  type: 'Assembly',   workCenterCode: 'WC-002', workCenterName: 'Assembly Station 1', status: 'RUNNING', oee: 82, lastMaintenanceDate: '2026-05-10', isActive: true  },
-  { id: '11', code: 'MC-11', name: 'Paint Booth 1',  type: 'Painting',   workCenterCode: 'WC-005', workCenterName: 'Paint Booth Line',   status: 'OFFLINE', oee: 0,  lastMaintenanceDate: '2026-02-01', isActive: false },
-  { id: '12', code: 'MC-12', name: 'Insp. Station',  type: 'Inspection', workCenterCode: 'WC-004', workCenterName: 'Final Inspection',   status: 'IDLE',    oee: 0,  lastMaintenanceDate: '2026-05-25', isActive: true  },
-];
-
-const STATUS_LABELS: Record<MachineStatus, string> = {
+const STATUS_LABELS: Record<string, string> = {
   RUNNING: 'Running',
   IDLE:    'Idle',
   SETUP:   'Setup',
@@ -74,27 +54,15 @@ const STATUS_LABELS: Record<MachineStatus, string> = {
   OFFLINE: 'Offline',
 };
 
-const MACHINE_TYPES = ['Lathe', 'Mill', 'Press', 'Welding', 'Assembly', 'Painting', 'Inspection'];
-
-const WORK_CENTERS = [
-  { code: 'WC-001', name: 'CNC Machining Bay' },
-  { code: 'WC-002', name: 'Assembly Station 1' },
-  { code: 'WC-003', name: 'MIG Welding Bay' },
-  { code: 'WC-004', name: 'Final Inspection' },
-  { code: 'WC-005', name: 'Paint Booth Line' },
-  { code: 'WC-007', name: 'CNC Milling Center' },
-  { code: 'WC-010', name: 'Press Shop' },
-];
-
 // ─── Form schema ──────────────────────────────────────────────────────────────
 
 const MachineSchema = z.object({
-  code:                z.string().min(1, 'Code is required'),
-  name:                z.string().min(1, 'Name is required'),
-  type:                z.string().min(1, 'Type is required'),
-  workCenterCode:      z.string().min(1, 'Work center is required'),
-  lastMaintenanceDate: z.string().min(1, 'Maintenance date is required'),
-  isActive:            z.boolean(),
+  code:         z.string().min(1, 'Code is required').max(30)
+    .regex(/^[A-Za-z0-9\-_]+$/, 'Letters, digits, hyphens, and underscores only'),
+  name:         z.string().min(1, 'Name is required').max(200),
+  workCenterId: z.string().min(1, 'Work center is required'),
+  brand:        z.string().max(100).optional(),
+  model:        z.string().max(100).optional(),
 });
 
 type MachineFormValues = z.infer<typeof MachineSchema>;
@@ -103,16 +71,18 @@ type MachineFormValues = z.infer<typeof MachineSchema>;
 
 function MachineForm({
   defaultValues,
+  isEdit,
   onSubmit,
-  loading: _loading,
+  workCenterOptions,
 }: {
   defaultValues: Partial<MachineFormValues>;
+  isEdit: boolean;
   onSubmit: (data: MachineFormValues) => void;
-  loading: boolean;
+  workCenterOptions: { id: string; label: string }[];
 }) {
   const { register, control, handleSubmit, formState: { errors } } = useForm<MachineFormValues>({
     resolver: zodResolver(MachineSchema),
-    defaultValues: { isActive: true, ...defaultValues },
+    defaultValues,
   });
 
   return (
@@ -124,6 +94,7 @@ function MachineForm({
             label="Machine Code"
             fullWidth
             required
+            disabled={isEdit}
             error={!!errors.code}
             helperText={errors.code?.message}
             slotProps={{ htmlInput: { style: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } } }}
@@ -131,20 +102,21 @@ function MachineForm({
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Controller
-            name="type"
+            name="workCenterId"
             control={control}
             render={({ field }) => (
               <TextField
                 {...field}
+                value={field.value ?? ''}
                 select
-                label="Type"
+                label="Work Center"
                 fullWidth
                 required
-                error={!!errors.type}
-                helperText={errors.type?.message}
+                error={!!errors.workCenterId}
+                helperText={errors.workCenterId?.message}
               >
-                {MACHINE_TYPES.map((t) => (
-                  <MenuItem key={t} value={t}>{t}</MenuItem>
+                {workCenterOptions.map((wc) => (
+                  <MenuItem key={wc.id} value={wc.id}>{wc.label}</MenuItem>
                 ))}
               </TextField>
             )}
@@ -160,50 +132,20 @@ function MachineForm({
             helperText={errors.name?.message}
           />
         </Grid>
-        <Grid size={{ xs: 12 }}>
-          <Controller
-            name="workCenterCode"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                select
-                label="Work Center"
-                fullWidth
-                required
-                error={!!errors.workCenterCode}
-                helperText={errors.workCenterCode?.message}
-              >
-                {WORK_CENTERS.map((wc) => (
-                  <MenuItem key={wc.code} value={wc.code}>{wc.code} — {wc.name}</MenuItem>
-                ))}
-              </TextField>
-            )}
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            {...register('brand')}
+            label="Brand"
+            fullWidth
+            placeholder="e.g. Fanuc"
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
-            {...register('lastMaintenanceDate')}
-            label="Last Maintenance Date"
+            {...register('model')}
+            label="Model"
             fullWidth
-            required
-            type="date"
-            error={!!errors.lastMaintenanceDate}
-            helperText={errors.lastMaintenanceDate?.message}
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Controller
-            name="isActive"
-            control={control}
-            render={({ field }) => (
-              <FormControlLabel
-                control={<Switch checked={field.value} onChange={field.onChange} color="primary" />}
-                label="Active"
-                sx={{ mt: 0.5, ml: 0 }}
-              />
-            )}
+            placeholder="e.g. Robodrill T21iE"
           />
         </Grid>
       </Grid>
@@ -216,132 +158,156 @@ function MachineForm({
 type DrawerMode = 'create' | 'edit';
 
 export default function MachinesPage() {
-  const [rows, setRows]                 = useState<Machine[]>(MOCK_MACHINES);
+  const queryClient = useQueryClient();
+
   const [search, setSearch]             = useState('');
   const [wcFilter, setWcFilter]         = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [typeFilter, setTypeFilter]     = useState('');
   const [selection, setSelection]       = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
   const [drawerOpen, setDrawerOpen]     = useState(false);
   const [drawerMode, setDrawerMode]     = useState<DrawerMode>('create');
-  const [editTarget, setEditTarget]     = useState<Machine | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Machine | null>(null);
-  const [saving, setSaving]             = useState(false);
+  const [editTarget, setEditTarget]     = useState<MachineDto | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<MachineDto | null>(null);
+  const [saveError, setSaveError]       = useState('');
+
+  const { data: machines = [], isLoading, error, refetch } =
+    useGetApiV1Machines({ activeOnly: false });
+
+  const { data: workCenters = [] } = useGetApiV1WorkCenters();
+
+  const workCenterOptions = useMemo(
+    () => workCenters.map((wc) => ({ id: String(wc.workCenterID), label: `${wc.workCenterCode} — ${wc.workCenterName}` })),
+    [workCenters],
+  );
 
   const filtered = useMemo(() => {
-    let r = rows;
-    if (search)       r = r.filter((m) => m.name.toLowerCase().includes(search.toLowerCase()) || m.code.toLowerCase().includes(search.toLowerCase()));
-    if (wcFilter)     r = r.filter((m) => m.workCenterCode === wcFilter);
+    let r = machines;
+    if (search)       r = r.filter((m) => m.machineName.toLowerCase().includes(search.toLowerCase()) || m.machineCode.toLowerCase().includes(search.toLowerCase()));
+    if (wcFilter)     r = r.filter((m) => String(m.workCenterID) === wcFilter);
     if (statusFilter) r = r.filter((m) => m.status === statusFilter);
-    if (typeFilter)   r = r.filter((m) => m.type === typeFilter);
     return r;
-  }, [rows, search, wcFilter, statusFilter, typeFilter]);
+  }, [machines, search, wcFilter, statusFilter]);
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getGetApiV1MachinesQueryKey({ activeOnly: false }) });
+
+  const createMutation = useMutation({
+    mutationFn: (data: MachineFormValues) =>
+      postApiV1Machines({
+        code: data.code,
+        name: data.name,
+        workCenterId: data.workCenterId,
+        brand: data.brand ?? null,
+        model: data.model ?? null,
+      }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: MachineFormValues) =>
+      putApiV1MachinesCode(editTarget!.machineCode, {
+        name: data.name,
+        workCenterId: data.workCenterId,
+        brand: data.brand ?? null,
+        model: data.model ?? null,
+      }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (code: string) => deleteApiV1MachinesCode(code),
+    onSuccess: () => { invalidate(); setDeleteTarget(null); },
+  });
+
+  const saving = createMutation.isPending || updateMutation.isPending;
+
+  function openCreate() { setSaveError(''); setDrawerMode('create'); setEditTarget(null); setDrawerOpen(true); }
+  function openEdit(m: MachineDto) { setSaveError(''); setDrawerMode('edit'); setEditTarget(m); setDrawerOpen(true); }
+
+  function handleSave(data: MachineFormValues) {
+    setSaveError('');
+    if (drawerMode === 'create') createMutation.mutate(data);
+    else updateMutation.mutate(data);
+  }
 
   const selectedIds = selection.type === 'include' ? selection.ids : new Set<string | number>();
 
-  function openCreate() { setDrawerMode('create'); setEditTarget(null); setDrawerOpen(true); }
-  function openEdit(m: Machine) { setDrawerMode('edit'); setEditTarget(m); setDrawerOpen(true); }
-
-  function handleSave(data: MachineFormValues) {
-    setSaving(true);
-    setTimeout(() => {
-      const wc = WORK_CENTERS.find((w) => w.code === data.workCenterCode);
-      if (drawerMode === 'create') {
-        setRows((prev) => [...prev, {
-          id: String(Date.now()),
-          status: 'IDLE' as MachineStatus,
-          oee: 0,
-          workCenterName: wc?.name ?? '',
-          ...data,
-        }]);
-      } else if (editTarget) {
-        setRows((prev) => prev.map((m) =>
-          m.id === editTarget.id
-            ? { ...m, ...data, workCenterName: wc?.name ?? m.workCenterName }
-            : m
-        ));
-      }
-      setSaving(false);
-      setDrawerOpen(false);
-    }, 800);
-  }
-
-  function handleDelete() {
-    if (deleteTarget) {
-      setRows((prev) => prev.filter((m) => m.id !== deleteTarget.id));
-      setDeleteTarget(null);
-    }
-  }
-
-  const columns: GridColDef<Machine>[] = [
+  const columns: GridColDef<MachineDto>[] = [
     {
-      field: 'code',
+      field: 'machineCode',
       headerName: 'Code',
-      width: 100,
-      renderCell: (params: GridRenderCellParams<Machine>) => (
+      width: 110,
+      renderCell: (params: GridRenderCellParams<MachineDto>) => (
         <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 600, color: 'primary.main' }}>
           {params.value}
         </Typography>
       ),
     },
-    { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
-    { field: 'type', headerName: 'Type', width: 110 },
+    { field: 'machineName', headerName: 'Name', flex: 1, minWidth: 160 },
     {
-      field: 'workCenterCode',
+      field: 'workCenterName',
       headerName: 'Work Center',
-      width: 170,
-      renderCell: (params: GridRenderCellParams<Machine>) => (
-        <Stack>
-          <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, fontWeight: 600, color: 'primary.main' }}>
-            {params.value}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
-            {params.row.workCenterName}
-          </Typography>
-        </Stack>
+      width: 180,
+      renderCell: (params: GridRenderCellParams<MachineDto>) => (
+        <Typography variant="body2" sx={{ fontSize: 12, color: params.value ? 'text.primary' : 'text.disabled', fontStyle: params.value ? 'normal' : 'italic' }}>
+          {params.value ?? '—'}
+        </Typography>
       ),
+    },
+    {
+      field: 'brand',
+      headerName: 'Brand / Model',
+      width: 160,
+      renderCell: (params: GridRenderCellParams<MachineDto>) => {
+        const brand = params.row.brand;
+        const model = params.row.model;
+        if (!brand && !model) return <Typography variant="body2" color="text.disabled" sx={{ fontSize: 12, fontStyle: 'italic' }}>—</Typography>;
+        return (
+          <Stack>
+            <Typography variant="body2" sx={{ fontSize: 12, fontWeight: 500 }}>{brand ?? '—'}</Typography>
+            {model && <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>{model}</Typography>}
+          </Stack>
+        );
+      },
     },
     {
       field: 'status',
       headerName: 'Status',
       width: 110,
-      renderCell: (params: GridRenderCellParams<Machine>) => {
-        const status = params.value as MachineStatus;
-        const color = machineColors[status];
+      renderCell: (params: GridRenderCellParams<MachineDto>) => {
+        const status = params.value as string;
+        const color = (machineColors as Record<string, string>)[status] ?? '#94A3B8';
         return (
           <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
             <StatusDot color={color} size={7} pulse={status === 'RUNNING'} />
             <Typography variant="body2" sx={{ fontSize: 12, color, fontWeight: 500 }}>
-              {STATUS_LABELS[status]}
+              {STATUS_LABELS[status] ?? status}
             </Typography>
           </Stack>
         );
       },
     },
     {
-      field: 'oee',
-      headerName: 'OEE %',
+      field: 'isActive',
+      headerName: 'Active',
       width: 80,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (params: GridRenderCellParams<Machine>) => {
-        const val = params.value as number;
-        return (
-          <Typography
-            variant="body2"
-            sx={{ fontSize: 12, fontWeight: 700, color: val > 0 ? oeeZoneColor(val) : '#94A3B8' }}
-          >
-            {val > 0 ? `${val}%` : '—'}
-          </Typography>
-        );
-      },
-    },
-    {
-      field: 'lastMaintenanceDate',
-      headerName: 'Last Maintenance',
-      width: 140,
-      renderCell: (params: GridRenderCellParams<Machine>) => (
-        <Typography variant="body2" sx={{ fontSize: 12, color: 'text.secondary' }}>{params.value}</Typography>
+      renderCell: (params: GridRenderCellParams<MachineDto>) => (
+        <Chip
+          label={params.value ? 'Yes' : 'No'}
+          size="small"
+          sx={{
+            height: 20,
+            fontSize: '0.6875rem',
+            fontWeight: 600,
+            bgcolor: params.value ? alpha('#15803D', 0.1) : alpha('#94A3B8', 0.1),
+            color: params.value ? '#15803D' : '#94A3B8',
+            border: 'none',
+            '& .MuiChip-label': { px: 0.75 },
+          }}
+        />
       ),
     },
     {
@@ -350,7 +316,7 @@ export default function MachinesPage() {
       width: 80,
       sortable: false,
       align: 'center',
-      renderCell: (params: GridRenderCellParams<Machine>) => (
+      renderCell: (params: GridRenderCellParams<MachineDto>) => (
         <Stack direction="row" spacing={0.25}>
           <Tooltip title="Edit">
             <IconButton size="small" onClick={() => openEdit(params.row)} sx={{ color: 'text.secondary' }}>
@@ -366,6 +332,14 @@ export default function MachinesPage() {
       ),
     },
   ];
+
+  if (isLoading) return <TablePageSkeleton />;
+  if (error) return (
+    <PageRoot>
+      <PageHeader title="Machines" breadcrumbs={[{ label: 'Master Data' }, { label: 'Machines' }]} />
+      <EmptyState icon="emptyTable" title="Failed to load machines" description={getErrorMessage(error)} />
+    </PageRoot>
+  );
 
   return (
     <PageRoot>
@@ -395,27 +369,21 @@ export default function MachinesPage() {
           {
             label: 'Work Center',
             value: wcFilter,
-            options: WORK_CENTERS.map((w) => ({ label: `${w.code} — ${w.name}`, value: w.code })),
+            options: workCenterOptions.map((wc) => ({ label: wc.label, value: wc.id })),
             onChange: setWcFilter,
           },
           {
             label: 'Status',
             value: statusFilter,
-            options: (['RUNNING', 'IDLE', 'SETUP', 'DOWN', 'OFFLINE'] as MachineStatus[]).map((s) => ({ label: STATUS_LABELS[s], value: s })),
+            options: ['RUNNING', 'IDLE', 'SETUP', 'DOWN', 'OFFLINE'].map((s) => ({ label: STATUS_LABELS[s] ?? s, value: s })),
             onChange: setStatusFilter,
-          },
-          {
-            label: 'Type',
-            value: typeFilter,
-            options: MACHINE_TYPES.map((t) => ({ label: t, value: t })),
-            onChange: setTypeFilter,
           },
         ]}
         totalCount={filtered.length}
         actions={
           <Stack direction="row" spacing={0.5}>
             <ExportButton />
-            <RefreshButton />
+            <RefreshButton onClick={() => refetch()} />
           </Stack>
         }
       />
@@ -423,6 +391,7 @@ export default function MachinesPage() {
       <Box sx={{ flex: 1, minHeight: 400 }}>
         <DataGrid
           rows={filtered}
+          getRowId={(row) => row.machineCode}
           columns={columns}
           density="compact"
           checkboxSelection
@@ -434,9 +403,12 @@ export default function MachinesPage() {
           slots={{
             noRowsOverlay: () => (
               <EmptyState
-                icon="emptySearch"
-                title="No machines match your filters"
-                description="Try adjusting your search or filters."
+                icon={search || wcFilter || statusFilter ? 'emptySearch' : 'emptyTable'}
+                title={search || wcFilter || statusFilter ? 'No machines match your filters' : 'No machines yet'}
+                description={search || wcFilter || statusFilter ? 'Try adjusting your search or filters.' : 'Add your first machine to get started.'}
+                action={!search && !wcFilter && !statusFilter ? (
+                  <Button variant="contained" size="small" onClick={openCreate}>Add Machine</Button>
+                ) : undefined}
                 compact
               />
             ),
@@ -454,40 +426,42 @@ export default function MachinesPage() {
       <FormDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title={drawerMode === 'create' ? 'Add Machine' : `Edit ${editTarget?.code}`}
-        subtitle={drawerMode === 'create' ? 'Enter machine details below' : editTarget?.name}
+        title={drawerMode === 'create' ? 'Add Machine' : `Edit ${editTarget?.machineCode}`}
+        subtitle={drawerMode === 'create' ? 'Enter machine details below' : editTarget?.machineName}
         onSubmit={() => document.getElementById('machine-form')?.dispatchEvent(new Event('submit', { bubbles: true }))}
         submitLabel={drawerMode === 'create' ? 'Add Machine' : 'Save Changes'}
         loading={saving}
       >
+        {saveError && <Alert severity="error" sx={{ mb: 2 }}>{saveError}</Alert>}
         <MachineForm
-          key={editTarget?.id ?? 'new'}
+          key={editTarget?.machineCode ?? 'new'}
+          isEdit={drawerMode === 'edit'}
           defaultValues={editTarget ? {
-            code:                editTarget.code,
-            name:                editTarget.name,
-            type:                editTarget.type,
-            workCenterCode:      editTarget.workCenterCode,
-            lastMaintenanceDate: editTarget.lastMaintenanceDate,
-            isActive:            editTarget.isActive,
+            code:         editTarget.machineCode,
+            name:         editTarget.machineName,
+            workCenterId: String(editTarget.workCenterID),
+            brand:        editTarget.brand ?? undefined,
+            model:        editTarget.model ?? undefined,
           } : {}}
           onSubmit={handleSave}
-          loading={saving}
+          workCenterOptions={workCenterOptions}
         />
       </FormDrawer>
 
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.machineCode)}
         title="Delete Machine"
         description={
           <>
-            Delete <strong>{deleteTarget?.name}</strong> ({deleteTarget?.code})?
+            Delete <strong>{deleteTarget?.machineName}</strong> ({deleteTarget?.machineCode})?
             This cannot be undone and may affect production schedules.
           </>
         }
         confirmLabel="Delete"
         confirmColor="error"
+        loading={deleteMutation.isPending}
       />
     </PageRoot>
   );
