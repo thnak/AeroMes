@@ -29,6 +29,24 @@ public class ProductionLogRepository(AppDbContext db) : IProductionLogRepository
             .OrderBy(x => x.Timestamp)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<ProductionLog>> GetForReportAsync(
+        DateTime from, DateTime to, string? workCenterCode, string? machineCode, CancellationToken ct)
+    {
+        var q = db.ProductionLogs.AsNoTracking()
+            .Include(l => l.Job!)
+                .ThenInclude(j => j.WorkOrder!)
+                .ThenInclude(wo => wo.WorkCenter)
+            .Where(l => l.Timestamp >= from && l.Timestamp <= to)
+            .AsQueryable();
+
+        if (machineCode is not null)
+            q = q.Where(l => l.Job!.MachineCode == machineCode.ToUpperInvariant());
+        if (workCenterCode is not null)
+            q = q.Where(l => l.Job!.WorkOrder!.WorkCenter!.WorkCenterCode == workCenterCode.ToUpperInvariant());
+
+        return await q.OrderBy(l => l.Timestamp).ToListAsync(ct);
+    }
+
     public Task AddAsync(ProductionLog entity, CancellationToken ct)
     {
         db.ProductionLogs.Add(entity);

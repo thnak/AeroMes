@@ -2,6 +2,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using AeroMes.Api.Controllers;
 using AeroMes.Api.Middleware;
+using AeroMes.Application.Inventory.Queries.GetInventoryStock;
+using AeroMes.Application.Inventory.Queries.GetLotTrace;
+using AeroMes.Application.Reports.Queries.GetDowntimeReport;
+using AeroMes.Application.Reports.Queries.GetProductionReport;
+using AeroMes.Application.Reports.Queries.GetQualityReport;
 using AeroMes.Application.Integration.Queries.GetProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetProductionOrders;
 using AeroMes.Application.Integration.Queries.GetSalesOrderDetail;
@@ -139,6 +144,17 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(AlertThresholdCreatedResult))]
 [JsonSerializable(typeof(CreateAlertThresholdRequest))]
 [JsonSerializable(typeof(UpdateAlertThresholdRequest))]
+// inventory
+[JsonSerializable(typeof(IReadOnlyList<InventoryStockDto>))]
+[JsonSerializable(typeof(LotTraceDto))]
+[JsonSerializable(typeof(IReadOnlyList<LotStockEntryDto>))]
+// reports
+[JsonSerializable(typeof(ProductionReportDto))]
+[JsonSerializable(typeof(IReadOnlyList<ProductionReportRowDto>))]
+[JsonSerializable(typeof(DowntimeReportDto))]
+[JsonSerializable(typeof(IReadOnlyList<DowntimeReportRowDto>))]
+[JsonSerializable(typeof(QualityReportDto))]
+[JsonSerializable(typeof(IReadOnlyList<QualityReportRowDto>))]
 // integration
 [JsonSerializable(typeof(IReadOnlyList<SalesOrderDto>))]
 [JsonSerializable(typeof(SalesOrderDetailDto))]

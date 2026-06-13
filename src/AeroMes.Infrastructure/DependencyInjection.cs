@@ -65,9 +65,11 @@ public static class DependencyInjection
         services.AddScoped<IJobRepository, JobRepository>();
         services.AddScoped<IProductionLogRepository, ProductionLogRepository>();
         services.AddScoped<IDowntimeLogRepository, DowntimeLogRepository>();
+        services.AddScoped<IInventoryStockRepository, InventoryStockRepository>();
 
         // qual repositories
         services.AddScoped<IDefectCodeRepository, DefectCodeRepository>();
+        services.AddScoped<IDefectDetailRepository, DefectDetailRepository>();
 
         services.AddMemoryCache();
         services.AddSingleton<IdempotencyStore>();
