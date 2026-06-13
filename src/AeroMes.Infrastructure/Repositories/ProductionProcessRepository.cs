@@ -85,4 +85,14 @@ public class ProductionProcessRepository(AppDbContext db) : IProductionProcessRe
     }
 
     public Task SaveChangesAsync(CancellationToken ct) => db.SaveChangesAsync(ct);
+
+    public Task<int?> GetActiveProcessIdForProductAsync(string productCode, CancellationToken ct)
+        => db.ProductionProcesses.AsNoTracking()
+            .Where(p => p.IsActive
+                && (p.ApplicationScope == ProcessApplicationScope.All
+                    || (p.ApplicationScope == ProcessApplicationScope.SpecificProduct
+                        && p.ProductIdsJson != null && p.ProductIdsJson.Contains(productCode))))
+            .OrderByDescending(p => p.EffectiveDate)
+            .Select(p => (int?)p.ProcessID)
+            .FirstOrDefaultAsync(ct);
 }

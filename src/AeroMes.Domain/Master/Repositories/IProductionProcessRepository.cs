@@ -29,4 +29,5 @@ public interface IProductionProcessRepository
     Task<ProductionProcessDetailDto?> GetDetailAsync(int processId, CancellationToken ct);
     Task DeleteAsync(ProductionProcess process, CancellationToken ct);
     Task SaveChangesAsync(CancellationToken ct);
+    Task<int?> GetActiveProcessIdForProductAsync(string productCode, CancellationToken ct);
 }

@@ -208,6 +208,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<QualityInspectionRequest> QualityInspectionRequests => Set<QualityInspectionRequest>();
     public DbSet<QualityCriteriaGroup> QualityCriteriaGroups => Set<QualityCriteriaGroup>();
     public DbSet<QualityCriteria> QualityCriterias => Set<QualityCriteria>();
+    public DbSet<QualityStandardSet> QualityStandardSets => Set<QualityStandardSet>();
+    public DbSet<QualityStandardSetCriteria> QualityStandardSetCriteria => Set<QualityStandardSetCriteria>();
+    public DbSet<QualityStandardSetStageCriteria> QualityStandardSetStageCriteria => Set<QualityStandardSetStageCriteria>();
 
     // iot schema
     public DbSet<AdapterInstance> AdapterInstances => Set<AdapterInstance>();
@@ -2708,6 +2711,45 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20)
                 .HasDefaultValue(CriteriaStatus.Active);
             e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<QualityStandardSet>(e =>
+        {
+            e.ToTable("QualityStandardSets", "qual");
+            e.HasKey(x => x.StandardSetID);
+            e.Property(x => x.StandardSetID).UseIdentityColumn();
+            e.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.Code).IsUnique();
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(1000);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20)
+                .HasDefaultValue(StandardSetStatus.Active);
+            e.HasQueryFilter(x => !x.IsDeleted);
+            e.HasMany(x => x.ProductCriteria).WithOne()
+                .HasForeignKey(x => x.StandardSetID).OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.ProductCriteria).HasField("_productCriteria")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+            e.HasMany(x => x.StageCriteria).WithOne()
+                .HasForeignKey(x => x.StandardSetID).OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.StageCriteria).HasField("_stageCriteria")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<QualityStandardSetCriteria>(e =>
+        {
+            e.ToTable("QualityStandardSetCriteria", "qual");
+            e.HasKey(x => x.ID);
+            e.Property(x => x.ID).UseIdentityColumn();
+            e.Property(x => x.Parameters).HasMaxLength(2000);
+        });
+
+        b.Entity<QualityStandardSetStageCriteria>(e =>
+        {
+            e.ToTable("QualityStandardSetStageCriteria", "qual");
+            e.HasKey(x => x.ID);
+            e.Property(x => x.ID).UseIdentityColumn();
+            e.Property(x => x.Parameters).HasMaxLength(2000);
         });
     }
 
