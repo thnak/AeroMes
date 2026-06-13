@@ -134,6 +134,7 @@ public static class DependencyInjection
         services.AddScoped<IMoldCompatibilityRepository, MoldCompatibilityRepository>();
         services.AddScoped<IMoldAssignmentRepository, MoldAssignmentRepository>();
         services.AddScoped<IMaterialBlendLogRepository, MaterialBlendLogRepository>();
+        services.AddScoped<IFabricRollRepository, FabricRollRepository>();
 
         // ERP client + background sync
         services.AddHttpClient("erp").ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler

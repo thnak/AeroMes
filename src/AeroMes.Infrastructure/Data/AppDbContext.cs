@@ -79,6 +79,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<MoldAssignment> MoldAssignments => Set<MoldAssignment>();
     public DbSet<MoldShotLog> MoldShotLogs => Set<MoldShotLog>();
     public DbSet<MaterialBlendLog> MaterialBlendLogs => Set<MaterialBlendLog>();
+    public DbSet<FabricRoll> FabricRolls => Set<FabricRoll>();
+    public DbSet<FabricConsumptionLog> FabricConsumptionLogs => Set<FabricConsumptionLog>();
     public DbSet<Tool> Tools => Set<Tool>();
     public DbSet<BomHeader> BomHeaders => Set<BomHeader>();
     public DbSet<BomByProduct> BomByProducts => Set<BomByProduct>();
@@ -1377,6 +1379,48 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Ignore(x => x.IsCompliant);
             e.HasIndex(x => new { x.JobID, x.RecordedAt });
             e.HasIndex(x => x.ResinProductCode);
+        });
+
+        b.Entity<FabricRoll>(e =>
+        {
+            e.ToTable("FabricRolls", "master");
+            e.HasKey(x => x.RollID);
+            e.Property(x => x.RollID).ValueGeneratedOnAdd();
+            e.Property(x => x.RollBarcode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.FabricProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ShadeCode).HasMaxLength(30).IsRequired();
+            e.Property(x => x.GrossLengthMeters).HasColumnType("DECIMAL(10,3)").IsRequired();
+            e.Property(x => x.GrossWeightKg).HasColumnType("DECIMAL(10,3)").IsRequired();
+            e.Property(x => x.RemainingLengthMeters).HasColumnType("DECIMAL(10,3)").IsRequired();
+            e.Property(x => x.RemainingWeightKg)
+                .HasColumnType("DECIMAL(10,3)")
+                .HasComputedColumnSql("[GrossWeightKg] * [RemainingLengthMeters] / [GrossLengthMeters]");
+            e.Property(x => x.FabricWidthCm).HasColumnType("DECIMAL(6,1)").IsRequired();
+            e.Property(x => x.SupplierCode).HasMaxLength(50);
+            e.Property(x => x.ReceivedDate).HasColumnType("date").IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+            e.Property(x => x.CreatedAt).HasColumnType("datetime2").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.HasIndex(x => x.RollBarcode).IsUnique().HasDatabaseName("IX_FabricRoll_Barcode");
+            e.HasIndex(x => new { x.FabricProductCode, x.ShadeCode })
+                .HasFilter("[Status] = 'Available'")
+                .HasDatabaseName("IX_FabricRoll_Product_Shade");
+            e.HasIndex(x => x.LotNumber).HasDatabaseName("IX_FabricRoll_Lot");
+        });
+
+        b.Entity<FabricConsumptionLog>(e =>
+        {
+            e.ToTable("FabricConsumptionLog", "prod");
+            e.HasKey(x => x.ConsumptionID);
+            e.Property(x => x.ConsumptionID).ValueGeneratedOnAdd();
+            e.Property(x => x.MetersConsumed).HasColumnType("DECIMAL(10,3)").IsRequired();
+            e.Property(x => x.RemainingAfter).HasColumnType("DECIMAL(10,3)").IsRequired();
+            e.Property(x => x.RecordedBy).HasMaxLength(50).IsRequired();
+            e.Property(x => x.RecordedAt).HasColumnType("datetime2").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.HasIndex(x => x.RollID).HasDatabaseName("IX_FabricLog_Roll");
+            e.HasIndex(x => x.CutOrderID).HasDatabaseName("IX_FabricLog_CutOrder");
         });
 
         b.Entity<Tool>(e =>
