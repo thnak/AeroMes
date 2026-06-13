@@ -203,6 +203,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<QualityInspectionVoucher> QualityInspectionVouchers => Set<QualityInspectionVoucher>();
     public DbSet<VoucherDefectDetail> VoucherDefectDetails => Set<VoucherDefectDetail>();
     public DbSet<QualityInspectionRequest> QualityInspectionRequests => Set<QualityInspectionRequest>();
+    public DbSet<QualityCriteriaGroup> QualityCriteriaGroups => Set<QualityCriteriaGroup>();
 
     // iot schema
     public DbSet<AdapterInstance> AdapterInstances => Set<AdapterInstance>();
@@ -2616,6 +2617,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20)
                 .HasDefaultValue(InspectionRequestStatus.NotStarted);
             e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<QualityCriteriaGroup>(e =>
+        {
+            e.ToTable("QualityCriteriaGroups", "qual");
+            e.HasKey(x => x.GroupID);
+            e.Property(x => x.GroupID).UseIdentityColumn();
+            e.Property(x => x.Code).HasMaxLength(30).IsRequired();
+            e.HasIndex(x => x.Code).IsUnique();
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20)
+                .HasDefaultValue(CriteriaGroupStatus.Active);
         });
     }
 

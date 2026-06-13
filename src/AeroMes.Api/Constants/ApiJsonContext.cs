@@ -185,6 +185,7 @@ using AeroMes.Application.Master.DisassemblyBoms.Queries.GetDisassemblyBoms;
 using AeroMes.Application.Master.DisassemblyBoms.Queries.GetDisassemblyBomById;
 using AeroMes.Application.Master.Boms.Commands.UpdateBomByProducts;
 using AeroMes.Domain.Master;
+using AeroMes.Domain.Quality;
 using AeroMes.Domain.Quality.Repositories;
 using AeroMes.Domain.Energy;
 using AeroMes.Domain.Energy.Repositories;
@@ -1126,6 +1127,14 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(CopqTrendPointDto))]
 [JsonSerializable(typeof(IReadOnlyList<CopqTrendPointDto>))]
 [JsonSerializable(typeof(List<CopqTrendPointDto>))]
+// quality criteria groups — #66
+[JsonSerializable(typeof(CreateCriteriaGroupRequest))]
+[JsonSerializable(typeof(UpdateCriteriaGroupRequest))]
+[JsonSerializable(typeof(SetCriteriaGroupStatusRequest))]
+[JsonSerializable(typeof(QualityCriteriaGroupDto))]
+[JsonSerializable(typeof(IReadOnlyList<QualityCriteriaGroupDto>))]
+[JsonSerializable(typeof(List<QualityCriteriaGroupDto>))]
+[JsonSerializable(typeof(CriteriaGroupStatus))]
 // quality inspection requests — #81
 [JsonSerializable(typeof(CreateInspectionRequestRequest))]
 [JsonSerializable(typeof(UpdateInspectionRequestRequest))]
