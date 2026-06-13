@@ -25,6 +25,7 @@ import {
   FormDrawer,
   PageHeader,
   PageRoot,
+  QrCodeDialog,
   RefreshButton,
   SolarIcon,
   StatusChip,
@@ -216,6 +217,7 @@ export default function WorkOrdersPage() {
   const [drawerMode, setDrawerMode]       = useState<DrawerMode>('create');
   const [editTarget, setEditTarget]       = useState<WorkOrder | null>(null);
   const [deleteTarget, setDeleteTarget]   = useState<WorkOrder | null>(null);
+  const [qrTarget, setQrTarget]           = useState<WorkOrder | null>(null);
   const [saving, setSaving]               = useState(false);
 
   const filtered = useMemo(() => {
@@ -341,7 +343,7 @@ export default function WorkOrdersPage() {
     {
       field: 'actions',
       headerName: '',
-      width: 105,
+      width: 130,
       sortable: false,
       align: 'center',
       renderCell: (params: GridRenderCellParams<WorkOrder>) => (
@@ -349,6 +351,11 @@ export default function WorkOrdersPage() {
           <Tooltip title="View">
             <IconButton size="small" onClick={() => navigate(`/production/work-orders/${params.row.id}`)} sx={{ color: 'text.secondary' }}>
               <SolarIcon name="view" size={16} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="QR Code">
+            <IconButton size="small" onClick={() => setQrTarget(params.row)} sx={{ color: 'text.secondary' }}>
+              <SolarIcon name="serial" size={16} />
             </IconButton>
           </Tooltip>
           <Tooltip title="Edit">
@@ -481,6 +488,14 @@ export default function WorkOrdersPage() {
         }
         confirmLabel="Delete"
         confirmColor="error"
+      />
+
+      <QrCodeDialog
+        open={!!qrTarget}
+        onClose={() => setQrTarget(null)}
+        value={qrTarget ? `${window.location.origin}/production/work-orders/${qrTarget.id}` : ''}
+        label={qrTarget?.no}
+        title="Work Order QR Code"
       />
     </PageRoot>
   );

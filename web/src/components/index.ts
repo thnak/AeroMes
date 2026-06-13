@@ -8,3 +8,4 @@ export { default as TableToolbar, ExportButton, RefreshButton } from './TableToo
 export { default as FormDrawer } from './FormDrawer';
 export { KpiRowSkeleton, TablePageSkeleton, DetailPageSkeleton } from './LoadingSkeleton';
 export { default as NewFeatureBadge } from './NewFeatureBadge';
+export { default as QrCodeDialog } from './QrCodeDialog';

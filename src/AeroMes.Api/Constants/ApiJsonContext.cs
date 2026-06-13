@@ -733,6 +733,20 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(UpsertResultDto))]
 [JsonSerializable(typeof(List<UpsertResultDto>))]
 [JsonSerializable(typeof(IssueReportDto))]
+[JsonSerializable(typeof(QrTextRequest))]
+// defect lifecycle
+[JsonSerializable(typeof(DefectEntryDto))]
+[JsonSerializable(typeof(List<DefectEntryDto>))]
+[JsonSerializable(typeof(RepairOrderDto))]
+[JsonSerializable(typeof(List<RepairOrderDto>))]
+[JsonSerializable(typeof(RepairMaterialLineDto))]
+[JsonSerializable(typeof(List<RepairMaterialLineDto>))]
+[JsonSerializable(typeof(CreateDefectEntryRequest))]
+[JsonSerializable(typeof(SetDefectEntryStatusRequest))]
+[JsonSerializable(typeof(CreateRepairOrderRequest))]
+[JsonSerializable(typeof(CreateRepairMaterialLineRequest))]
+[JsonSerializable(typeof(List<CreateRepairMaterialLineRequest>))]
+[JsonSerializable(typeof(SetRepairOrderStatusRequest))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 
