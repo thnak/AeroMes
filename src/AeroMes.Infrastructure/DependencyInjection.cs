@@ -1,4 +1,5 @@
 using AeroMes.Application.Interfaces;
+using AeroMes.Application.Storage;
 using AeroMes.Application.Wms.Services;
 using AeroMes.Domain.Integration.Repositories;
 using AeroMes.Domain.Iot.Events;
@@ -25,6 +26,7 @@ using AeroMes.Infrastructure.Reminders;
 using AeroMes.Infrastructure.Rules;
 using AeroMes.Infrastructure.Sop;
 using AeroMes.Infrastructure.Services;
+using AeroMes.Infrastructure.Storage;
 using LiteBus.Events.Abstractions;
 using LiteBus.Extensions.Microsoft.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
@@ -188,6 +190,14 @@ public static class DependencyInjection
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<DatabaseSeeder>();
         services.AddScoped<IEmailSender, LoggingEmailSender>();
+
+        // File storage — pluggable provider selected by Storage:Provider (Local default, S3/MinIO opt-in)
+        services.Configure<FileStorageOptions>(configuration.GetSection(FileStorageOptions.SectionName));
+        var storageProvider = configuration[$"{FileStorageOptions.SectionName}:Provider"] ?? "Local";
+        if (string.Equals(storageProvider, "S3", StringComparison.OrdinalIgnoreCase))
+            services.AddSingleton<IFileStorage, S3FileStorage>();
+        else
+            services.AddSingleton<IFileStorage, LocalDiskStorage>();
 
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();
