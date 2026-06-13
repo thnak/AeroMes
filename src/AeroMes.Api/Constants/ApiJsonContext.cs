@@ -207,6 +207,7 @@ using AeroMes.Application.Integration.Queries.GetSalesOrderDetailWithLines;
 using AeroMes.Application.Integration.Queries.GetSalesOrdersList;
 using AeroMes.Domain.Integration;
 using AeroMes.Domain.Integration.Repositories;
+using AeroMes.Domain.Production.Repositories;
 using AeroMes.Application.Production.MasterPlan.Commands.CreateMasterPlan;
 using AeroMes.Application.Production.MasterPlan.Queries.GetMasterPlanDetail;
 using AeroMes.Application.Production.MasterPlan.Queries.GetMasterPlans;
@@ -1432,6 +1433,19 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(CreateSalesOrderRequest))]
 [JsonSerializable(typeof(ConfirmSoRequest))]
 [JsonSerializable(typeof(SoSyncSource))]
+// extended reports (#68)
+[JsonSerializable(typeof(OrderProgressDto))]
+[JsonSerializable(typeof(IReadOnlyList<OrderProgressDto>))]
+[JsonSerializable(typeof(List<OrderProgressDto>))]
+[JsonSerializable(typeof(SoProductionStatusDto))]
+[JsonSerializable(typeof(IReadOnlyList<SoProductionStatusDto>))]
+[JsonSerializable(typeof(List<SoProductionStatusDto>))]
+[JsonSerializable(typeof(EmployeeOutputDto))]
+[JsonSerializable(typeof(IReadOnlyList<EmployeeOutputDto>))]
+[JsonSerializable(typeof(List<EmployeeOutputDto>))]
+[JsonSerializable(typeof(ProductOutputDto))]
+[JsonSerializable(typeof(IReadOnlyList<ProductOutputDto>))]
+[JsonSerializable(typeof(List<ProductOutputDto>))]
 // master production schedule (#55)
 [JsonSerializable(typeof(MasterPlanSummaryDto))]
 [JsonSerializable(typeof(IReadOnlyList<MasterPlanSummaryDto>))]

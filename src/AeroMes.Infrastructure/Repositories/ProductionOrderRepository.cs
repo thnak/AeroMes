@@ -67,4 +67,61 @@ public class ProductionOrderRepository(AppDbContext db) : IProductionOrderReposi
             .CountAsync(x => x.CreatedAt.HasValue && x.CreatedAt.Value.Year == year, ct);
         return $"PO-{year}-{count + 1:D4}";
     }
+
+    public async Task<IReadOnlyList<OrderProgressDto>> GetProgressReportAsync(
+        DateTime? from, DateTime? to, string? status, CancellationToken ct)
+    {
+        var q = db.ProductionOrders.AsNoTracking().AsQueryable();
+
+        if (from.HasValue) q = q.Where(x => x.PlannedStartDate >= from || x.ActualStartDate >= from);
+        if (to.HasValue) q = q.Where(x => x.PlannedEndDate <= to || x.PlannedStartDate <= to);
+        if (status is not null && Enum.TryParse<ProductionOrderStatus>(status, true, out var s))
+            q = q.Where(x => x.Status == s);
+
+        var now = DateTime.UtcNow;
+        return await q
+            .OrderByDescending(x => x.POID)
+            .Select(x => new OrderProgressDto(
+                x.POID,
+                x.POCode,
+                x.ProductCode,
+                x.TargetQuantity,
+                db.ProductionLogs
+                    .Where(l => l.Job!.WorkOrder!.POID == x.POID)
+                    .Sum(l => (int?)l.QtyOK) ?? 0,
+                db.ProductionLogs
+                    .Where(l => l.Job!.WorkOrder!.POID == x.POID)
+                    .Sum(l => (int?)l.QtyNG) ?? 0,
+                x.TargetQuantity > 0
+                    ? Math.Round(
+                        (db.ProductionLogs.Where(l => l.Job!.WorkOrder!.POID == x.POID).Sum(l => (double?)l.QtyOK) ?? 0)
+                        / x.TargetQuantity * 100, 1)
+                    : 0,
+                x.PlannedEndDate.HasValue && x.ActualEndDate == null && x.PlannedEndDate < now,
+                x.PlannedEndDate,
+                x.ActualStartDate,
+                x.ActualEndDate,
+                x.Status.ToString()))
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<SoProductionStatusDto>> GetSoProductionStatusAsync(
+        DateTime? from, DateTime? to, CancellationToken ct)
+    {
+        var soQ = db.SalesOrders.AsNoTracking().AsQueryable();
+        if (from.HasValue) soQ = soQ.Where(x => x.OrderDate >= from.Value);
+        if (to.HasValue) soQ = soQ.Where(x => x.OrderDate <= to.Value);
+
+        return await soQ
+            .OrderByDescending(x => x.SOID)
+            .Select(x => new SoProductionStatusDto(
+                x.SOID, x.SOCode, x.CustomerName, x.OrderDate, x.DeliveryDate,
+                x.Status.ToString(),
+                db.ProductionOrders.Count(p => p.SOID == x.SOID),
+                db.ProductionOrders.Count(p => p.SOID == x.SOID && p.Status == ProductionOrderStatus.Completed),
+                db.ProductionOrders.Where(p => p.SOID == x.SOID).Sum(p => (int?)p.TargetQuantity) ?? 0,
+                db.ProductionLogs.Where(l => l.Job!.WorkOrder!.ProductionOrder!.SOID == x.SOID)
+                    .Sum(l => (int?)l.QtyOK) ?? 0))
+            .ToListAsync(ct);
+    }
 }

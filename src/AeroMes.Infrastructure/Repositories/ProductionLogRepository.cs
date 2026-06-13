@@ -47,6 +47,35 @@ public class ProductionLogRepository(AppDbContext db) : IProductionLogRepository
         return await q.OrderBy(l => l.Timestamp).ToListAsync(ct);
     }
 
+    public async Task<IReadOnlyList<EmployeeOutputDto>> GetOutputByEmployeeAsync(
+        DateTime from, DateTime to, CancellationToken ct)
+    {
+        return await db.ProductionLogs.AsNoTracking()
+            .Where(l => l.Timestamp >= from && l.Timestamp <= to)
+            .GroupBy(l => l.Job!.OperatorID)
+            .Select(g => new EmployeeOutputDto(
+                g.Key,
+                g.Sum(l => l.QtyOK),
+                g.Sum(l => l.QtyNG),
+                g.Count()))
+            .OrderByDescending(x => x.QtyOK)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<ProductOutputDto>> GetOutputByProductAsync(
+        DateTime from, DateTime to, CancellationToken ct)
+    {
+        return await db.ProductionLogs.AsNoTracking()
+            .Where(l => l.Timestamp >= from && l.Timestamp <= to)
+            .GroupBy(l => l.Job!.WorkOrder!.ProductionOrder!.ProductCode)
+            .Select(g => new ProductOutputDto(
+                g.Key ?? "UNKNOWN",
+                g.Sum(l => l.QtyOK),
+                g.Sum(l => l.QtyNG)))
+            .OrderByDescending(x => x.QtyOK)
+            .ToListAsync(ct);
+    }
+
     public Task AddAsync(ProductionLog entity, CancellationToken ct)
     {
         db.ProductionLogs.Add(entity);

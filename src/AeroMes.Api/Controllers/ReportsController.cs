@@ -1,8 +1,14 @@
 using AeroMes.Api.Auth;
 using AeroMes.Application.Common;
 using AeroMes.Application.Reports.Queries.GetDowntimeReport;
+using AeroMes.Application.Reports.Queries.GetOrderProgressReport;
+using AeroMes.Application.Reports.Queries.GetOutputByEmployeeReport;
+using AeroMes.Application.Reports.Queries.GetOutputByProductReport;
 using AeroMes.Application.Reports.Queries.GetProductionReport;
 using AeroMes.Application.Reports.Queries.GetQualityReport;
+using AeroMes.Application.Reports.Queries.GetSoProductionStatusReport;
+using AeroMes.Domain.Integration.Repositories;
+using AeroMes.Domain.Production.Repositories;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -63,4 +69,41 @@ public class ReportsController(IQueryMediator queryMediator) : ControllerBase
             new GetQualityReportQuery(from, to, defectCategory), null, ct);
         return Ok(new ApiResponse<QualityReportDto>(true, "OK", result));
     }
+
+    [HttpGet("production/order-progress")]
+    [RequirePermission(Permissions.ReportRead)]
+    [ProducesResponseType<IReadOnlyList<OrderProgressDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetOrderProgress(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] string? status,
+        CancellationToken ct)
+        => Ok(await queryMediator.QueryAsync(new GetOrderProgressReportQuery(from, to, status), null, ct));
+
+    [HttpGet("production/output-by-employee")]
+    [RequirePermission(Permissions.ReportRead)]
+    [ProducesResponseType<IReadOnlyList<EmployeeOutputDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetOutputByEmployee(
+        [FromQuery] DateTime from,
+        [FromQuery] DateTime to,
+        CancellationToken ct)
+        => Ok(await queryMediator.QueryAsync(new GetOutputByEmployeeReportQuery(from, to), null, ct));
+
+    [HttpGet("production/output-by-product")]
+    [RequirePermission(Permissions.ReportRead)]
+    [ProducesResponseType<IReadOnlyList<ProductOutputDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetOutputByProduct(
+        [FromQuery] DateTime from,
+        [FromQuery] DateTime to,
+        CancellationToken ct)
+        => Ok(await queryMediator.QueryAsync(new GetOutputByProductReportQuery(from, to), null, ct));
+
+    [HttpGet("sales-orders/production-status")]
+    [RequirePermission(Permissions.ReportRead)]
+    [ProducesResponseType<IReadOnlyList<SoProductionStatusDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSoProductionStatus(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        CancellationToken ct)
+        => Ok(await queryMediator.QueryAsync(new GetSoProductionStatusReportQuery(from, to), null, ct));
 }
