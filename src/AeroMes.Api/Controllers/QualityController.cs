@@ -23,6 +23,15 @@ using AeroMes.Application.Quality.InspectionResults;
 using AeroMes.Application.Quality.InspectionResults.Commands.BulkRecordInspectionResults;
 using AeroMes.Application.Quality.InspectionResults.Commands.RecordInspectionResult;
 using AeroMes.Application.Quality.InspectionResults.Queries.GetInspectionResults;
+using AeroMes.Application.Quality.Ncr;
+using AeroMes.Application.Quality.Ncr.Commands.CancelNcr;
+using AeroMes.Application.Quality.Ncr.Commands.CloseNcr;
+using AeroMes.Application.Quality.Ncr.Commands.CreateManualNcr;
+using AeroMes.Application.Quality.Ncr.Commands.EscalateNcr;
+using AeroMes.Application.Quality.Ncr.Commands.SetNcrDisposition;
+using AeroMes.Application.Quality.Ncr.Commands.UpdateNcr;
+using AeroMes.Application.Quality.Ncr.Queries.GetNcrDetail;
+using AeroMes.Application.Quality.Ncr.Queries.GetNcrs;
 using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
@@ -302,6 +311,107 @@ public class QualityController(ICommandMediator commandMediator, IQueryMediator 
         if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
+
+    // ── NCRs ──────────────────────────────────────────────────────────────
+
+    [HttpGet("ncrs")]
+    [RequirePermission(Permissions.QualityRead)]
+    [ProducesResponseType<IReadOnlyList<NcrListDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetNcrs(
+        [FromQuery] string? status,
+        [FromQuery] string? productCode,
+        CancellationToken ct)
+        => Ok(await queryMediator.QueryAsync(new GetNcrsQuery(status, productCode), null, ct));
+
+    [HttpPost("ncrs")]
+    [RequirePermission(Permissions.QualityWrite)]
+    [ProducesResponseType<NcrCreatedResult>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> CreateManualNcr([FromBody] CreateManualNcrRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new CreateManualNcrCommand(
+                req.WorkOrderId,
+                req.ProductCode,
+                req.LotNumber,
+                req.QtyAffected,
+                req.Severity,
+                User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return CreatedAtAction(nameof(GetNcrDetail), new { id = result.Value! }, new NcrCreatedResult(result.Value!));
+    }
+
+    [HttpGet("ncrs/{id:int}")]
+    [RequirePermission(Permissions.QualityRead)]
+    [ProducesResponseType<NcrDetailDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetNcrDetail(int id, CancellationToken ct)
+    {
+        var result = await queryMediator.QueryAsync(new GetNcrDetailQuery(id), null, ct);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpPatch("ncrs/{id:int}/disposition")]
+    [RequirePermission(Permissions.QualityApprove)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> SetNcrDisposition(int id, [FromBody] SetNcrDispositionRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new SetNcrDispositionCommand(id, req.DispositionCode, req.SetBy), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpPatch("ncrs/{id:int}/escalate")]
+    [RequirePermission(Permissions.QualityWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> EscalateNcr(int id, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(new EscalateNcrCommand(id), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpPatch("ncrs/{id:int}/close")]
+    [RequirePermission(Permissions.QualityApprove)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> CloseNcr(int id, [FromBody] CloseNcrRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new CloseNcrCommand(id, req.ClosedBy, req.RootCause, req.CorrectiveAction, req.PreventiveAction), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpPatch("ncrs/{id:int}/cancel")]
+    [RequirePermission(Permissions.QualityApprove)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> CancelNcr(int id, [FromBody] CancelNcrRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(new CancelNcrCommand(id, req.CancelledBy), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpPatch("ncrs/{id:int}")]
+    [RequirePermission(Permissions.QualityWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateNcr(int id, [FromBody] UpdateNcrRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(new UpdateNcrCommand(id, req.AssignedTo, req.DueDate), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
 }
 
 // ── Request / Result records ───────────────────────────────────────────────
@@ -376,3 +486,25 @@ public record RecordInspectionResultRequest(
     string? Notes);
 
 public record BulkRecordInspectionResultsRequest(IReadOnlyList<RecordResultItem> Results);
+
+// NCR request records
+public record CreateManualNcrRequest(
+    long WorkOrderId,
+    string ProductCode,
+    string? LotNumber,
+    decimal QtyAffected,
+    string Severity);
+
+public record SetNcrDispositionRequest(string DispositionCode, string SetBy);
+
+public record CloseNcrRequest(
+    string ClosedBy,
+    string? RootCause,
+    string? CorrectiveAction,
+    string? PreventiveAction);
+
+public record CancelNcrRequest(string CancelledBy);
+
+public record UpdateNcrRequest(string? AssignedTo, DateTimeOffset? DueDate);
+
+public record NcrCreatedResult(int NcrId);

@@ -137,6 +137,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<InspectionCharacteristic> InspectionCharacteristics => Set<InspectionCharacteristic>();
     public DbSet<InspectionOrder> InspectionOrders => Set<InspectionOrder>();
     public DbSet<InspectionResult> InspectionResults => Set<InspectionResult>();
+    public DbSet<Ncr> Ncrs => Set<Ncr>();
+    public DbSet<NcrDefectLine> NcrDefectLines => Set<NcrDefectLine>();
 
     // iot schema
     public DbSet<AdapterInstance> AdapterInstances => Set<AdapterInstance>();
@@ -1693,6 +1695,45 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.CharId)
                 .OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(x => new { x.InspectionOrderId, x.CharId });
+        });
+
+        b.Entity<Ncr>(e =>
+        {
+            e.ToTable("Ncrs", "qual");
+            e.HasKey(x => x.NcrId);
+            e.HasIndex(x => x.NcrNo).IsUnique();
+            e.Property(x => x.NcrNo).HasMaxLength(30).IsRequired();
+            e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Severity).HasMaxLength(20).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(100);
+            e.Property(x => x.QtyAffected).HasColumnType("decimal(18,4)");
+            e.Property(x => x.DispositionCode).HasMaxLength(30);
+            e.Property(x => x.DispositionSetBy).HasMaxLength(100);
+            e.Property(x => x.RootCause).HasMaxLength(500);
+            e.Property(x => x.CorrectiveAction).HasMaxLength(500);
+            e.Property(x => x.PreventiveAction).HasMaxLength(500);
+            e.Property(x => x.AssignedTo).HasMaxLength(100);
+            e.Property(x => x.ClosedBy).HasMaxLength(100);
+            e.Property(x => x.CreatedBy).HasMaxLength(100).IsRequired();
+            e.HasMany(x => x.DefectLines)
+                .WithOne(l => l.Ncr)
+                .HasForeignKey(l => l.NcrId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.DefectLines)
+                .HasField("_defectLines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<NcrDefectLine>(e =>
+        {
+            e.ToTable("NcrDefectLines", "qual");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.Notes).HasMaxLength(255);
+            e.HasOne(x => x.DefectCode)
+                .WithMany()
+                .HasForeignKey(x => x.DefectCodeId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 

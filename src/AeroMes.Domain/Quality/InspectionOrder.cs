@@ -1,5 +1,6 @@
 using AeroMes.Domain.Common;
 using AeroMes.Domain.Exceptions;
+using AeroMes.Domain.Quality.Events;
 
 namespace AeroMes.Domain.Quality;
 
@@ -84,6 +85,7 @@ public class InspectionOrder : Entity
             throw new DomainException($"Cannot fail order in status {Status}.");
         Status = "FAILED";
         CompletedAt = DateTimeOffset.UtcNow;
+        RaiseDomainEvent(new InspectionOrderFailedEvent(InspectionOrderId, WorkOrderId, ProductCode));
     }
 
     public void Waive(string waivedBy, string reason)

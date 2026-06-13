@@ -128,6 +128,7 @@ using AeroMes.Application.Iot.StateRules.Queries.GetStateRules;
 using AeroMes.Application.Quality.InspectionOrders;
 using AeroMes.Application.Quality.InspectionPlans;
 using AeroMes.Application.Quality.InspectionResults;
+using AeroMes.Application.Quality.Ncr;
 using AeroMes.Application.Wms.Queries.GetBeginningInventoryEntries;
 using AeroMes.Application.Wms.Commands.UpdateProductPickingConfig;
 using AeroMes.Application.Wms.Queries.GetLotAllocation;
@@ -592,6 +593,17 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(AddCharacteristicRequest))]
 [JsonSerializable(typeof(UpdateCharacteristicRequest))]
 [JsonSerializable(typeof(ReorderCharacteristicsRequest))]
+// ncr
+[JsonSerializable(typeof(IReadOnlyList<NcrListDto>))]
+[JsonSerializable(typeof(NcrDetailDto))]
+[JsonSerializable(typeof(NcrDefectLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<NcrDefectLineDto>))]
+[JsonSerializable(typeof(NcrCreatedResult))]
+[JsonSerializable(typeof(CreateManualNcrRequest))]
+[JsonSerializable(typeof(SetNcrDispositionRequest))]
+[JsonSerializable(typeof(CloseNcrRequest))]
+[JsonSerializable(typeof(CancelNcrRequest))]
+[JsonSerializable(typeof(UpdateNcrRequest))]
 // iot
 [JsonSerializable(typeof(AdapterDto))]
 [JsonSerializable(typeof(AdapterDetailDto))]
