@@ -53,6 +53,7 @@ builder.Services.AddOpenApi(opts =>
     opts.AddOperationTransformer<AuthOperationTransformer>();
 });
 builder.Services.AddProblemDetails();
+builder.Services.AddLocalization();
 
 builder.Services.AddApplication();        // MediatR + FluentValidation + ValidationBehavior
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -170,6 +171,18 @@ app.UseStaticFiles();
 app.Use(ExceptionMiddleware.InvokeAsync);   // must be first — catches all downstream exceptions
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
+
+// Localization after authentication so UserPreferenceCultureProvider can read user claims.
+var supportedCultures = new[] { "vi", "en-US" };
+app.UseRequestLocalization(opts =>
+{
+    opts.SetDefaultCulture("vi")
+        .AddSupportedCultures(supportedCultures)
+        .AddSupportedUICultures(supportedCultures);
+    // Provider order: query string → authenticated user preference → Accept-Language header
+    opts.RequestCultureProviders.Insert(0, new AeroMes.Api.Middleware.UserPreferenceCultureProvider());
+});
+
 app.UseAuthorization();
 app.Use(ForcePasswordChangeMiddleware.InvokeAsync);
 app.Use(MfaEnforcementMiddleware.InvokeAsync);

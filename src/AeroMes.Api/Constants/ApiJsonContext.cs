@@ -781,6 +781,10 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(FileUploadResult))]
 [JsonSerializable(typeof(FileObjectDto))]
 [JsonSerializable(typeof(IReadOnlyList<FileObjectDto>))]
+// localization
+[JsonSerializable(typeof(SupportedLanguageDto))]
+[JsonSerializable(typeof(List<SupportedLanguageDto>))]
+[JsonSerializable(typeof(ApiResponse<List<SupportedLanguageDto>>))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

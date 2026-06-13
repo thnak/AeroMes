@@ -178,7 +178,8 @@ public static class DependencyInjection
         .AddRoles<IdentityRole>()
         .AddEntityFrameworkStores<AppDbContext>()
         .AddSignInManager()
-        .AddDefaultTokenProviders();
+        .AddDefaultTokenProviders()
+        .AddClaimsPrincipalFactory<AppUserClaimsPrincipalFactory>();
 
         // Passkey (WebAuthn) — .NET 10 built-in, no AddPasskeys() extension needed
         services.Configure<IdentityPasskeyOptions>(opts =>

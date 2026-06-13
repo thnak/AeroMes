@@ -92,7 +92,7 @@ public class AuthController(
         }
 
         var roles = await userManager.GetRolesAsync(user);
-        var accessToken = tokenService.CreateToken(user.Id, user.Email!, roles, user.DefaultWorkCenterId);
+        var accessToken = tokenService.CreateToken(user.Id, user.Email!, roles, user.DefaultWorkCenterId, preferredLanguage: user.PreferredLanguage);
 
         var (rawRefresh, refreshEntity) = CreateRefreshToken(user.Id, ua, ip);
         refreshTokens.Add(refreshEntity);
@@ -156,7 +156,7 @@ public class AuthController(
             return Unauthorized(new MessageResult("Account disabled."));
 
         var roles = await userManager.GetRolesAsync(user);
-        var accessToken = tokenService.CreateToken(user.Id, user.Email!, roles, user.DefaultWorkCenterId);
+        var accessToken = tokenService.CreateToken(user.Id, user.Email!, roles, user.DefaultWorkCenterId, preferredLanguage: user.PreferredLanguage);
 
         var (rawRefresh, newEntity) = CreateRefreshToken(user.Id,
             Request.Headers.UserAgent.ToString(), ip, stored.FamilyId);

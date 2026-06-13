@@ -10,7 +10,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
 {
     public string CreateToken(
         string userId, string email, IEnumerable<string> roles,
-        int? workCenterId = null, bool mfaVerified = false)
+        int? workCenterId = null, bool mfaVerified = false, string? preferredLanguage = null)
     {
         var claims = new List<Claim>
         {
@@ -25,6 +25,9 @@ public class TokenService(IConfiguration configuration) : ITokenService
 
         if (mfaVerified)
             claims.Add(new Claim("mfa_verified", "true"));
+
+        if (preferredLanguage is not null)
+            claims.Add(new Claim("preferred_language", preferredLanguage));
 
         var expiryMinutes = int.TryParse(configuration["Jwt:ExpiryMinutes"], out var m) ? m : 15;
         return BuildToken(claims, expiryMinutes);

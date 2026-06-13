@@ -12,6 +12,8 @@ public record AppInfoDto(
     string InstanceId
 );
 
+public record SupportedLanguageDto(string Code, string DisplayName);
+
 [ApiController]
 [Route("api/v1/app-info")]
 [Authorize]
@@ -29,5 +31,18 @@ public class AppInfoController(IConfiguration configuration, IHostEnvironment en
             InstanceId:  configuration["INSTANCE_ID"] ?? Environment.MachineName
         );
         return Ok(new ApiResponse<AppInfoDto>(true, "OK", dto));
+    }
+
+    [HttpGet("languages")]
+    [AllowAnonymous]
+    [ProducesResponseType<ApiResponse<List<SupportedLanguageDto>>>(StatusCodes.Status200OK)]
+    public ActionResult<ApiResponse<List<SupportedLanguageDto>>> GetLanguages()
+    {
+        var langs = new List<SupportedLanguageDto>
+        {
+            new("vi", "Tiếng Việt"),
+            new("en-US", "English"),
+        };
+        return Ok(new ApiResponse<List<SupportedLanguageDto>>(true, "OK", langs));
     }
 }
