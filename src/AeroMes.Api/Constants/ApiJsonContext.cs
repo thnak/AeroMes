@@ -14,6 +14,7 @@ using AeroMes.Application.Reports.Queries.GetQualityReport;
 using AeroMes.Application.Integration.Commands.BatchCreateProductionOrders;
 using AeroMes.Application.Integration.Commands.CreateMultiProductionOrder;
 using AeroMes.Application.Integration.Commands.SaveErpSettings;
+using AeroMes.Application.Production.Queries.GetProductionOrderProgress;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrders;
 using AeroMes.Application.Integration.Commands.SyncSalesOrders;
@@ -329,6 +330,20 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(BatchOrderItemRequest))]
 [JsonSerializable(typeof(BatchCreateProductionOrdersRequest))]
 [JsonSerializable(typeof(IReadOnlyList<BatchOrderItemRequest>))]
+// production order progress
+[JsonSerializable(typeof(ProductionOrderProgressDto))]
+[JsonSerializable(typeof(StageProgressDto))]
+[JsonSerializable(typeof(IReadOnlyList<StageProgressDto>))]
+[JsonSerializable(typeof(MaterialProgressDto))]
+[JsonSerializable(typeof(IReadOnlyList<MaterialProgressDto>))]
+[JsonSerializable(typeof(OutputSummaryDto))]
+[JsonSerializable(typeof(IReadOnlyList<OutputSummaryDto>))]
+[JsonSerializable(typeof(QualityProgressDto))]
+[JsonSerializable(typeof(IReadOnlyList<QualityProgressDto>))]
+[JsonSerializable(typeof(DefectSummaryDto))]
+[JsonSerializable(typeof(IReadOnlyList<DefectSummaryDto>))]
+[JsonSerializable(typeof(HandoverProgressDto))]
+[JsonSerializable(typeof(IReadOnlyList<HandoverProgressDto>))]
 // integration — multi-product production orders
 [JsonSerializable(typeof(MultiProductionOrderCreatedResult))]
 [JsonSerializable(typeof(MultiProductionOrderSummaryDto))]

@@ -4,6 +4,7 @@ using AeroMes.Application.Common;
 using AeroMes.Application.Integration.Commands.SaveErpSettings;
 using AeroMes.Application.Integration.Commands.SyncProductionOrders;
 using AeroMes.Application.Integration.Commands.BatchCreateProductionOrders;
+using AeroMes.Application.Production.Queries.GetProductionOrderProgress;
 using AeroMes.Application.Integration.Commands.SyncSalesOrders;
 using AeroMes.Application.Integration.Commands.TestErpConnection;
 using AeroMes.Application.Integration.Queries.GetErpSettings;
@@ -138,6 +139,20 @@ public class IntegrationController(
         var result = await commandMediator.SendAsync(new SyncProductionOrdersCommand(), null, ct);
         if (!result.IsSuccess) return result.ToErrorResult();
         return Ok(new ApiResponse<ErpSyncResult>(true, "Sync complete", result.Value!));
+    }
+
+    // ── Production Order Progress ────────────────────────────────────────────
+
+    [HttpGet("production-orders/{id:int}/progress")]
+    [RequirePermission(Permissions.IntegrationRead)]
+    [ProducesResponseType<ProductionOrderProgressDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetProductionOrderProgress(int id, CancellationToken ct)
+    {
+        var result = await queryMediator.QueryAsync(
+            new GetProductionOrderProgressQuery(id), null, ct);
+        if (!result.IsFound) return NotFound(result.ErrorMessage);
+        return Ok(result.Value!);
     }
 
     // ── Batch Production Order Creation ──────────────────────────────────────
