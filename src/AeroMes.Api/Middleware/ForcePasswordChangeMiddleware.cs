@@ -14,6 +14,7 @@ public class ForcePasswordChangeMiddleware
         "/api/v1/auth/me",
         "/api/v1/auth/mfa/",
         "/api/v1/auth/passkey/",
+        "/api/v1/app-info",
     ];
 
     public record ForcePasswordChangeResponse(string Type, string Title, int Status, string Detail, string Code)

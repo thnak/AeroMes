@@ -21,6 +21,7 @@ public class MfaEnforcementMiddleware
         "/api/v1/auth/passkey/",
         "/api/v1/auth/change-password",
         "/api/v1/auth/sessions",
+        "/api/v1/app-info",
     ];
 
     public record MfaVerifyRequiredResponse(string Type, string Title, int Status, string Detail, string Code)
