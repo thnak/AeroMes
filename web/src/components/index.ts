@@ -12,3 +12,4 @@ export { default as QrCodeDialog } from './QrCodeDialog';
 export { default as NotificationsDrawer } from './NotificationsDrawer';
 export { default as FileUpload } from './FileUpload';
 export { default as AttachmentList } from './AttachmentList';
+export { default as LabelDialog } from './LabelDialog';

@@ -751,6 +751,12 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(List<LabelPrintJobDto>))]
 [JsonSerializable(typeof(CreatePrintJobRequest))]
 [JsonSerializable(typeof(ScanResultDto))]
+[JsonSerializable(typeof(BatchLabelItem))]
+[JsonSerializable(typeof(BatchLabelItem[]))]
+[JsonSerializable(typeof(BatchLabelRequest))]
+[JsonSerializable(typeof(BatchLabelResponse))]
+[JsonSerializable(typeof(LabelEncodeRequest))]
+[JsonSerializable(typeof(LabelDecodeResponse))]
 // reminders
 [JsonSerializable(typeof(ReminderAlertDto))]
 [JsonSerializable(typeof(List<ReminderAlertDto>))]

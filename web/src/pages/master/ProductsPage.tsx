@@ -31,6 +31,7 @@ import {
   ExportButton,
   FileUpload,
   FormDrawer,
+  LabelDialog,
   PageHeader,
   PageRoot,
   RefreshButton,
@@ -324,6 +325,7 @@ export default function ProductsPage() {
   const [drawerMode, setDrawerMode]           = useState<DrawerMode>('create');
   const [editTarget, setEditTarget]           = useState<ProductDto | null>(null);
   const [deleteTarget, setDeleteTarget]       = useState<ProductDto | null>(null);
+  const [labelTarget, setLabelTarget]         = useState<ProductDto | null>(null);
   const [saveError, setSaveError]             = useState('');
 
   const { data: products = [], isLoading, error, refetch } =
@@ -542,6 +544,11 @@ export default function ProductsPage() {
               <SolarIcon name="edit" size={16} />
             </IconButton>
           </Tooltip>
+          <Tooltip title="Print Label">
+            <IconButton size="small" onClick={() => setLabelTarget(params.row)} sx={{ color: 'text.secondary' }}>
+              <SolarIcon name="print" size={16} />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Delete">
             <IconButton size="small" onClick={() => setDeleteTarget(params.row)} sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}>
               <SolarIcon name="delete" size={16} />
@@ -707,6 +714,14 @@ export default function ProductsPage() {
         confirmLabel="Delete"
         confirmColor="error"
         loading={deleteMutation.isPending}
+      />
+
+      <LabelDialog
+        open={!!labelTarget}
+        onClose={() => setLabelTarget(null)}
+        contentType="PRD"
+        entityId={labelTarget?.productCode ?? ''}
+        entityLabel={labelTarget?.productName}
       />
     </PageRoot>
   );

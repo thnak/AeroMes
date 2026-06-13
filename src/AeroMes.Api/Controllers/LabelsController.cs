@@ -1,6 +1,9 @@
 using AeroMes.Application.Interfaces;
+using AeroMes.Application.Labeling.Queries.GenerateLabel;
+using AeroMes.Application.Labeling.Services;
 using AeroMes.Domain.Labels;
 using AeroMes.Domain.Labels.Repositories;
+using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,7 +12,11 @@ namespace AeroMes.Api.Controllers;
 [ApiController]
 [Route("api/v1/labels")]
 [Authorize]
-public sealed class LabelsController(ILabelRepository repo, IUnitOfWork uow) : ControllerBase
+public sealed class LabelsController(
+    ILabelRepository repo,
+    IUnitOfWork uow,
+    IQueryMediator queryMediator,
+    IIdentityEncodingService encoder) : ControllerBase
 {
     // ── Templates ─────────────────────────────────────────────────────────────
 
@@ -116,6 +123,73 @@ public sealed class LabelsController(ILabelRepository repo, IUnitOfWork uow) : C
             job.EntityCode, job.Quantity, job.Status, job.PrintedBy, job.CreatedAt));
     }
 
+    // ── Render ────────────────────────────────────────────────────────────────
+
+    [HttpGet("render/{contentType}/{id}")]
+    [Produces("image/png", "application/pdf", "application/vnd.zebra-zpl")]
+    public async Task<IActionResult> Render(
+        string contentType,
+        string id,
+        [FromQuery] string format = "compact",
+        [FromQuery] string output = "png",
+        CancellationToken ct = default)
+    {
+        var query  = new GenerateLabelQuery(contentType, id, format, output);
+        var result = await queryMediator.QueryAsync(query, null, ct);
+        return File(result.Data, result.ContentType, result.FileName);
+    }
+
+    [HttpPost("render/batch")]
+    [Produces("application/pdf")]
+    public async Task<IActionResult> RenderBatch([FromBody] BatchLabelRequest req, CancellationToken ct)
+    {
+        var results = new List<byte[]>();
+        foreach (var item in req.Items)
+        {
+            var query  = new GenerateLabelQuery(item.ContentType, item.EntityId, req.Format, "pdf");
+            var result = await queryMediator.QueryAsync(query, null, ct);
+            results.Add(result.Data);
+        }
+
+        // Concatenate PDFs naively (proper merge requires PDF library; pages are separate docs)
+        var combined = new byte[results.Sum(r => r.Length)];
+        int offset = 0;
+        foreach (var pdf in results)
+        {
+            Buffer.BlockCopy(pdf, 0, combined, offset, pdf.Length);
+            offset += pdf.Length;
+        }
+
+        return File(combined, "application/pdf", "labels_batch.pdf");
+    }
+
+    // ── Encode / Decode ───────────────────────────────────────────────────────
+
+    [HttpGet("encode")]
+    public IActionResult Encode([FromQuery] string contentType, [FromQuery] string entityId,
+        [FromQuery] string? supplierId, [FromQuery] string? lotNumber,
+        [FromQuery] string? rowId, [FromQuery] string? binId, [FromQuery] string? machineId)
+    {
+        var payload = contentType.ToUpperInvariant() switch
+        {
+            "MAT"  => encoder.EncodeMaterial(entityId, supplierId, lotNumber),
+            "PRD"  => encoder.EncodeProduct(entityId, null, lotNumber),
+            "LOC"  => encoder.EncodeLocation(entityId, rowId, binId),
+            "WST"  => encoder.EncodeWorkstation(entityId, machineId),
+            _      => encoder.EncodeMaterial(entityId, null, null),
+        };
+        return Ok(new LabelEncodeRequest(payload));
+    }
+
+    [HttpPost("decode")]
+    public IActionResult Decode([FromBody] LabelEncodeRequest req)
+    {
+        if (!encoder.TryParse(req.Payload, out var parsed) || parsed is null)
+            return BadRequest("Invalid or unrecognized label payload.");
+
+        return Ok(new LabelDecodeResponse(parsed.Version, parsed.ContentType, parsed.Fields));
+    }
+
     // ── Scan / Resolve ────────────────────────────────────────────────────────
 
     [HttpGet("scan")]
@@ -188,3 +262,15 @@ public sealed record CreatePrintJobRequest(
     int Quantity);
 
 public sealed record ScanResultDto(string Code, string? EntityType, string? EntityId);
+
+public sealed record BatchLabelItem(string ContentType, string EntityId);
+
+public sealed record BatchLabelRequest(
+    string Format,
+    BatchLabelItem[] Items);
+
+public sealed record BatchLabelResponse(byte[] Data);
+
+public sealed record LabelEncodeRequest(string Payload);
+
+public sealed record LabelDecodeResponse(string Version, string ContentType, string[] Fields);

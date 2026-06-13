@@ -9,8 +9,10 @@ using AeroMes.Domain.Quality.Repositories;
 using AeroMes.Domain.Lab.Repositories;
 using AeroMes.Domain.Labels.Repositories;
 using AeroMes.Domain.Reminders.Repositories;
+using AeroMes.Application.Labeling.Services;
 using AeroMes.Application.Storage;
 using AeroMes.Domain.Storage.Repositories;
+using AeroMes.Infrastructure.Labeling;
 using AeroMes.Domain.Sop.Repositories;
 using AeroMes.Domain.Rules.Repositories;
 using AeroMes.Domain.Wms.Repositories;
@@ -293,6 +295,10 @@ public static class DependencyInjection
         }
         services.AddScoped<IFileObjectRepository, FileObjectRepository>();
         services.AddScoped<IThumbnailGenerator, ImageSharpThumbnailGenerator>();
+
+        // Labeling
+        services.AddSingleton<IIdentityEncodingService, IdentityEncodingService>();
+        services.AddSingleton<ILabelRenderer, QuestPdfLabelRenderer>();
 
         return services;
     }
