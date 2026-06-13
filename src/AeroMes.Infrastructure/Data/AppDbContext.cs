@@ -147,6 +147,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<DisassemblyOrder> DisassemblyOrders => Set<DisassemblyOrder>();
     public DbSet<ProductionPlanByOrder> ProductionPlansByOrder => Set<ProductionPlanByOrder>();
     public DbSet<ProductionPlanOrderLine> ProductionPlanOrderLines => Set<ProductionPlanOrderLine>();
+    public DbSet<MaterialRequirementsPlan> MaterialRequirementsPlans => Set<MaterialRequirementsPlan>();
+    public DbSet<MrpLine> MrpLines => Set<MrpLine>();
     public DbSet<MaterialPurchaseRequest> MaterialPurchaseRequests => Set<MaterialPurchaseRequest>();
     public DbSet<MaterialPurchaseRequestLine> MaterialPurchaseRequestLines => Set<MaterialPurchaseRequestLine>();
 
@@ -2319,6 +2321,44 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.PlannedQty).HasColumnType("DECIMAL(18,4)");
             e.Property(x => x.ActualQty).HasColumnType("DECIMAL(18,4)");
             e.Ignore(x => x.IsLate);
+        });
+
+        b.Entity<MaterialRequirementsPlan>(e =>
+        {
+            e.ToTable("MaterialRequirementsPlans", "prod");
+            e.HasKey(x => x.MrpID);
+            e.Property(x => x.MrpID).UseIdentityColumn();
+            e.Property(x => x.PlanNumber).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.PlanNumber).IsUnique();
+            e.Property(x => x.PlanName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.OrganizationalUnit).HasMaxLength(100);
+            e.Property(x => x.Notes).HasMaxLength(1000);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.HasMany(x => x.Lines).WithOne()
+                .HasForeignKey(x => x.MrpID).OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines).HasField("_lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<MrpLine>(e =>
+        {
+            e.ToTable("MrpLines", "prod");
+            e.HasKey(x => x.MrpLineID);
+            e.Property(x => x.MrpLineID).UseIdentityColumn();
+            e.Property(x => x.FinishedGoodCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.MaterialCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.MaterialName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
+            e.Property(x => x.FinishedGoodQty).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.FixedWaste).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.WasteRatio).HasColumnType("DECIMAL(10,6)");
+            e.Property(x => x.CalculatedMaterialQty).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.OpeningInventory).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.ConcurrentPurchaseRequestQty).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.PlannedOrderQty).HasColumnType("DECIMAL(18,4)");
+            e.Ignore(x => x.ForecastedClosingBalance);
+            e.Ignore(x => x.HasShortfall);
+            e.HasIndex(x => x.MrpID);
         });
 
         b.Entity<MaterialPurchaseRequest>(e =>

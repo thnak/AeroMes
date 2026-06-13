@@ -185,6 +185,8 @@ using AeroMes.Application.Master.DisassemblyBoms.Queries.GetDisassemblyBoms;
 using AeroMes.Application.Master.DisassemblyBoms.Queries.GetDisassemblyBomById;
 using AeroMes.Application.Master.Boms.Commands.UpdateBomByProducts;
 using AeroMes.Application.Cost.WOCosts.Queries.GetWOCostBreakdown;
+using AeroMes.Application.Production.MRP.Commands.UpdateMrp;
+using AeroMes.Domain.Production;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Quality;
 using AeroMes.Domain.Quality.Repositories;
@@ -1216,6 +1218,20 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(List<QualityCriteriaDto>))]
 [JsonSerializable(typeof(CriteriaType))]
 [JsonSerializable(typeof(CriteriaStatus))]
+// MRP — #76
+[JsonSerializable(typeof(MrpStatus))]
+[JsonSerializable(typeof(CreateMrpRequest))]
+[JsonSerializable(typeof(UpdateMrpRequest))]
+[JsonSerializable(typeof(MrpLineInput))]
+[JsonSerializable(typeof(IReadOnlyList<MrpLineInput>))]
+[JsonSerializable(typeof(MrpListDto))]
+[JsonSerializable(typeof(IReadOnlyList<MrpListDto>))]
+[JsonSerializable(typeof(List<MrpListDto>))]
+[JsonSerializable(typeof(PagedResult<MrpListDto>))]
+[JsonSerializable(typeof(MrpDetailDto))]
+[JsonSerializable(typeof(MrpLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<MrpLineDto>))]
+[JsonSerializable(typeof(List<MrpLineDto>))]
 // WO actual cost capture — #74
 [JsonSerializable(typeof(PostMaterialCostRequest))]
 [JsonSerializable(typeof(CloseJobCostRequest))]
