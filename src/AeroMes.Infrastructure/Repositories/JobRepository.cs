@@ -39,4 +39,10 @@ public class JobRepository(AppDbContext db) : IJobRepository
         db.Jobs.Add(entity);
         return Task.CompletedTask;
     }
+
+    public Task<Job?> GetLatestCompletedJobAsync(int workOrderId, CancellationToken ct) =>
+        db.Jobs
+            .Where(x => x.WOID == workOrderId && x.Status == JobStatus.Finished)
+            .OrderByDescending(x => x.EndTime)
+            .FirstOrDefaultAsync(ct);
 }

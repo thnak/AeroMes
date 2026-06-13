@@ -1,11 +1,12 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
+using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
+using AeroMes.Domain.Quality.Repositories;
 using FluentValidation;
 using LiteBus.Commands.Abstractions;
-using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Application.Jobs.Commands.StartJob;
 
@@ -15,6 +16,7 @@ public class StartJobHandler(
     IEmployeeRepository employeeRepo,
     IWorkOrderAutoRulesRepository autoRulesRepo,
     IJobRepository jobRepo,
+    IInspectionOrderRepository inspectionOrderRepo,
     IUnitOfWork uow,
     IValidator<StartJobCommand> validator)
     : ICommandHandler<StartJobCommand, ValidationResult<StartJobResult>>
@@ -38,6 +40,15 @@ public class StartJobHandler(
                 return ValidationResult<StartJobResult>.NotFound($"Machine '{cmd.MachineCode}' was not found.");
 
             await EnsureCertifiedAsync(workOrder, cmd.OperatorId, ct);
+
+            // QC gate: if prior job on this work order had a QC step, check inspection cleared
+            var priorJob = await jobRepo.GetLatestCompletedJobAsync(cmd.WorkOrderId, ct);
+            if (priorJob is not null)
+            {
+                var hasOpen = await inspectionOrderRepo.HasOpenOrderForJobAsync(priorJob.JobID, ct);
+                if (hasOpen)
+                    throw new DomainException("QC gate: inspection order for the prior job has not been cleared.");
+            }
 
             var job = Job.Create(cmd.WorkOrderId, cmd.MachineCode, cmd.ShiftCode, cmd.OperatorId, cmd.StartTime);
             await jobRepo.AddAsync(job, ct);

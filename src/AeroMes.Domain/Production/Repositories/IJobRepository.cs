@@ -9,4 +9,5 @@ public interface IJobRepository
         int? woId, string? machineCode, JobStatus? status,
         DateTime? from, DateTime? to, CancellationToken ct = default);
     Task AddAsync(Job entity, CancellationToken ct = default);
+    Task<Job?> GetLatestCompletedJobAsync(int workOrderId, CancellationToken ct = default);
 }

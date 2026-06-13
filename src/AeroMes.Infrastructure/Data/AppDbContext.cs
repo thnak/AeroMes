@@ -131,6 +131,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<DefectDetail> DefectDetails => Set<DefectDetail>();
     public DbSet<InspectionPlan> InspectionPlans => Set<InspectionPlan>();
     public DbSet<InspectionCharacteristic> InspectionCharacteristics => Set<InspectionCharacteristic>();
+    public DbSet<InspectionOrder> InspectionOrders => Set<InspectionOrder>();
 
     // iot schema
     public DbSet<AdapterInstance> AdapterInstances => Set<AdapterInstance>();
@@ -1596,6 +1597,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.SeverityLevel).HasMaxLength(20).IsRequired();
             e.Property(x => x.DefectCodeLink).HasMaxLength(50);
             e.Property(x => x.Notes).HasMaxLength(255);
+        });
+
+        b.Entity<InspectionOrder>(e =>
+        {
+            e.ToTable("InspectionOrders", "qual");
+            e.HasKey(x => x.InspectionOrderId);
+            e.HasIndex(x => x.OrderNo).IsUnique();
+            e.Property(x => x.OrderNo).HasMaxLength(30).IsRequired();
+            e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            e.Property(x => x.TriggeredBy).HasMaxLength(30).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(100);
+            e.Property(x => x.InspectorCode).HasMaxLength(100);
+            e.Property(x => x.WaivedBy).HasMaxLength(100);
+            e.Property(x => x.WaivedReason).HasMaxLength(500);
+            e.HasOne(x => x.Plan).WithMany().HasForeignKey(x => x.PlanId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 

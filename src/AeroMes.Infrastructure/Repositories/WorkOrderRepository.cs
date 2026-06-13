@@ -36,4 +36,10 @@ public class WorkOrderRepository(AppDbContext db) : IWorkOrderRepository
         db.WorkOrders.Add(entity);
         return Task.CompletedTask;
     }
+
+    public Task<WorkOrder?> GetByIdWithRoutingStepAndProductionOrderAsync(int id, CancellationToken ct) =>
+        db.WorkOrders
+            .Include(x => x.RoutingStep)
+            .Include(x => x.ProductionOrder)
+            .FirstOrDefaultAsync(x => x.WOID == id, ct);
 }

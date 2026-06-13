@@ -21,11 +21,8 @@ public class InspectionPlanRepository(AppDbContext db) : IInspectionPlanReposito
     public Task<bool> ExistsByCodeAsync(string code, CancellationToken ct) =>
         db.InspectionPlans.AnyAsync(x => x.Code == code.ToUpperInvariant(), ct);
 
-    public Task<bool> HasLinkedInspectionOrdersAsync(int planId, CancellationToken ct)
-    {
-        // InspectionOrder table does not exist yet; return false for now.
-        return Task.FromResult(false);
-    }
+    public Task<bool> HasLinkedInspectionOrdersAsync(int planId, CancellationToken ct) =>
+        db.InspectionOrders.AnyAsync(x => x.PlanId == planId, ct);
 
     public async Task<IReadOnlyList<InspectionPlan>> GetListAsync(
         int? routingStepId, string? productCode, bool? isActive, CancellationToken ct)

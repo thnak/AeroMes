@@ -1,5 +1,13 @@
 using AeroMes.Api.Auth;
 using AeroMes.Api.Extensions;
+using AeroMes.Application.Quality.InspectionOrders;
+using AeroMes.Application.Quality.InspectionOrders.Commands.AssignInspectionOrder;
+using AeroMes.Application.Quality.InspectionOrders.Commands.FailInspectionOrder;
+using AeroMes.Application.Quality.InspectionOrders.Commands.PassInspectionOrder;
+using AeroMes.Application.Quality.InspectionOrders.Commands.StartInspectionOrder;
+using AeroMes.Application.Quality.InspectionOrders.Commands.WaiveInspectionOrder;
+using AeroMes.Application.Quality.InspectionOrders.Queries.GetInspectionOrderDetail;
+using AeroMes.Application.Quality.InspectionOrders.Queries.GetInspectionOrders;
 using AeroMes.Application.Quality.InspectionPlans;
 using AeroMes.Application.Quality.InspectionPlans.Commands.AddCharacteristic;
 using AeroMes.Application.Quality.InspectionPlans.Commands.CreateInspectionPlan;
@@ -167,6 +175,89 @@ public class QualityController(ICommandMediator commandMediator, IQueryMediator 
         if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
+
+    // ── Inspection Orders ─────────────────────────────────────────────────
+
+    [HttpGet("inspection-orders")]
+    [RequirePermission(Permissions.QualityRead)]
+    [ProducesResponseType<IReadOnlyList<InspectionOrderListDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetInspectionOrders(
+        [FromQuery] string? status,
+        [FromQuery] string? workCenter,
+        [FromQuery] DateOnly? date,
+        CancellationToken ct)
+        => Ok(await queryMediator.QueryAsync(new GetInspectionOrdersQuery(status, workCenter, date), null, ct));
+
+    [HttpGet("inspection-orders/{id:int}")]
+    [RequirePermission(Permissions.QualityRead)]
+    [ProducesResponseType<InspectionOrderDetailDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetInspectionOrderDetail(int id, CancellationToken ct)
+    {
+        var result = await queryMediator.QueryAsync(new GetInspectionOrderDetailQuery(id), null, ct);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpPatch("inspection-orders/{id:int}/assign")]
+    [RequirePermission(Permissions.QualityWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> AssignInspectionOrder(int id, [FromBody] AssignInspectionOrderRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(new AssignInspectionOrderCommand(id, req.InspectorCode), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpPatch("inspection-orders/{id:int}/start")]
+    [RequirePermission(Permissions.QualityWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> StartInspectionOrder(int id, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(new StartInspectionOrderCommand(id), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpPatch("inspection-orders/{id:int}/pass")]
+    [RequirePermission(Permissions.QualityWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> PassInspectionOrder(int id, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(new PassInspectionOrderCommand(id), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpPatch("inspection-orders/{id:int}/fail")]
+    [RequirePermission(Permissions.QualityWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> FailInspectionOrder(int id, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(new FailInspectionOrderCommand(id), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpPatch("inspection-orders/{id:int}/waive")]
+    [RequirePermission(Permissions.QualityApprove)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> WaiveInspectionOrder(int id, [FromBody] WaiveInspectionOrderRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new WaiveInspectionOrderCommand(id, req.WaivedBy, req.Reason), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
 }
 
 // ── Request / Result records ───────────────────────────────────────────────
@@ -226,3 +317,7 @@ public record ReorderCharacteristicsRequest(List<int> CharIds);
 
 public record InspectionPlanCreatedResult(int PlanId);
 public record CharacteristicCreatedResult(int CharId);
+
+// Inspection order requests
+public record AssignInspectionOrderRequest(string InspectorCode);
+public record WaiveInspectionOrderRequest(string WaivedBy, string Reason);
