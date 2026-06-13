@@ -1,20 +1,27 @@
 using AeroMes.Api.Auth;
 using AeroMes.Api.Extensions;
 using AeroMes.Application.Master.Molds.Commands.AddMoldProduct;
+using AeroMes.Application.Master.Molds.Commands.AssignMoldToJob;
 using AeroMes.Application.Master.Molds.Commands.AssignMoldToMachine;
 using AeroMes.Application.Master.Molds.Commands.CompleteMoldMaintenance;
 using AeroMes.Application.Master.Molds.Commands.DeleteMold;
+using AeroMes.Application.Master.Molds.Commands.IncrementMoldShotCount;
 using AeroMes.Application.Master.Molds.Commands.RecordMoldShots;
 using AeroMes.Application.Master.Molds.Commands.RegisterMold;
 using AeroMes.Application.Master.Molds.Commands.RemoveMoldProduct;
 using AeroMes.Application.Master.Molds.Commands.ScrapMold;
 using AeroMes.Application.Master.Molds.Commands.SendMoldForMaintenance;
+using AeroMes.Application.Master.Molds.Commands.SetMoldCompatibility;
 using AeroMes.Application.Master.Molds.Commands.UnmountMold;
 using AeroMes.Application.Master.Molds.Commands.UpdateMold;
+using AeroMes.Application.Master.Molds.Queries.GetCompatibleMoldsForMachine;
+using AeroMes.Application.Master.Molds.Queries.GetMoldAssignmentHistory;
 using AeroMes.Application.Master.Molds.Queries.GetMoldByCode;
 using AeroMes.Application.Master.Molds.Queries.GetMolds;
 using AeroMes.Application.Master.Molds.Queries.GetMoldsDueForPm;
 using AeroMes.Domain.Master;
+using AeroMes.Domain.Master.Repositories;
+using AeroMes.Domain.Production.Repositories;
 using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
@@ -212,6 +219,65 @@ public class MoldsController(ICommandMediator commandMediator, IQueryMediator qu
         if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
+
+    // ── Mold–Machine Compatibility ─────────────────────────────────────────
+
+    [HttpPut("{code}/compatibility/{machineCode}")]
+    [RequirePermission(Permissions.MasterDataWrite)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> SetCompatibility(
+        string code, string machineCode, [FromBody] SetCompatibilityRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new SetMoldCompatibilityCommand(code, machineCode, req.IsCompatible, req.Notes), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpGet("{code}/compatible-machines")]
+    [RequirePermission(Permissions.MasterDataRead)]
+    [ProducesResponseType<IReadOnlyList<MoldCompatibilityDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetCompatibleMachines(string code, CancellationToken ct)
+        => Ok(await queryMediator.QueryAsync(new GetCompatibleMoldsForMachineQuery(code), null, ct));
+
+    // ── Job Assignment & Shot Tracking ─────────────────────────────────────
+
+    [HttpPost("{code}/assign-job")]
+    [RequirePermission(Permissions.ProductionSubmitOutput)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> AssignToJob(string code, [FromBody] AssignMoldToJobRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new AssignMoldToJobCommand(code, req.MachineCode, req.WOID, req.JobID,
+                User.Identity?.Name ?? "system"), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpPost("{code}/increment-shots")]
+    [RequirePermission(Permissions.ProductionSubmitOutput)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> IncrementShots(string code, [FromBody] IncrementShotsRequest req, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new IncrementMoldShotCountCommand(code, req.JobID, req.QtyOK), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    [HttpGet("{code}/history")]
+    [RequirePermission(Permissions.MasterDataRead)]
+    [ProducesResponseType<IReadOnlyList<MoldAssignmentDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAssignmentHistory(
+        string code,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
+        CancellationToken ct = default)
+        => Ok(await queryMediator.QueryAsync(
+            new GetMoldAssignmentHistoryQuery(code, from, to), null, ct));
 }
 
 public record RegisterMoldRequest(
@@ -263,3 +329,6 @@ public record RecordMoldShotsRequest(long Shots);
 public record MoldCreatedResult(string MoldCode);
 public record MoldProductAddedResult(int MappingId);
 public record MoldMaintenanceLoggedResult(long LogId);
+public record SetCompatibilityRequest(bool IsCompatible, string? Notes = null);
+public record AssignMoldToJobRequest(string MachineCode, int WOID, long JobID);
+public record IncrementShotsRequest(long JobID, long QtyOK);

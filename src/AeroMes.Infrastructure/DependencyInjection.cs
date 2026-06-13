@@ -131,6 +131,8 @@ public static class DependencyInjection
         services.AddScoped<IESignatureService, ESignatureService>();
         services.AddScoped<ISerialUnitRepository, SerialUnitRepository>();
         services.AddScoped<ISerialNumberGenerationService, SerialNumberGenerationService>();
+        services.AddScoped<IMoldCompatibilityRepository, MoldCompatibilityRepository>();
+        services.AddScoped<IMoldAssignmentRepository, MoldAssignmentRepository>();
 
         // ERP client + background sync
         services.AddHttpClient("erp").ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler

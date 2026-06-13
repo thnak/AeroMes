@@ -14,6 +14,7 @@ public class Job : Entity
     public string MachineCode { get; private set; } = string.Empty;
     public string ShiftCode { get; private set; } = string.Empty;
     public string OperatorID { get; private set; } = string.Empty;
+    public string? MoldCode { get; private set; }
     public DateTime StartTime { get; private set; }
     public DateTime? EndTime { get; private set; }
     public JobStatus Status { get; private set; } = JobStatus.Active;
@@ -71,6 +72,13 @@ public class Job : Entity
         Status = JobStatus.Finished;
         EndTime = endTime ?? DateTime.UtcNow;
         RaiseDomainEvent(new JobFinishedEvent(JobID, WOID));
+    }
+
+    public void AssignMold(string moldCode)
+    {
+        if (Status == JobStatus.Finished)
+            throw new DomainException($"Cannot assign mold to a finished job {JobID}.");
+        MoldCode = moldCode.Trim().ToUpperInvariant();
     }
 
     private void EnsureStatus(JobStatus required, string operation)

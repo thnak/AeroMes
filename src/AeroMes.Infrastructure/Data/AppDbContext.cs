@@ -75,6 +75,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<Mold> Molds => Set<Mold>();
     public DbSet<MoldProductMapping> MoldProductMappings => Set<MoldProductMapping>();
     public DbSet<MoldMaintenanceLog> MoldMaintenanceLogs => Set<MoldMaintenanceLog>();
+    public DbSet<MoldMachineCompatibility> MoldMachineCompatibilities => Set<MoldMachineCompatibility>();
+    public DbSet<MoldAssignment> MoldAssignments => Set<MoldAssignment>();
+    public DbSet<MoldShotLog> MoldShotLogs => Set<MoldShotLog>();
     public DbSet<Tool> Tools => Set<Tool>();
     public DbSet<BomHeader> BomHeaders => Set<BomHeader>();
     public DbSet<BomByProduct> BomByProducts => Set<BomByProduct>();
@@ -1318,6 +1321,40 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.HasIndex(x => x.MoldId);
         });
 
+        b.Entity<MoldMachineCompatibility>(e =>
+        {
+            e.ToTable("MoldMachineCompatibility", "master");
+            e.HasKey(x => new { x.MoldCode, x.MachineCode });
+            e.Property(x => x.MoldCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(255);
+        });
+
+        b.Entity<MoldAssignment>(e =>
+        {
+            e.ToTable("MoldAssignments", "prod");
+            e.HasKey(x => x.AssignmentID);
+            e.Property(x => x.AssignmentID).ValueGeneratedOnAdd();
+            e.Property(x => x.MoldCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.MountedAt).HasColumnType("datetime2").IsRequired();
+            e.Property(x => x.UnmountedAt).HasColumnType("datetime2");
+            e.Property(x => x.MountedBy).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => new { x.MoldCode, x.MountedAt });
+            e.HasIndex(x => x.WOID);
+        });
+
+        b.Entity<MoldShotLog>(e =>
+        {
+            e.ToTable("MoldShotLog", "prod");
+            e.HasKey(x => x.LogID);
+            e.Property(x => x.LogID).ValueGeneratedOnAdd();
+            e.Property(x => x.MoldCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.RecordedAt).HasColumnType("datetime2").IsRequired()
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.HasIndex(x => new { x.MoldCode, x.RecordedAt });
+        });
+
         b.Entity<Tool>(e =>
         {
             e.ToTable("Tools", "master");
@@ -1665,6 +1702,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.ShiftCode).HasMaxLength(20).IsRequired();
             e.Property(x => x.OperatorID).HasMaxLength(50).IsRequired();
+            e.Property(x => x.MoldCode).HasMaxLength(50);
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
             e.HasIndex(x => x.WOID);
             e.HasIndex(x => x.MachineCode);

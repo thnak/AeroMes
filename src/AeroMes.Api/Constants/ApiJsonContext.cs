@@ -22,6 +22,8 @@ using AeroMes.Domain.Traceability;
 using AeroMes.Domain.Traceability.Repositories;
 using AeroMes.Application.Traceability.Services;
 using AeroMes.Application.Traceability.Commands.CommissionSerialUnits;
+using AeroMes.Domain.Master.Repositories;
+using AeroMes.Domain.Production.Repositories;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrders;
 using AeroMes.Application.Integration.Commands.SyncSalesOrders;
@@ -927,6 +929,16 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(SupportedLanguageDto))]
 [JsonSerializable(typeof(List<SupportedLanguageDto>))]
 [JsonSerializable(typeof(ApiResponse<List<SupportedLanguageDto>>))]
+// mold management extensions
+[JsonSerializable(typeof(SetCompatibilityRequest))]
+[JsonSerializable(typeof(AssignMoldToJobRequest))]
+[JsonSerializable(typeof(IncrementShotsRequest))]
+[JsonSerializable(typeof(MoldCompatibilityDto))]
+[JsonSerializable(typeof(IReadOnlyList<MoldCompatibilityDto>))]
+[JsonSerializable(typeof(List<MoldCompatibilityDto>))]
+[JsonSerializable(typeof(MoldAssignmentDto))]
+[JsonSerializable(typeof(IReadOnlyList<MoldAssignmentDto>))]
+[JsonSerializable(typeof(List<MoldAssignmentDto>))]
 // serial unit traceability
 [JsonSerializable(typeof(CommissionSerialUnitsRequest))]
 [JsonSerializable(typeof(PackSerialsRequest))]
