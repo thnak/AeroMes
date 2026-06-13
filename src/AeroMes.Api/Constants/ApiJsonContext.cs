@@ -88,6 +88,10 @@ using AeroMes.Application.Wms.Commands.AddGrnLine;
 using AeroMes.Application.Wms.Queries.GetPurchaseOrders;
 using AeroMes.Application.Wms.Queries.GetGrnList;
 using AeroMes.Application.Wms.Queries.GetGrnDetail;
+using AeroMes.Application.Iot.Adapters.Queries.GetAdapters;
+using AeroMes.Application.Iot.Adapters.Queries.GetAdapterDetail;
+using AeroMes.Application.Iot.Signals.Queries.GetSignals;
+using AeroMes.Application.Iot.StateRules.Queries.GetStateRules;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AeroMes.Api.Constants;
@@ -386,6 +390,17 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<BinStockDto>))]
 [JsonSerializable(typeof(IReadOnlyList<ZoneMapDto>))]
 [JsonSerializable(typeof(ZoneMapDto))]
+// iot
+[JsonSerializable(typeof(AdapterDto))]
+[JsonSerializable(typeof(AdapterDetailDto))]
+[JsonSerializable(typeof(IReadOnlyList<AdapterDto>))]
+[JsonSerializable(typeof(SignalDto))]
+[JsonSerializable(typeof(IReadOnlyList<SignalDto>))]
+[JsonSerializable(typeof(StateRuleDto))]
+[JsonSerializable(typeof(IReadOnlyList<StateRuleDto>))]
+[JsonSerializable(typeof(AdapterCreatedResult))]
+[JsonSerializable(typeof(SignalCreatedResult))]
+[JsonSerializable(typeof(StateRuleCreatedResult))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 

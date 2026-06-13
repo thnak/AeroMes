@@ -3,6 +3,7 @@ using AeroMes.Domain.Auth;
 using AeroMes.Domain.Common;
 using Microsoft.AspNetCore.Identity;
 using AeroMes.Domain.Integration;
+using AeroMes.Domain.Iot;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.ValueObjects;
@@ -104,6 +105,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<DefectCode> DefectCodes => Set<DefectCode>();
     public DbSet<DefectDetail> DefectDetails => Set<DefectDetail>();
 
+    // iot schema
+    public DbSet<AdapterInstance> AdapterInstances => Set<AdapterInstance>();
+    public DbSet<SignalMapping> SignalMappings => Set<SignalMapping>();
+    public DbSet<MachineStateRule> MachineStateRules => Set<MachineStateRule>();
+
     // settings
     public DbSet<SystemOptions> SystemOptions => Set<SystemOptions>();
 
@@ -138,6 +144,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureWmsSchema(b);
         ConfigureQualSchema(b);
         ConfigureSettingsSchema(b);
+        ConfigureIotSchema(b);
     }
 
     // ── auth ──────────────────────────────────────────────────────────────
@@ -1726,6 +1733,50 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.BinId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+
+    // ── iot ───────────────────────────────────────────────────────────────
+    private static void ConfigureIotSchema(ModelBuilder b)
+    {
+        b.Entity<AdapterInstance>(e =>
+        {
+            e.ToTable("AdapterInstances", "iot");
+            e.HasKey(x => x.AdapterID);
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ConfigJson).HasColumnType("nvarchar(max)");
+            e.Property(x => x.AdapterType).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.WebhookApiKey).HasMaxLength(64);
+            e.HasQueryFilter(x => !x.IsDeleted);
+            e.HasMany(x => x.Signals).WithOne(s => s.Adapter).HasForeignKey(s => s.AdapterID);
+            e.Navigation(x => x.Signals)
+                .HasField("_signals")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<SignalMapping>(e =>
+        {
+            e.ToTable("SignalMappings", "iot");
+            e.HasKey(x => x.SignalID);
+            e.Property(x => x.AdapterID).IsRequired();
+            e.Property(x => x.TagKey).HasMaxLength(100).IsRequired();
+            e.Property(x => x.DisplayName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.SourceAddress).HasMaxLength(500).IsRequired();
+            e.HasQueryFilter(x => !x.IsDeleted);
+            e.HasIndex(x => new { x.AdapterID, x.TagKey }).IsUnique().HasFilter("[IsDeleted] = 0");
+        });
+
+        b.Entity<MachineStateRule>(e =>
+        {
+            e.ToTable("MachineStateRules", "iot");
+            e.HasKey(x => x.RuleID);
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.TargetState).HasMaxLength(20).IsRequired();
+            e.Property(x => x.SignalTagKey).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Operator).HasMaxLength(10).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(500);
+            e.HasQueryFilter(x => !x.IsDeleted);
         });
     }
 

@@ -89,6 +89,10 @@ public static class Permissions
     public const string ApiKeyCreate = "ApiKey:Create";
     public const string ApiKeyRevoke = "ApiKey:Revoke";
 
+    // IoT
+    public const string IotRead = "Iot:Read";
+    public const string IotWrite = "Iot:Write";
+
     // System
     public const string SystemConfigure = "System:Configure";
     public const string PermissionRead = "Permission:Read";
@@ -113,5 +117,6 @@ public static class Permissions
         MaintenanceRead, MaintenanceExecute, MaintenanceCreate, MaintenanceApprove,
         ApiKeyRead, ApiKeyCreate, ApiKeyRevoke,
         SystemConfigure, PermissionRead, PermissionManage,
+        IotRead, IotWrite,
     ];
 }

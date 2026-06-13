@@ -1,5 +1,6 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Integration.Repositories;
+using AeroMes.Domain.Iot.Repositories;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production.Repositories;
 using AeroMes.Domain.Quality.Repositories;
@@ -91,6 +92,11 @@ public static class DependencyInjection
         // qual repositories
         services.AddScoped<IDefectCodeRepository, DefectCodeRepository>();
         services.AddScoped<IDefectDetailRepository, DefectDetailRepository>();
+
+        // iot repositories
+        services.AddScoped<IAdapterRepository, AdapterRepository>();
+        services.AddScoped<ISignalMappingRepository, SignalMappingRepository>();
+        services.AddScoped<IMachineStateRuleRepository, MachineStateRuleRepository>();
 
         // cross-cutting
         services.AddScoped<IModuleStatusRepository, ModuleStatusRepository>();

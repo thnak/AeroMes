@@ -15,6 +15,7 @@ import { alpha } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
 import type { GridColDef, GridRenderCellParams, GridRowSelectionModel } from '@mui/x-data-grid';
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -158,6 +159,7 @@ function MachineForm({
 type DrawerMode = 'create' | 'edit';
 
 export default function MachinesPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [search, setSearch]             = useState('');
@@ -313,11 +315,21 @@ export default function MachinesPage() {
     {
       field: 'actions',
       headerName: '',
-      width: 80,
+      width: 130,
       sortable: false,
       align: 'center',
       renderCell: (params: GridRenderCellParams<MachineDto>) => (
         <Stack direction="row" spacing={0.25}>
+          <Tooltip title="IoT Adapters">
+            <IconButton size="small" onClick={() => navigate(`/iot/machines/${params.row.machineCode}/adapters`)} sx={{ color: '#7C3AED' }}>
+              <SolarIcon name="machineOn" size={16} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="State Rules">
+            <IconButton size="small" onClick={() => navigate(`/iot/machines/${params.row.machineCode}/state-rules`)} sx={{ color: '#0EA5E9' }}>
+              <SolarIcon name="settings" size={16} />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Edit">
             <IconButton size="small" onClick={() => openEdit(params.row)} sx={{ color: 'text.secondary' }}>
               <SolarIcon name="edit" size={16} />

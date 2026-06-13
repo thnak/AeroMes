@@ -56,6 +56,11 @@ const InspectionPlanPage = lazy(() => import('./pages/quality/InspectionPlanPage
 const NCRPage = lazy(() => import('./pages/quality/NCRPage'));
 const DefectAnalysisPage = lazy(() => import('./pages/quality/DefectAnalysisPage'));
 
+// IoT
+const IotAdaptersPage   = lazy(() => import('./pages/iot/IotAdaptersPage'));
+const IotSignalsPage    = lazy(() => import('./pages/iot/IotSignalsPage'));
+const IotStateRulesPage = lazy(() => import('./pages/iot/IotStateRulesPage'));
+
 // Maintenance
 const MaintenancePage = lazy(() => import('./pages/maintenance/MaintenancePage'));
 
@@ -177,6 +182,13 @@ export default function App() {
             <Route path="integration/sales-orders/:id" element={<SalesOrderDetailPage />} />
             <Route path="integration/production-orders" element={<ProductionOrdersPage />} />
             <Route path="integration/production-orders/:id" element={<ProductionOrderDetailPage />} />
+          </Route>
+
+          {/* ── IoT module ───────────────────────────────────── */}
+          <Route element={<ModuleLayout />}>
+            <Route path="iot/machines/:machineCode/adapters"    element={<IotAdaptersPage />} />
+            <Route path="iot/adapters/:adapterId/signals"       element={<IotSignalsPage />} />
+            <Route path="iot/machines/:machineCode/state-rules" element={<IotStateRulesPage />} />
           </Route>
 
           {/* ── Maintenance module ────────────────────────────── */}
