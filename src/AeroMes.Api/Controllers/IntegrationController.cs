@@ -1,9 +1,16 @@
 using AeroMes.Api.Auth;
+using AeroMes.Api.Extensions;
 using AeroMes.Application.Common;
+using AeroMes.Application.Integration.Commands.SaveErpSettings;
+using AeroMes.Application.Integration.Commands.SyncProductionOrders;
+using AeroMes.Application.Integration.Commands.SyncSalesOrders;
+using AeroMes.Application.Integration.Commands.TestErpConnection;
+using AeroMes.Application.Integration.Queries.GetErpSettings;
 using AeroMes.Application.Integration.Queries.GetProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetProductionOrders;
 using AeroMes.Application.Integration.Queries.GetSalesOrderDetail;
 using AeroMes.Application.Integration.Queries.GetSalesOrders;
+using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,7 +20,9 @@ namespace AeroMes.Api.Controllers;
 [ApiController]
 [Route("api/v1/integration")]
 [Authorize]
-public class IntegrationController(IQueryMediator queryMediator) : ControllerBase
+public class IntegrationController(
+    IQueryMediator queryMediator,
+    ICommandMediator commandMediator) : ControllerBase
 {
     // ── Sales Orders ─────────────────────────────────────────────────────────
 
@@ -78,4 +87,70 @@ public class IntegrationController(IQueryMediator queryMediator) : ControllerBas
         var result = await queryMediator.QueryAsync(new GetProductionOrderDetailQuery(id), null, ct);
         return Ok(new ApiResponse<ProductionOrderDetailDto>(true, "OK", result));
     }
+
+    // ── ERP Settings ─────────────────────────────────────────────────────────
+
+    [HttpGet("erp-settings")]
+    [RequirePermission(Permissions.IntegrationConfigure)]
+    [ProducesResponseType<ApiResponse<ErpSettingsDto>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<ErpSettingsDto>>> GetErpSettings(CancellationToken ct)
+    {
+        var result = await queryMediator.QueryAsync(new GetErpSettingsQuery(), null, ct);
+        return Ok(new ApiResponse<ErpSettingsDto>(true, "OK", result));
+    }
+
+    [HttpPut("erp-settings")]
+    [RequirePermission(Permissions.IntegrationConfigure)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SaveErpSettings(
+        [FromBody] SaveErpSettingsRequest body, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new SaveErpSettingsCommand(body.ErpEnabled, body.ErpBaseUrl, body.ErpApiKey, body.ErpSyncIntervalMinutes),
+            null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return NoContent();
+    }
+
+    // ── Sync ─────────────────────────────────────────────────────────────────
+
+    [HttpPost("sync/sales-orders")]
+    [RequirePermission(Permissions.IntegrationSync)]
+    [ProducesResponseType<ApiResponse<ErpSyncResult>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ApiResponse<ErpSyncResult>>> SyncSalesOrders(CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(new SyncSalesOrdersCommand(), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return Ok(new ApiResponse<ErpSyncResult>(true, "Sync complete", result.Value!));
+    }
+
+    [HttpPost("sync/production-orders")]
+    [RequirePermission(Permissions.IntegrationSync)]
+    [ProducesResponseType<ApiResponse<ErpSyncResult>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ApiResponse<ErpSyncResult>>> SyncProductionOrders(CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(new SyncProductionOrdersCommand(), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return Ok(new ApiResponse<ErpSyncResult>(true, "Sync complete", result.Value!));
+    }
+
+    [HttpPost("test-connection")]
+    [RequirePermission(Permissions.IntegrationConfigure)]
+    [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ApiResponse<bool>>> TestConnection(CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(new TestErpConnectionCommand(), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return Ok(new ApiResponse<bool>(true, "Connection successful", true));
+    }
 }
+
+public record SaveErpSettingsRequest(
+    bool ErpEnabled,
+    string? ErpBaseUrl,
+    string? ErpApiKey,
+    int ErpSyncIntervalMinutes);

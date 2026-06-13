@@ -1742,6 +1742,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.DispatchSequentialWorkflowEnforcement).HasMaxLength(10);
             e.Property(x => x.QcTargetSelection).HasMaxLength(20);
             e.Property(x => x.UpdatedBy).HasMaxLength(450);
+            // ERP integration settings
+            e.Property(x => x.ErpBaseUrl).HasMaxLength(500);
+            e.Property(x => x.ErpApiKey).HasMaxLength(200);
         });
     }
 }

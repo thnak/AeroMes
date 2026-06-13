@@ -10,6 +10,15 @@ public class SalesOrderRepository(AppDbContext db) : ISalesOrderRepository
     public Task<SalesOrder?> GetByIdAsync(int id, CancellationToken ct) =>
         db.SalesOrders.AsNoTracking().FirstOrDefaultAsync(x => x.SOID == id, ct);
 
+    public Task<SalesOrder?> GetByCodeAsync(string soCode, CancellationToken ct) =>
+        db.SalesOrders.FirstOrDefaultAsync(x => x.SOCode == soCode.ToUpperInvariant(), ct);
+
+    public Task AddAsync(SalesOrder entity, CancellationToken ct)
+    {
+        db.SalesOrders.Add(entity);
+        return Task.CompletedTask;
+    }
+
     public async Task<IReadOnlyList<SalesOrder>> GetFilteredAsync(
         string? soCode, SalesOrderStatus? status,
         DateTime? from, DateTime? to, CancellationToken ct)

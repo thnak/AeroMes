@@ -26,6 +26,8 @@ public static class Permissions
 
     // Integration (ERP)
     public const string IntegrationRead = "Integration:Read";
+    public const string IntegrationSync = "Integration:Sync";
+    public const string IntegrationConfigure = "Integration:Configure";
 
     // Inventory
     public const string InventoryRead = "Inventory:Read";
@@ -94,7 +96,7 @@ public static class Permissions
 
     public static readonly string[] All =
     [
-        IntegrationRead,
+        IntegrationRead, IntegrationSync, IntegrationConfigure,
         WorkOrderRead, WorkOrderCreate, WorkOrderUpdate, WorkOrderDelete, WorkOrderStart, WorkOrderComplete, WorkOrderApprove,
         JobRead, JobStart, JobComplete,
         ProductionRead, ProductionSubmitOutput,

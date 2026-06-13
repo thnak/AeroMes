@@ -7,6 +7,7 @@ using AeroMes.Domain.Wms.Repositories;
 using AeroMes.Infrastructure.Data;
 using AeroMes.Infrastructure.Identity;
 using AeroMes.Infrastructure.Repositories;
+using AeroMes.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -71,6 +72,14 @@ public static class DependencyInjection
         // integration repositories
         services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();
         services.AddScoped<IProductionOrderRepository, ProductionOrderRepository>();
+
+        // ERP client + background sync
+        services.AddHttpClient("erp").ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AllowAutoRedirect = false,
+        });
+        services.AddScoped<IErpClient, HttpErpClient>();
+        services.AddHostedService<ErpSyncBackgroundService>();
 
         // prod repositories
         services.AddScoped<IWorkOrderRepository, WorkOrderRepository>();

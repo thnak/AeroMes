@@ -26,6 +26,13 @@ import { PageHeader, PageRoot, SolarIcon } from '../../components';
 import { Icons } from '../../lib/icons';
 import { Icon } from '@iconify/react';
 import { useAppInfo, useChangelog } from '../../lib/useAppInfo';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useGetApiV1IntegrationErpSettings,
+  putApiV1IntegrationErpSettings,
+  postApiV1IntegrationTestConnection,
+  getGetApiV1IntegrationErpSettingsQueryKey,
+} from '../../api/integration/integration';
 
 // ─── Settings nav ─────────────────────────────────────────────────────────────
 
@@ -215,36 +222,147 @@ function SecuritySettings() {
 }
 
 function IntegrationsSettings() {
+  const queryClient = useQueryClient();
+  const { data: settingsData, isLoading } = useGetApiV1IntegrationErpSettings();
+  const remote = settingsData?.data;
+
+  const [enabled, setEnabled] = useState(false);
+  const [baseUrl, setBaseUrl] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [syncInterval, setSyncInterval] = useState('15');
+  const [testStatus, setTestStatus] = useState<'idle' | 'ok' | 'fail'>('idle');
+  const [saved, setSaved] = useState(false);
+
+  // Populate form once remote data arrives
+  const [hydrated, setHydrated] = useState(false);
+  if (remote && !hydrated) {
+    setEnabled(remote.erpEnabled);
+    setBaseUrl(remote.erpBaseUrl ?? '');
+    setSyncInterval(String(remote.erpSyncIntervalMinutes));
+    setHydrated(true);
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      putApiV1IntegrationErpSettings({
+        erpEnabled: enabled,
+        erpBaseUrl: baseUrl || null,
+        erpApiKey: apiKey || null,
+        erpSyncIntervalMinutes: Number(syncInterval),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getGetApiV1IntegrationErpSettingsQueryKey() });
+      setSaved(true);
+      setApiKey('');
+      setTimeout(() => setSaved(false), 3000);
+    },
+  });
+
+  const testMutation = useMutation({
+    mutationFn: () => postApiV1IntegrationTestConnection(),
+    onSuccess: (res) => setTestStatus(res.data === true ? 'ok' : 'fail'),
+    onError: () => setTestStatus('fail'),
+  });
+
+  const lastSync = remote?.erpLastSyncAt
+    ? new Date(remote.erpLastSyncAt).toLocaleString()
+    : null;
+
   return (
     <Stack spacing={3}>
       <Box>
-        <Typography variant="subtitle1" gutterBottom>ERP Connection</Typography>
+        <Stack direction="row" sx={{ alignItems: 'center', mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ flex: 1 }}>ERP Connection</Typography>
+          <FormControlLabel
+            control={<Switch checked={enabled} onChange={(e) => setEnabled(e.target.checked)} color="primary" size="small" />}
+            label={<Typography variant="body2">{enabled ? 'Enabled' : 'Disabled'}</Typography>}
+            labelPlacement="start"
+            sx={{ m: 0 }}
+          />
+        </Stack>
         <Divider sx={{ mb: 2 }} />
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, sm: 8 }}>
-            <TextField label="ERP API Base URL" defaultValue="https://erp.aeromes.vn/api" fullWidth />
+
+        {isLoading ? (
+          <Stack spacing={1.5}>
+            <Skeleton height={56} />
+            <Skeleton height={56} />
+            <Skeleton height={56} />
+          </Stack>
+        ) : (
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 8 }}>
+              <TextField
+                label="ERP API Base URL"
+                value={baseUrl}
+                onChange={(e) => setBaseUrl(e.target.value)}
+                fullWidth
+                placeholder="https://erp.example.com/api"
+                disabled={!enabled}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField select label="Sync Interval" value={syncInterval} onChange={(e) => setSyncInterval(e.target.value)} fullWidth disabled={!enabled}>
+                {['5', '10', '15', '30', '60'].map((v) => (
+                  <MenuItem key={v} value={v}>{v} min</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                label={remote?.hasApiKey ? 'API Key (leave blank to keep existing)' : 'API Key'}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                fullWidth
+                type="password"
+                placeholder={remote?.hasApiKey ? '••••••••••••••••' : 'Enter API key'}
+                disabled={!enabled}
+              />
+            </Grid>
           </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField select label="Sync Interval" defaultValue="15" fullWidth>
-              {['5', '10', '15', '30', '60'].map((v) => (
-                <MenuItem key={v} value={v}>{v} min</MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <TextField label="API Key" defaultValue="••••••••••••••••••••••••••••••••" fullWidth type="password" />
-          </Grid>
-        </Grid>
+        )}
+
         <Stack direction="row" spacing={1.5} sx={{ mt: 2, alignItems: 'center' }}>
-          <Button variant="outlined" size="small" startIcon={<SolarIcon name="refresh" size={16} />}>
-            Test Connection
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<SolarIcon name="refresh" size={16} />}
+            onClick={() => { setTestStatus('idle'); testMutation.mutate(); }}
+            disabled={!enabled || !baseUrl || testMutation.isPending}
+          >
+            {testMutation.isPending ? 'Testing…' : 'Test Connection'}
           </Button>
-          <Alert severity="success" sx={{ py: 0.5, flex: 1 }}>
-            <Typography variant="caption">Last sync: 09 Jun 2026, 10:15 — 12 orders received</Typography>
-          </Alert>
+
+          {testStatus === 'ok' && (
+            <Alert severity="success" sx={{ py: 0.5, flex: 1 }}>
+              <Typography variant="caption">
+                Connection OK{lastSync ? ` · Last sync: ${lastSync}` : ''}
+              </Typography>
+            </Alert>
+          )}
+          {testStatus === 'fail' && (
+            <Alert severity="error" sx={{ py: 0.5, flex: 1 }}>
+              <Typography variant="caption">Connection failed — check URL and API key.</Typography>
+            </Alert>
+          )}
+          {testStatus === 'idle' && lastSync && (
+            <Alert severity="info" sx={{ py: 0.5, flex: 1 }}>
+              <Typography variant="caption">Last sync: {lastSync}</Typography>
+            </Alert>
+          )}
         </Stack>
       </Box>
-      <Box><Button variant="contained" size="small">Save Integration</Button></Box>
+
+      {saved && <Alert severity="success" sx={{ py: 0.75 }}>Integration settings saved.</Alert>}
+      <Box>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending}
+        >
+          {saveMutation.isPending ? 'Saving…' : 'Save Integration'}
+        </Button>
+      </Box>
     </Stack>
   );
 }

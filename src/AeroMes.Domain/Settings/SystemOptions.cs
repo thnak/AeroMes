@@ -49,6 +49,13 @@ public class SystemOptions
     public bool QcAutoGenerateRequestsAfterReporting { get; set; }
     public string QcTargetSelection { get; set; } = "Both"; // FinishedGoods | ProcessStages | Both
 
+    // ── ERP Integration ───────────────────────────────────────────────────
+    public bool ErpEnabled { get; set; }
+    public string? ErpBaseUrl { get; set; }
+    public string? ErpApiKey { get; set; }
+    public int ErpSyncIntervalMinutes { get; set; } = 15;
+    public DateTime? ErpLastSyncAt { get; set; }
+
     // ── Audit ─────────────────────────────────────────────────────────────
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public string? UpdatedBy { get; set; }
@@ -98,4 +105,15 @@ public class SystemOptions
         UpdatedAt = DateTime.UtcNow;
         UpdatedBy = updatedBy;
     }
+
+    public void UpdateErpSettings(bool enabled, string? baseUrl, string? apiKey, int syncIntervalMinutes)
+    {
+        ErpEnabled = enabled;
+        ErpBaseUrl = baseUrl?.Trim().TrimEnd('/');
+        ErpApiKey = string.IsNullOrWhiteSpace(apiKey) ? ErpApiKey : apiKey.Trim();
+        ErpSyncIntervalMinutes = Math.Max(1, syncIntervalMinutes);
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void RecordSyncCompleted() => ErpLastSyncAt = DateTime.UtcNow;
 }

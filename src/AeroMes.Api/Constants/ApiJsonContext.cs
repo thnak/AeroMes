@@ -7,6 +7,9 @@ using AeroMes.Application.Inventory.Queries.GetLotTrace;
 using AeroMes.Application.Reports.Queries.GetDowntimeReport;
 using AeroMes.Application.Reports.Queries.GetProductionReport;
 using AeroMes.Application.Reports.Queries.GetQualityReport;
+using AeroMes.Application.Integration.Commands.SaveErpSettings;
+using AeroMes.Application.Integration.Commands.SyncSalesOrders;
+using AeroMes.Application.Integration.Queries.GetErpSettings;
 using AeroMes.Application.Integration.Queries.GetProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetProductionOrders;
 using AeroMes.Application.Integration.Queries.GetSalesOrderDetail;
@@ -214,6 +217,12 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<ProductionOrderSummaryDto>))]
 [JsonSerializable(typeof(IReadOnlyList<ProductionOrderDto>))]
 [JsonSerializable(typeof(ProductionOrderDetailDto))]
+[JsonSerializable(typeof(ApiResponse<ErpSettingsDto>))]
+[JsonSerializable(typeof(ErpSettingsDto))]
+[JsonSerializable(typeof(SaveErpSettingsRequest))]
+[JsonSerializable(typeof(ApiResponse<ErpSyncResult>))]
+[JsonSerializable(typeof(ErpSyncResult))]
+[JsonSerializable(typeof(ApiResponse<bool>))]
 [JsonSerializable(typeof(IReadOnlyList<WorkOrderSummaryDto>))]
 // work order detail
 [JsonSerializable(typeof(WorkOrderDetailDto))]

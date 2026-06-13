@@ -13,6 +13,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ExportButton,
   PageHeader,
@@ -21,86 +22,63 @@ import {
   SolarIcon,
   TableToolbar,
 } from '../../components';
+import {
+  useGetApiV1IntegrationSalesOrders,
+  postApiV1IntegrationSyncSalesOrders,
+  getGetApiV1IntegrationSalesOrdersQueryKey,
+} from '../../api/integration/integration';
+import type { SalesOrderDto } from '../../api/model/salesOrderDto';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-interface SalesOrder {
-  id: string;
-  soNo: string;
-  customerCode: string;
-  customerName: string;
-  orderDate: string;
-  deliveryDate: string;
-  status: 'Open' | 'Confirmed' | 'In Production' | 'Shipped' | 'Closed';
-  totalItems: number;
-  totalQty: number;
-  currency: string;
-  totalValue: number;
-}
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const MOCK_SALES_ORDERS: SalesOrder[] = [
-  { id: '1',  soNo: 'SO-2026-0091', customerCode: 'JAXA-001', customerName: 'JAXA Research',           orderDate: '2026-05-01', deliveryDate: '2026-06-30', status: 'In Production', totalItems: 3, totalQty: 900,  currency: 'JPY', totalValue: 4_500_000 },
-  { id: '2',  soNo: 'SO-2026-0090', customerCode: 'HNI-002',  customerName: 'Honda Aircraft',          orderDate: '2026-04-28', deliveryDate: '2026-06-15', status: 'Confirmed',     totalItems: 2, totalQty: 500,  currency: 'JPY', totalValue: 2_800_000 },
-  { id: '3',  soNo: 'SO-2026-0089', customerCode: 'SBY-003',  customerName: 'Subaru Aerospace',        orderDate: '2026-04-20', deliveryDate: '2026-05-31', status: 'Shipped',       totalItems: 1, totalQty: 200,  currency: 'USD', totalValue: 128_000   },
-  { id: '4',  soNo: 'SO-2026-0092', customerCode: 'MIT-004',  customerName: 'Mitsubishi Heavy Ind.',   orderDate: '2026-05-03', deliveryDate: '2026-07-15', status: 'Open',          totalItems: 4, totalQty: 1200, currency: 'JPY', totalValue: 7_200_000 },
-  { id: '5',  soNo: 'SO-2026-0088', customerCode: 'KAW-005',  customerName: 'Kawasaki Aerospace',      orderDate: '2026-04-15', deliveryDate: '2026-05-28', status: 'Closed',        totalItems: 2, totalQty: 350,  currency: 'JPY', totalValue: 1_960_000 },
-  { id: '6',  soNo: 'SO-2026-0087', customerCode: 'FJT-006',  customerName: 'Fujitsu Aero Systems',    orderDate: '2026-04-10', deliveryDate: '2026-05-25', status: 'Shipped',       totalItems: 3, totalQty: 600,  currency: 'USD', totalValue: 384_000   },
-  { id: '7',  soNo: 'SO-2026-0093', customerCode: 'IHI-007',  customerName: 'IHI Corporation',         orderDate: '2026-05-05', deliveryDate: '2026-08-01', status: 'Open',          totalItems: 5, totalQty: 2000, currency: 'JPY', totalValue: 9_800_000 },
-  { id: '8',  soNo: 'SO-2026-0086', customerCode: 'NEC-008',  customerName: 'NEC Space Technologies',  orderDate: '2026-04-05', deliveryDate: '2026-05-20', status: 'Closed',        totalItems: 1, totalQty: 150,  currency: 'JPY', totalValue: 750_000   },
-  { id: '9',  soNo: 'SO-2026-0094', customerCode: 'SUM-009',  customerName: 'Sumitomo Precision',      orderDate: '2026-05-08', deliveryDate: '2026-07-30', status: 'Confirmed',     totalItems: 3, totalQty: 780,  currency: 'USD', totalValue: 421_200   },
-  { id: '10', soNo: 'SO-2026-0085', customerCode: 'MHI-010',  customerName: 'Mitsui Engineering',      orderDate: '2026-04-02', deliveryDate: '2026-05-15', status: 'Closed',        totalItems: 2, totalQty: 420,  currency: 'JPY', totalValue: 2_100_000 },
-];
-
-const STATUS_COLORS: Record<SalesOrder['status'], string> = {
-  'Open':          '#94A3B8',
-  'Confirmed':     '#1D4ED8',
-  'In Production': '#D97706',
-  'Shipped':       '#15803D',
-  'Closed':        '#475569',
+const STATUS_COLORS: Record<string, string> = {
+  Open:      '#94A3B8',
+  Closed:    '#475569',
+  Cancelled: '#DC2626',
 };
 
-const CUSTOMERS = [...new Set(MOCK_SALES_ORDERS.map((o) => o.customerCode))].sort();
-const STATUSES: SalesOrder['status'][] = ['Open', 'Confirmed', 'In Production', 'Shipped', 'Closed'];
-
-const TODAY = '2026-06-12';
+const TODAY = new Date().toISOString().slice(0, 10);
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SalesOrdersPage() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [snackOpen, setSnackOpen] = useState(false);
-  const [filterCustomer, setFilterCustomer] = useState('');
+  const queryClient = useQueryClient();
+  const [snackMsg, setSnackMsg] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [search, setSearch] = useState('');
 
+  const { data, isLoading } = useGetApiV1IntegrationSalesOrders();
+  const rows: SalesOrderDto[] = data?.data ?? [];
+
+  const syncMutation = useMutation({
+    mutationFn: () => postApiV1IntegrationSyncSalesOrders(),
+    onSuccess: (res) => {
+      const r = res.data;
+      setSnackMsg(`Sync complete — ${r?.created ?? 0} created, ${r?.updated ?? 0} updated`);
+      queryClient.invalidateQueries({ queryKey: getGetApiV1IntegrationSalesOrdersQueryKey() });
+    },
+    onError: () => setSnackMsg('Sync failed. Check ERP connection settings.'),
+  });
+
   const filtered = useMemo(() => {
-    let rows = MOCK_SALES_ORDERS;
-    if (filterCustomer) rows = rows.filter((r) => r.customerCode === filterCustomer);
-    if (filterStatus)   rows = rows.filter((r) => r.status === filterStatus);
-    if (search)         rows = rows.filter((r) =>
-      r.soNo.toLowerCase().includes(search.toLowerCase()) ||
-      r.customerName.toLowerCase().includes(search.toLowerCase())
+    let r = rows;
+    if (filterStatus) r = r.filter((x) => x.status === filterStatus);
+    if (search) r = r.filter((x) =>
+      x.soCode.toLowerCase().includes(search.toLowerCase()) ||
+      (x.customerName ?? '').toLowerCase().includes(search.toLowerCase()),
     );
-    return rows;
-  }, [filterCustomer, filterStatus, search]);
+    return r;
+  }, [rows, filterStatus, search]);
 
-  function handleSync() {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setSnackOpen(true);
-    }, 800);
-  }
+  const statuses = [...new Set(rows.map((r) => r.status))].sort();
 
-  const columns: GridColDef<SalesOrder>[] = [
+  const columns: GridColDef<SalesOrderDto>[] = [
     {
-      field: 'soNo',
+      field: 'soCode',
       headerName: 'SO #',
       width: 148,
-      renderCell: (p: GridRenderCellParams<SalesOrder>) => (
+      renderCell: (p: GridRenderCellParams<SalesOrderDto>) => (
         <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 600 }}>
           {p.value}
         </Typography>
@@ -111,30 +89,34 @@ export default function SalesOrdersPage() {
       headerName: 'Customer',
       flex: 1,
       minWidth: 200,
-      renderCell: (p: GridRenderCellParams<SalesOrder>) => (
-        <Stack>
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>{p.value}</Typography>
-          <Typography variant="caption" color="text.secondary">{p.row.customerCode}</Typography>
-        </Stack>
+      renderCell: (p: GridRenderCellParams<SalesOrderDto>) => (
+        <Typography variant="body2" sx={{ fontWeight: 500 }}>{p.value ?? '—'}</Typography>
       ),
     },
     {
       field: 'orderDate',
       headerName: 'Order Date',
-      width: 110,
+      width: 120,
+      renderCell: (p: GridRenderCellParams<SalesOrderDto>) => (
+        <Typography variant="body2" sx={{ fontSize: 12 }}>
+          {new Date(p.value as string).toLocaleDateString()}
+        </Typography>
+      ),
     },
     {
       field: 'deliveryDate',
       headerName: 'Delivery Date',
-      width: 120,
-      renderCell: (p: GridRenderCellParams<SalesOrder>) => {
-        const pastDue = p.value < TODAY && p.row.status !== 'Shipped' && p.row.status !== 'Closed';
+      width: 130,
+      renderCell: (p: GridRenderCellParams<SalesOrderDto>) => {
+        if (!p.value) return <Typography variant="body2" color="text.secondary">—</Typography>;
+        const dateStr = new Date(p.value as string).toISOString().slice(0, 10);
+        const pastDue = dateStr < TODAY && p.row.status !== 'Closed' && p.row.status !== 'Cancelled';
         return (
           <Typography
             variant="body2"
             sx={{ color: pastDue ? 'error.main' : 'text.primary', fontWeight: pastDue ? 600 : 400 }}
           >
-            {p.value}
+            {new Date(p.value as string).toLocaleDateString()}
           </Typography>
         );
       },
@@ -142,9 +124,9 @@ export default function SalesOrdersPage() {
     {
       field: 'status',
       headerName: 'Status',
-      width: 145,
-      renderCell: (p: GridRenderCellParams<SalesOrder>) => {
-        const color = STATUS_COLORS[p.value as SalesOrder['status']];
+      width: 120,
+      renderCell: (p: GridRenderCellParams<SalesOrderDto>) => {
+        const color = STATUS_COLORS[p.value as string] ?? '#94A3B8';
         return (
           <Chip
             label={p.value}
@@ -161,33 +143,12 @@ export default function SalesOrdersPage() {
       },
     },
     {
-      field: 'totalItems',
-      headerName: 'Items',
-      width: 70,
-      align: 'right',
-      headerAlign: 'right',
-    },
-    {
-      field: 'totalQty',
-      headerName: 'Qty',
-      width: 100,
-      align: 'right',
-      headerAlign: 'right',
-      renderCell: (p: GridRenderCellParams<SalesOrder>) => (
-        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-          {(p.value as number).toLocaleString()} EA
-        </Typography>
-      ),
-    },
-    {
-      field: 'totalValue',
-      headerName: 'Value',
-      width: 140,
-      align: 'right',
-      headerAlign: 'right',
-      renderCell: (p: GridRenderCellParams<SalesOrder>) => (
-        <Typography variant="body2">
-          {p.row.currency} {(p.value as number).toLocaleString()}
+      field: 'syncedAt',
+      headerName: 'Synced',
+      width: 130,
+      renderCell: (p: GridRenderCellParams<SalesOrderDto>) => (
+        <Typography variant="caption" color="text.secondary">
+          {new Date(p.value as string).toLocaleString()}
         </Typography>
       ),
     },
@@ -197,9 +158,9 @@ export default function SalesOrdersPage() {
       width: 52,
       sortable: false,
       filterable: false,
-      renderCell: (p: GridRenderCellParams<SalesOrder>) => (
+      renderCell: (p: GridRenderCellParams<SalesOrderDto>) => (
         <Tooltip title="View detail">
-          <IconButton size="small" onClick={() => navigate(`/integration/sales-orders/${p.row.id}`)}>
+          <IconButton size="small" onClick={() => navigate(`/integration/sales-orders/${p.row.soid}`)}>
             <SolarIcon name="view" size={16} />
           </IconButton>
         </Tooltip>
@@ -219,8 +180,8 @@ export default function SalesOrdersPage() {
             <Button
               variant="contained"
               startIcon={<SolarIcon name="refresh" size={16} />}
-              onClick={handleSync}
-              disabled={loading}
+              onClick={() => syncMutation.mutate()}
+              disabled={syncMutation.isPending}
             >
               Sync from ERP
             </Button>
@@ -234,29 +195,23 @@ export default function SalesOrdersPage() {
         searchPlaceholder="Search SO# or customer…"
         filters={[
           {
-            label: 'Customer',
-            value: filterCustomer,
-            options: CUSTOMERS.map((c) => ({ label: c, value: c })),
-            onChange: setFilterCustomer,
-            width: 180,
-          },
-          {
             label: 'Status',
             value: filterStatus,
-            options: STATUSES.map((s) => ({ label: s, value: s })),
+            options: statuses.map((s) => ({ label: s, value: s })),
             onChange: setFilterStatus,
             width: 160,
           },
         ]}
         totalCount={filtered.length}
-        actions={<RefreshButton loading={loading} onClick={handleSync} />}
+        actions={<RefreshButton loading={isLoading} onClick={() => queryClient.invalidateQueries({ queryKey: getGetApiV1IntegrationSalesOrdersQueryKey() })} />}
       />
 
       <Box sx={{ mt: 2 }}>
         <DataGrid
           rows={filtered}
           columns={columns}
-          loading={loading}
+          loading={isLoading}
+          getRowId={(r) => String(r.soid)}
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
           disableRowSelectionOnClick
@@ -272,10 +227,10 @@ export default function SalesOrdersPage() {
       </Box>
 
       <Snackbar
-        open={snackOpen}
+        open={!!snackMsg}
         autoHideDuration={4000}
-        onClose={() => setSnackOpen(false)}
-        message="Sync initiated — 0 new orders found"
+        onClose={() => setSnackMsg('')}
+        message={snackMsg}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </PageRoot>
