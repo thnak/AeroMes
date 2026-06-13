@@ -10,6 +10,7 @@ public class GetDefectCodesHandler(IDefectCodeRepository repo)
     {
         var items = await repo.GetAllAsync(q.ActiveOnly, ct);
         return items.Select(x => new DefectCodeDto(
-            x.DefectCodeID, x.Code, x.DefectName, x.DefectCategory, x.IsActive, x.IsRepairable)).ToList();
+            x.DefectCodeID, x.Code, x.DefectName, x.DefectCategory, x.IsActive, x.IsRepairable,
+            x.SeverityLevel.ToString(), x.Description)).ToList();
     }
 }

@@ -4,6 +4,7 @@ using AeroMes.Application.Quality.DefectCodes.Commands.CreateDefectCode;
 using AeroMes.Application.Quality.DefectCodes.Commands.DeleteDefectCode;
 using AeroMes.Application.Quality.DefectCodes.Commands.UpdateDefectCode;
 using AeroMes.Application.Quality.DefectCodes.Queries.GetDefectCodes;
+using AeroMes.Domain.Quality;
 using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
@@ -31,7 +32,7 @@ public class DefectCodesController(ICommandMediator commandMediator, IQueryMedia
     {
         var result = await commandMediator.SendAsync(
             new CreateDefectCodeCommand(req.Code, req.DefectName, req.DefectCategory,
-                User.Identity?.Name), null, ct);
+                User.Identity?.Name, req.IsRepairable, req.SeverityLevel, req.Description), null, ct);
         if (!result.IsSuccess) return result.ToErrorResult();
         return CreatedAtAction(nameof(GetAll), null, new DefectCodeCreatedResult(result.Value!));
     }
@@ -44,7 +45,7 @@ public class DefectCodesController(ICommandMediator commandMediator, IQueryMedia
     {
         var result = await commandMediator.SendAsync(
             new UpdateDefectCodeCommand(id, req.DefectName, req.DefectCategory, req.IsActive, req.IsRepairable,
-                User.Identity?.Name), null, ct);
+                User.Identity?.Name, req.SeverityLevel, req.Description), null, ct);
         if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
@@ -62,6 +63,15 @@ public class DefectCodesController(ICommandMediator commandMediator, IQueryMedia
     }
 }
 
-public record CreateDefectCodeRequest(string Code, string DefectName, string? DefectCategory);
-public record UpdateDefectCodeRequest(string DefectName, string? DefectCategory, bool IsActive, bool IsRepairable = false);
+public record CreateDefectCodeRequest(
+    string Code, string DefectName, string? DefectCategory,
+    bool IsRepairable = false,
+    DefectSeverityLevel SeverityLevel = DefectSeverityLevel.Minor,
+    string? Description = null);
+
+public record UpdateDefectCodeRequest(
+    string DefectName, string? DefectCategory, bool IsActive, bool IsRepairable = false,
+    DefectSeverityLevel SeverityLevel = DefectSeverityLevel.Minor,
+    string? Description = null);
+
 public record DefectCodeCreatedResult(int DefectCodeId);

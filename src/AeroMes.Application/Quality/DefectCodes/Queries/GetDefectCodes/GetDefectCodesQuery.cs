@@ -1,3 +1,4 @@
+using AeroMes.Domain.Quality;
 using LiteBus.Queries.Abstractions;
 
 namespace AeroMes.Application.Quality.DefectCodes.Queries.GetDefectCodes;
@@ -10,4 +11,6 @@ public record DefectCodeDto(
     string DefectName,
     string? DefectCategory,
     bool IsActive,
-    bool IsRepairable);
+    bool IsRepairable,
+    string SeverityLevel,
+    string? Description);
