@@ -10,6 +10,7 @@ using AeroMes.Infrastructure.Data;
 using AeroMes.Infrastructure.Identity;
 using AeroMes.Infrastructure.Iot;
 using AeroMes.Infrastructure.Iot.Mqtt;
+using AeroMes.Infrastructure.Iot.OpcUa;
 using AeroMes.Infrastructure.Repositories;
 using AeroMes.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
@@ -201,6 +202,14 @@ public static class DependencyInjection
                 sp.GetRequiredService<IServiceScopeFactory>(),
                 sp.GetRequiredService<ISignalIngestionPipeline>(),
                 sp.GetRequiredService<ILogger<MqttAdapterManager>>(),
+                sp.GetRequiredService<ILoggerFactory>()));
+
+        // OPC-UA adapter manager — starts one OpcUaAdapterService per enabled OPC-UA adapter
+        services.AddHostedService(sp =>
+            new OpcUaAdapterManager(
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                sp.GetRequiredService<ISignalIngestionPipeline>(),
+                sp.GetRequiredService<ILogger<OpcUaAdapterManager>>(),
                 sp.GetRequiredService<ILoggerFactory>()));
 
         return services;
