@@ -197,6 +197,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<RepairOrder> RepairOrders => Set<RepairOrder>();
     public DbSet<RepairOrderEntry> RepairOrderEntries => Set<RepairOrderEntry>();
     public DbSet<RepairMaterialLine> RepairMaterialLines => Set<RepairMaterialLine>();
+    public DbSet<QualityInspectionVoucher> QualityInspectionVouchers => Set<QualityInspectionVoucher>();
+    public DbSet<VoucherDefectDetail> VoucherDefectDetails => Set<VoucherDefectDetail>();
 
     // iot schema
     public DbSet<AdapterInstance> AdapterInstances => Set<AdapterInstance>();
@@ -2542,6 +2544,39 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.ToTable("AQLInspectionDefects", "qual");
             e.HasKey(x => x.DefectID);
             e.Property(x => x.DefectCode).HasMaxLength(30).IsRequired();
+        });
+
+        b.Entity<QualityInspectionVoucher>(e =>
+        {
+            e.ToTable("QualityInspectionVouchers", "qual");
+            e.HasKey(x => x.VoucherID);
+            e.Property(x => x.VoucherID).UseIdentityColumn();
+            e.Property(x => x.VoucherNumber).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.VoucherNumber).IsUnique();
+            e.Property(x => x.VoucherName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.InspectionType).HasConversion<string>().HasMaxLength(30).IsRequired();
+            e.Property(x => x.InspectorName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.SampleQuantity).HasColumnType("DECIMAL(12,4)");
+            e.Property(x => x.PassingSamples).HasColumnType("DECIMAL(12,4)");
+            e.Property(x => x.FailingSamples).HasColumnType("DECIMAL(12,4)");
+            e.Property(x => x.Conclusion).HasConversion<string>().HasMaxLength(20)
+                .HasDefaultValue(InspectionConclusion.Pending);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20)
+                .HasDefaultValue(InspectionVoucherStatus.NotStarted);
+            e.HasMany(x => x.Defects).WithOne()
+                .HasForeignKey(x => x.VoucherID).OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Defects).HasField("_defects")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<VoucherDefectDetail>(e =>
+        {
+            e.ToTable("VoucherDefectDetails", "qual");
+            e.HasKey(x => x.DetailID);
+            e.Property(x => x.DetailID).UseIdentityColumn();
+            e.Property(x => x.DefectName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Quantity).HasColumnType("DECIMAL(12,4)");
         });
     }
 

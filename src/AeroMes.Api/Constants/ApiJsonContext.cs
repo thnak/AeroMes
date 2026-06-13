@@ -27,6 +27,7 @@ using AeroMes.Domain.Production.Repositories;
 using AeroMes.Application.Production.Commands.CreateProductionPlan;
 using AeroMes.Application.Quality.SamplingMethods.Commands.CreateSamplingMethod;
 using AeroMes.Application.Production.Commands.CreateMaterialPurchaseRequest;
+using AeroMes.Application.Quality.InspectionVouchers.Commands.CreateInspectionVoucher;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrders;
 using AeroMes.Application.Integration.Commands.SyncSalesOrders;
@@ -1091,6 +1092,15 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(SamplingVolumeRangeDto))]
 [JsonSerializable(typeof(IReadOnlyList<SamplingVolumeRangeDto>))]
 [JsonSerializable(typeof(List<SamplingVolumeRangeDto>))]
+// quality inspection vouchers — #92
+[JsonSerializable(typeof(CreateInspectionVoucherRequest))]
+[JsonSerializable(typeof(AddDefectRequest))]
+[JsonSerializable(typeof(UpdateVoucherStatusRequest))]
+[JsonSerializable(typeof(QualityInspectionVoucherDto))]
+[JsonSerializable(typeof(PagedResult<QualityInspectionVoucherDto>))]
+[JsonSerializable(typeof(VoucherDefectDto))]
+[JsonSerializable(typeof(IReadOnlyList<VoucherDefectDto>))]
+[JsonSerializable(typeof(List<VoucherDefectDto>))]
 // production planning (order-based) — #135
 [JsonSerializable(typeof(CreateProductionPlanRequest))]
 [JsonSerializable(typeof(PlanLineInput))]
