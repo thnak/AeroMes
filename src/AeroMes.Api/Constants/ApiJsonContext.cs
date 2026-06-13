@@ -1212,6 +1212,13 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(MachineCostRateType))]
 [JsonSerializable(typeof(EnergyTariffType))]
 [JsonSerializable(typeof(ItemCostType))]
+// production process step catalog — #57
+[JsonSerializable(typeof(CreateProcessStepRequest))]
+[JsonSerializable(typeof(UpdateProcessStepRequest))]
+[JsonSerializable(typeof(SetStepStatusRequest))]
+[JsonSerializable(typeof(DuplicateProcessStepRequest))]
+[JsonSerializable(typeof(ProductionProcessStepDto))]
+[JsonSerializable(typeof(PagedResult<ProductionProcessStepDto>))]
 // production process catalog — #71
 [JsonSerializable(typeof(CreateProductionProcessRequest))]
 [JsonSerializable(typeof(StageInputRequest))]

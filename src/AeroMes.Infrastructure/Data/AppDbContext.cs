@@ -109,6 +109,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
     public DbSet<ProductionProcess> ProductionProcesses => Set<ProductionProcess>();
     public DbSet<ProductionProcessStage> ProductionProcessStages => Set<ProductionProcessStage>();
+    public DbSet<ProductionProcessStep> ProductionProcessSteps => Set<ProductionProcessStep>();
 
     // integration schema
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
@@ -1830,6 +1831,21 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .WithMany()
                 .HasForeignKey(x => x.ShiftCode)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<ProductionProcessStep>(e =>
+        {
+            e.ToTable("ProductionProcessSteps", "master");
+            e.HasKey(x => x.StepID);
+            e.Property(x => x.StepID).UseIdentityColumn();
+            e.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.Code).IsUnique();
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(500);
+            e.Property(x => x.ApplicationScope).HasConversion<string>().HasMaxLength(30).IsRequired();
+            e.Property(x => x.ProductGroupIdsJson).HasColumnType("nvarchar(max)");
+            e.Property(x => x.ProductIdsJson).HasColumnType("nvarchar(max)");
+            e.HasQueryFilter(x => !x.IsDeleted);
         });
 
         b.Entity<ProductionProcess>(e =>
