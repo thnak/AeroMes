@@ -88,6 +88,7 @@ public static class DependencyInjection
         services.AddScoped<IDisassemblyBomRepository, DisassemblyBomRepository>();
         services.AddScoped<IEngChangeRepository, EngChangeRepository>();
         services.AddScoped<IProductFamilyRepository, ProductFamilyRepository>();
+        services.AddScoped<IStageHandoverRepository, StageHandoverRepository>();
 
         // wms repositories
         services.AddScoped<IWarehouseZoneRepository, WarehouseZoneRepository>();

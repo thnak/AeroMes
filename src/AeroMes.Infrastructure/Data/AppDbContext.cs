@@ -103,6 +103,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<ProductionLog> ProductionLogs => Set<ProductionLog>();
     public DbSet<DowntimeLog> DowntimeLogs => Set<DowntimeLog>();
     public DbSet<InventoryStock> InventoryStocks => Set<InventoryStock>();
+    public DbSet<StageHandoverForm> StageHandoverForms => Set<StageHandoverForm>();
+    public DbSet<HandoverLineItem> HandoverLineItems => Set<HandoverLineItem>();
 
     // wms schema
     public DbSet<WarehouseZone> WarehouseZones => Set<WarehouseZone>();
@@ -1742,6 +1744,38 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .WithMany()
                 .HasForeignKey(x => x.BinId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        b.Entity<StageHandoverForm>(e =>
+        {
+            e.ToTable("StageHandoverForms", "prod");
+            e.HasKey(x => x.FormID);
+            e.Property(x => x.FormID).ValueGeneratedOnAdd();
+            e.Property(x => x.FormNumber).HasMaxLength(30).IsRequired();
+            e.Property(x => x.FormType).HasConversion<string>().HasMaxLength(10).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(15).IsRequired();
+            e.Property(x => x.HandoverDate).HasColumnType("datetime2");
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(256);
+            e.HasIndex(x => x.FormNumber).IsUnique();
+            e.HasIndex(x => x.FromWorkOrderID);
+            e.HasIndex(x => x.ToWorkOrderID);
+            e.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(x => x.FormID)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines).HasField("_lines").UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<HandoverLineItem>(e =>
+        {
+            e.ToTable("HandoverLineItems", "prod");
+            e.HasKey(x => x.LineID);
+            e.Property(x => x.LineID).ValueGeneratedOnAdd();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Qty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.Unit).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
         });
     }
 

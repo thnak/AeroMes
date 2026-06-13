@@ -80,6 +80,8 @@ using AeroMes.Application.Master.Machines.Queries.GetCompatibleMachinesForMold;
 using AeroMes.Application.Master.ProductFamilies.Queries.GetProductFamilies;
 using AeroMes.Application.Master.ProductFamilies.Queries.GetVariantMatrix;
 using AeroMes.Application.Master.ProductFamilies.Queries.GetVariantByAttributes;
+using AeroMes.Application.Production.StageHandovers.Queries.GetHandoverForms;
+using AeroMes.Application.Production.StageHandovers.Queries.GetHandoverFormDetail;
 using AeroMes.Application.Master.MachineProductConfigs.Queries.GetMachineProductConfigs;
 using AeroMes.Application.Master.MachineProductParams.Queries.GetMachineSetupSheet;
 using AeroMes.Application.Master.OperatorCertifications.Queries.CheckOperatorEligibility;
@@ -462,6 +464,15 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(WarehouseCreatedResult))]
 [JsonSerializable(typeof(CreateWarehouseRequest))]
 [JsonSerializable(typeof(UpdateWarehouseRequest))]
+// stage handovers
+[JsonSerializable(typeof(IReadOnlyList<HandoverFormSummaryDto>))]
+[JsonSerializable(typeof(HandoverFormDetailDto))]
+[JsonSerializable(typeof(HandoverLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<HandoverLineDto>))]
+[JsonSerializable(typeof(CreateHandoverFormRequest))]
+[JsonSerializable(typeof(HandoverLineRequest))]
+[JsonSerializable(typeof(IReadOnlyList<HandoverLineRequest>))]
+[JsonSerializable(typeof(HandoverFormCreatedResult))]
 // variant groups (product families)
 [JsonSerializable(typeof(IReadOnlyList<ProductFamilySummaryDto>))]
 [JsonSerializable(typeof(VariantMatrixDto))]
