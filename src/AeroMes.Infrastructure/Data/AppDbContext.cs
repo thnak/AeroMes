@@ -9,6 +9,7 @@ using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.ValueObjects;
 using AeroMes.Domain.Quality;
 using AeroMes.Domain.Lab;
+using AeroMes.Domain.Sop;
 using AeroMes.Domain.Rules;
 using AeroMes.Domain.Settings;
 using AeroMes.Domain.Wms;
@@ -162,6 +163,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<RuleAction> RuleActions => Set<RuleAction>();
     public DbSet<RuleExecutionLog> RuleExecutionLogs => Set<RuleExecutionLog>();
 
+    // sop
+    public DbSet<SopDocument> SopDocuments => Set<SopDocument>();
+    public DbSet<CheckItem> CheckItems => Set<CheckItem>();
+    public DbSet<ChecksheetInstance> ChecksheetInstances => Set<ChecksheetInstance>();
+    public DbSet<CheckItemResult> CheckItemResults => Set<CheckItemResult>();
+
     // lab
     public DbSet<TestMethod> TestMethods => Set<TestMethod>();
     public DbSet<TestPanel> TestPanels => Set<TestPanel>();
@@ -207,6 +214,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
         ConfigureSettingsSchema(b);
         ConfigureIotSchema(b);
         ConfigureRulesSchema(b);
+        ConfigureSopSchema(b);
         ConfigureLabSchema(b);
     }
 
@@ -2741,6 +2749,65 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.ActionsExecuted).HasColumnType("nvarchar(max)");
             e.Property(x => x.ContextSnapshot).HasColumnType("nvarchar(max)");
             e.HasIndex(x => new { x.RuleId, x.TriggeredAt });
+        });
+    }
+
+    // ── sop ───────────────────────────────────────────────────────────────
+    private static void ConfigureSopSchema(ModelBuilder b)
+    {
+        b.Entity<SopDocument>(e =>
+        {
+            e.ToTable("SopDocuments", "sop");
+            e.HasKey(x => x.SopId);
+            e.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.Code);
+            e.Property(x => x.Title).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Version).HasMaxLength(20).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50);
+            e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            e.Property(x => x.ApprovedBy).HasMaxLength(256);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(256).IsRequired();
+            e.HasIndex(x => new { x.RoutingStepId, x.Status });
+            e.HasMany(x => x.Items).WithOne().HasForeignKey(x => x.SopId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<CheckItem>(e =>
+        {
+            e.ToTable("CheckItems", "sop");
+            e.HasKey(x => x.CheckItemId);
+            e.Property(x => x.Category).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ItemText).HasMaxLength(500).IsRequired();
+            e.Property(x => x.CompletionMode).HasMaxLength(20).IsRequired();
+            e.Property(x => x.AutoConfig).HasColumnType("nvarchar(max)");
+            e.Property(x => x.SpecMin).HasColumnType("decimal(18,4)");
+            e.Property(x => x.SpecMax).HasColumnType("decimal(18,4)");
+            e.Property(x => x.Unit).HasMaxLength(20);
+        });
+
+        b.Entity<ChecksheetInstance>(e =>
+        {
+            e.ToTable("ChecksheetInstances", "sop");
+            e.HasKey(x => x.InstanceId);
+            e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            e.Property(x => x.OperatorCode).HasMaxLength(256).IsRequired();
+            e.Property(x => x.OverrideReason).HasMaxLength(500);
+            e.HasIndex(x => x.JobId).IsUnique();
+            e.HasIndex(x => x.WorkOrderId);
+            e.HasMany(x => x.Results).WithOne().HasForeignKey(x => x.InstanceId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<CheckItemResult>(e =>
+        {
+            e.ToTable("CheckItemResults", "sop");
+            e.HasKey(x => x.ResultId);
+            e.Property(x => x.Result).HasMaxLength(20).IsRequired();
+            e.Property(x => x.CompletedBy).HasMaxLength(256);
+            e.Property(x => x.CompletionSource).HasMaxLength(20).IsRequired();
+            e.Property(x => x.MeasuredValue).HasColumnType("decimal(18,4)");
+            e.Property(x => x.Notes).HasMaxLength(255);
+            e.Property(x => x.PhotoUrl).HasMaxLength(500);
+            e.HasIndex(x => new { x.InstanceId, x.CheckItemId });
         });
     }
 

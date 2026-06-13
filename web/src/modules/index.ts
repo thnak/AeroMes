@@ -95,6 +95,7 @@ export const MODULES: ModuleConfig[] = [
     available: true,
     tabs: [
       { label: 'Lab Requests', path: '/lab/requests' },
+      { label: 'SOP Documents', path: '/lab/sop-documents' },
     ],
   },
   {

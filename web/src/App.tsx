@@ -68,6 +68,7 @@ const RuleEnginePage           = lazy(() => import('./pages/iot/RuleEnginePage')
 
 // Lab
 const LabRequestsPage = lazy(() => import('./pages/lab/LabRequestsPage'));
+const SopDocumentsPage = lazy(() => import('./pages/lab/SopDocumentsPage'));
 
 // Maintenance
 const MaintenancePage = lazy(() => import('./pages/maintenance/MaintenancePage'));
@@ -225,6 +226,7 @@ export default function App() {
           {/* ── Lab module ────────────────────────────────────── */}
           <Route element={<ModuleLayout />}>
             <Route path="lab/requests" element={<LabRequestsPage />} />
+            <Route path="lab/sop-documents" element={<SopDocumentsPage />} />
           </Route>
 
           {/* ── Maintenance module ────────────────────────────── */}
