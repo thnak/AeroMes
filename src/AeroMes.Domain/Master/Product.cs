@@ -61,6 +61,10 @@ public class Product : AuditableEntity
 
     public bool IsActive { get; private set; } = true;
 
+    // Lot allocation
+    public PickingStrategy PickingStrategy { get; private set; } = PickingStrategy.Fefo;
+    public int? MinShelfLifeDaysOnIssue { get; private set; }
+
     // Navigation
     public ProductCategory? Category { get; private set; }
 
@@ -252,4 +256,13 @@ public class Product : AuditableEntity
 
     public void Activate() => IsActive = true;
     public void Deactivate() => IsActive = false;
+
+    public void UpdatePickingConfig(PickingStrategy strategy, int? minShelfLifeDays, string updatedBy)
+    {
+        if (minShelfLifeDays.HasValue && minShelfLifeDays.Value < 0)
+            throw new DomainException("Số ngày hạn dùng tối thiểu không được âm.");
+        PickingStrategy = strategy;
+        MinShelfLifeDaysOnIssue = minShelfLifeDays;
+        Touch(updatedBy);
+    }
 }

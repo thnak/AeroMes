@@ -1,4 +1,5 @@
 using AeroMes.Application.Interfaces;
+using AeroMes.Application.Wms.Services;
 using AeroMes.Domain.Integration.Repositories;
 using AeroMes.Domain.Iot.Repositories;
 using AeroMes.Domain.Master.Repositories;
@@ -69,6 +70,22 @@ public static class DependencyInjection
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
         services.AddScoped<IGoodsReceiptNoteRepository, GoodsReceiptNoteRepository>();
         services.AddScoped<IStockMovementRepository, StockMovementRepository>();
+        services.AddScoped<IBeginningInventoryEntryRepository, BeginningInventoryEntryRepository>();
+        services.AddScoped<IFactoryWarehouseReceiptRepository, FactoryWarehouseReceiptRepository>();
+        services.AddScoped<IFactoryWarehouseExportRepository, FactoryWarehouseExportRepository>();
+        services.AddScoped<IMaterialTransferSlipRepository, MaterialTransferSlipRepository>();
+        services.AddScoped<IMaterialSupplyRequestRepository, MaterialSupplyRequestRepository>();
+        services.AddScoped<IMaterialRequisitionRepository, MaterialRequisitionRepository>();
+        services.AddScoped<IFinishedProductIntakeRequestRepository, FinishedProductIntakeRequestRepository>();
+        services.AddScoped<ICycleCountPlanRepository, CycleCountPlanRepository>();
+        services.AddScoped<IStockPolicyRepository, StockPolicyRepository>();
+        services.AddScoped<IReplenishmentAlertRepository, ReplenishmentAlertRepository>();
+        services.AddScoped<IStockPolicyEvaluationService, StockPolicyEvaluationService>();
+        services.AddScoped<ILotAllocationService, LotAllocationService>();
+        services.AddScoped<IRmaRepository, RmaRepository>();
+        services.AddScoped<IShipmentOrderRepository, ShipmentOrderRepository>();
+        services.AddScoped<IPickListRepository, PickListRepository>();
+        services.AddScoped<ICartonRepository, CartonRepository>();
 
         // integration repositories
         services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();

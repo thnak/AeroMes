@@ -32,6 +32,7 @@ public static class Permissions
     // Inventory
     public const string InventoryRead = "Inventory:Read";
     public const string InventoryAdjust = "Inventory:Adjust";
+    public const string BeginningInventoryWrite = "BeginningInventory:Write";
 
     // MasterData
     public const string MasterDataRead = "MasterData:Read";
@@ -68,6 +69,50 @@ public static class Permissions
     public const string NcrCreate = "NCR:Create";
     public const string NcrClose = "NCR:Close";
 
+    // Factory Warehouse Receipt
+    public const string FactoryWarehouseReceiptRead = "FactoryWarehouseReceipt:Read";
+    public const string FactoryWarehouseReceiptCreate = "FactoryWarehouseReceipt:Create";
+    public const string FactoryWarehouseReceiptUpdate = "FactoryWarehouseReceipt:Update";
+    public const string FactoryWarehouseReceiptDelete = "FactoryWarehouseReceipt:Delete";
+
+    // Factory Warehouse Export
+    public const string FactoryWarehouseExportRead = "FactoryWarehouseExport:Read";
+    public const string FactoryWarehouseExportCreate = "FactoryWarehouseExport:Create";
+    public const string FactoryWarehouseExportUpdate = "FactoryWarehouseExport:Update";
+    public const string FactoryWarehouseExportDelete = "FactoryWarehouseExport:Delete";
+
+    // Material Transfer Slip
+    public const string MaterialTransferRead = "MaterialTransfer:Read";
+    public const string MaterialTransferCreate = "MaterialTransfer:Create";
+    public const string MaterialTransferUpdate = "MaterialTransfer:Update";
+    public const string MaterialTransferDelete = "MaterialTransfer:Delete";
+
+    // Finished Product Intake Request
+    public const string FinishedProductIntakeRead = "FinishedProductIntake:Read";
+    public const string FinishedProductIntakeCreate = "FinishedProductIntake:Create";
+    public const string FinishedProductIntakeUpdate = "FinishedProductIntake:Update";
+    public const string FinishedProductIntakeDelete = "FinishedProductIntake:Delete";
+    public const string FinishedProductIntakeSend = "FinishedProductIntake:Send";
+    public const string FinishedProductIntakeRecall = "FinishedProductIntake:Recall";
+    public const string FinishedProductIntakeReceive = "FinishedProductIntake:Receive";
+
+    // Material Requisition
+    public const string MaterialRequisitionRead = "MaterialRequisition:Read";
+    public const string MaterialRequisitionCreate = "MaterialRequisition:Create";
+    public const string MaterialRequisitionUpdate = "MaterialRequisition:Update";
+    public const string MaterialRequisitionDelete = "MaterialRequisition:Delete";
+    public const string MaterialRequisitionSend = "MaterialRequisition:Send";
+    public const string MaterialRequisitionRecall = "MaterialRequisition:Recall";
+    public const string MaterialRequisitionFulfill = "MaterialRequisition:Fulfill";
+
+    // Material Supply Request
+    public const string MaterialSupplyRequestRead = "MaterialSupplyRequest:Read";
+    public const string MaterialSupplyRequestCreate = "MaterialSupplyRequest:Create";
+    public const string MaterialSupplyRequestUpdate = "MaterialSupplyRequest:Update";
+    public const string MaterialSupplyRequestDelete = "MaterialSupplyRequest:Delete";
+    public const string MaterialSupplyRequestSubmit = "MaterialSupplyRequest:Submit";
+    public const string MaterialSupplyRequestApprove = "MaterialSupplyRequest:Approve";
+
     // Warehouse
     public const string WarehouseRead = "Warehouse:Read";
     public const string WarehouseReceive = "Warehouse:Receive";
@@ -75,9 +120,35 @@ public static class Permissions
     public const string WarehousePick = "Warehouse:Pick";
     public const string WarehouseDispatch = "Warehouse:Dispatch";
 
+    // Stock Policy & Replenishment
+    public const string StockPolicyRead = "StockPolicy:Read";
+    public const string StockPolicyWrite = "StockPolicy:Write";
+    public const string ReplenishmentAlertRead = "ReplenishmentAlert:Read";
+    public const string ReplenishmentAlertAcknowledge = "ReplenishmentAlert:Acknowledge";
+
+    // Lot Allocation
+    public const string AllocationPreview = "Allocation:Preview";
+
+    // RMA (Returns)
+    public const string RmaRead = "Rma:Read";
+    public const string RmaCreate = "Rma:Create";
+    public const string RmaAuthorize = "Rma:Authorize";
+    public const string RmaReceive = "Rma:Receive";
+    public const string RmaDispose = "Rma:Dispose";
+
     // CycleCount
     public const string CycleCountRead = "CycleCount:Read";
+    public const string CycleCountCreate = "CycleCount:Create";
+    public const string CycleCountExecute = "CycleCount:Execute";
+    public const string CycleCountDelete = "CycleCount:Delete";
     public const string CycleCountApprove = "CycleCount:Approve";
+
+    // Shipment (Outbound)
+    public const string ShipmentRead = "Shipment:Read";
+    public const string ShipmentCreate = "Shipment:Create";
+    public const string ShipmentPick = "Shipment:Pick";
+    public const string ShipmentPack = "Shipment:Pack";
+    public const string ShipmentDispatch = "Shipment:Dispatch";
 
     // Maintenance
     public const string MaintenanceRead = "Maintenance:Read";
@@ -106,7 +177,13 @@ public static class Permissions
         JobRead, JobStart, JobComplete,
         ProductionRead, ProductionSubmitOutput,
         DowntimeDeclare, DowntimeRead,
-        InventoryRead, InventoryAdjust,
+        InventoryRead, InventoryAdjust, BeginningInventoryWrite,
+        FactoryWarehouseReceiptRead, FactoryWarehouseReceiptCreate, FactoryWarehouseReceiptUpdate, FactoryWarehouseReceiptDelete,
+        FactoryWarehouseExportRead, FactoryWarehouseExportCreate, FactoryWarehouseExportUpdate, FactoryWarehouseExportDelete,
+        MaterialTransferRead, MaterialTransferCreate, MaterialTransferUpdate, MaterialTransferDelete,
+        FinishedProductIntakeRead, FinishedProductIntakeCreate, FinishedProductIntakeUpdate, FinishedProductIntakeDelete, FinishedProductIntakeSend, FinishedProductIntakeRecall, FinishedProductIntakeReceive,
+        MaterialRequisitionRead, MaterialRequisitionCreate, MaterialRequisitionUpdate, MaterialRequisitionDelete, MaterialRequisitionSend, MaterialRequisitionRecall, MaterialRequisitionFulfill,
+        MaterialSupplyRequestRead, MaterialSupplyRequestCreate, MaterialSupplyRequestUpdate, MaterialSupplyRequestDelete, MaterialSupplyRequestSubmit, MaterialSupplyRequestApprove,
         MasterDataRead, MasterDataWrite,
         UserRead, UserCreate, UserUpdate, UserDelete, UserManageRoles, UserResetPassword,
         RoleRead, RoleCreate, RoleUpdate, RoleDelete, RoleManagePermissions,
@@ -114,7 +191,12 @@ public static class Permissions
         QualityRead, QualityWrite, QualityCreate, QualityUpdate, QualityApprove,
         NcrRead, NcrCreate, NcrClose,
         WarehouseRead, WarehouseReceive, WarehousePutAway, WarehousePick, WarehouseDispatch,
-        CycleCountRead, CycleCountApprove,
+        StockPolicyRead, StockPolicyWrite,
+        ReplenishmentAlertRead, ReplenishmentAlertAcknowledge,
+        CycleCountRead, CycleCountCreate, CycleCountExecute, CycleCountDelete, CycleCountApprove,
+        AllocationPreview,
+        RmaRead, RmaCreate, RmaAuthorize, RmaReceive, RmaDispose,
+        ShipmentRead, ShipmentCreate, ShipmentPick, ShipmentPack, ShipmentDispatch,
         MaintenanceRead, MaintenanceExecute, MaintenanceCreate, MaintenanceApprove,
         ApiKeyRead, ApiKeyCreate, ApiKeyRevoke,
         SystemConfigure, PermissionRead, PermissionManage,

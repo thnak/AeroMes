@@ -13,6 +13,9 @@ public class InventoryStock : Entity
     public string LotNumber { get; private set; } = string.Empty;
     public decimal Quantity { get; private set; }
     public DateTime UpdatedAt { get; private set; }
+    public DateTime ReceivedAt { get; private set; }
+    public DateOnly? ExpiryDate { get; private set; }
+    public DateOnly? ManufacturedDate { get; private set; }
 
     // EF navigations
     public StorageLocation? StorageLocation { get; private set; }
@@ -39,6 +42,7 @@ public class InventoryStock : Entity
             LotNumber = lotNumber.Trim(),
             Quantity = initialQuantity,
             UpdatedAt = DateTime.UtcNow,
+            ReceivedAt = DateTime.UtcNow,
         };
     }
 
@@ -53,4 +57,10 @@ public class InventoryStock : Entity
     }
 
     public void SetBin(int? binId) => BinId = binId;
+
+    public void SetLotDates(DateOnly? expiryDate, DateOnly? manufacturedDate)
+    {
+        ExpiryDate = expiryDate;
+        ManufacturedDate = manufacturedDate;
+    }
 }

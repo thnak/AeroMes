@@ -1,4 +1,6 @@
 using AeroMes.Domain.Common;
+using AeroMes.Domain.Exceptions;
+using AeroMes.Domain.Wms.Events;
 
 namespace AeroMes.Domain.Wms;
 
@@ -22,7 +24,7 @@ public class StockMovement : Entity
         string productCode, string lotNumber, decimal quantity,
         int locationId, int? binId, string reference, string? notes, string? createdBy)
     {
-        return new StockMovement
+        var m = new StockMovement
         {
             MovementType = MovementType.Receive,
             ProductCode = productCode.Trim().ToUpperInvariant(),
@@ -35,5 +37,51 @@ public class StockMovement : Entity
             CreatedBy = createdBy,
             CreatedAt = DateTime.UtcNow,
         };
+        m.RaiseDomainEvent(new StockMovementCreatedEvent(m.ProductCode, locationId, MovementType.Receive, quantity));
+        return m;
+    }
+
+    public static StockMovement CreateAdjust(
+        string productCode, string lotNumber, decimal delta,
+        int locationId, int? binId, string reference, string? notes, string? createdBy)
+    {
+        var m = new StockMovement
+        {
+            MovementType = MovementType.Adjust,
+            ProductCode = productCode.Trim().ToUpperInvariant(),
+            LotNumber = lotNumber.Trim(),
+            Quantity = delta,
+            LocationId = locationId,
+            BinId = binId,
+            Reference = reference,
+            Notes = notes,
+            CreatedBy = createdBy,
+            CreatedAt = DateTime.UtcNow,
+        };
+        m.RaiseDomainEvent(new StockMovementCreatedEvent(m.ProductCode, locationId, MovementType.Adjust, delta));
+        return m;
+    }
+
+    public static StockMovement CreateIssue(
+        string productCode, string lotNumber, decimal quantity,
+        int locationId, int? binId, string reference, string? notes, string? createdBy)
+    {
+        if (quantity <= 0)
+            throw new DomainException("Issue quantity must be positive.");
+        var m = new StockMovement
+        {
+            MovementType = MovementType.Issue,
+            ProductCode = productCode.Trim().ToUpperInvariant(),
+            LotNumber = lotNumber.Trim(),
+            Quantity = quantity,
+            LocationId = locationId,
+            BinId = binId,
+            Reference = reference,
+            Notes = notes,
+            CreatedBy = createdBy,
+            CreatedAt = DateTime.UtcNow,
+        };
+        m.RaiseDomainEvent(new StockMovementCreatedEvent(m.ProductCode, locationId, MovementType.Issue, quantity));
+        return m;
     }
 }

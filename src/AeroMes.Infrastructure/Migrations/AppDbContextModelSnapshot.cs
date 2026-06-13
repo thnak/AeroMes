@@ -2128,12 +2128,20 @@ namespace AeroMes.Infrastructure.Migrations
                     b.Property<bool>("LotControlled")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("MinShelfLifeDaysOnIssue")
+                        .HasColumnType("int");
+
                     b.Property<decimal?>("NetWeight")
                         .HasColumnType("NUMERIC(10,4)");
 
                     b.Property<string>("ParentProductCode")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PickingStrategy")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("ProcurementType")
                         .HasMaxLength(10)
@@ -3557,6 +3565,9 @@ namespace AeroMes.Infrastructure.Migrations
                     b.Property<int?>("BinId")
                         .HasColumnType("int");
 
+                    b.Property<DateOnly?>("ExpiryDate")
+                        .HasColumnType("date");
+
                     b.Property<int>("LocationID")
                         .HasColumnType("int");
 
@@ -3565,6 +3576,9 @@ namespace AeroMes.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<DateOnly?>("ManufacturedDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("ProductCode")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -3572,6 +3586,9 @@ namespace AeroMes.Infrastructure.Migrations
 
                     b.Property<decimal>("Quantity")
                         .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<DateTime>("ReceivedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -4152,6 +4169,74 @@ namespace AeroMes.Infrastructure.Migrations
                     b.ToTable("Aisles", "wms");
                 });
 
+            modelBuilder.Entity("AeroMes.Domain.Wms.BeginningInventoryEntry", b =>
+                {
+                    b.Property<int>("EntryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EntryId"));
+
+                    b.Property<decimal>("BeginningQuantity")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateOnly?>("ExpirationDate")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LotNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateOnly>("Period")
+                        .HasColumnType("date");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UnitOfMeasure")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("WarehouseId")
+                        .HasColumnType("int");
+
+                    b.HasKey("EntryId");
+
+                    b.HasIndex("ProductCode");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("Period", "WarehouseId", "ProductCode", "LotNumber");
+
+                    b.ToTable("BeginningInventoryEntries", "wms");
+                });
+
             modelBuilder.Entity("AeroMes.Domain.Wms.Bin", b =>
                 {
                     b.Property<int>("BinId")
@@ -4211,6 +4296,506 @@ namespace AeroMes.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Bins", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.Carton", b =>
+                {
+                    b.Property<int>("CartonId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CartonId"));
+
+                    b.Property<string>("CartonCode")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal?>("GrossWeightKg")
+                        .HasColumnType("NUMERIC(10,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ShipmentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("CartonId");
+
+                    b.ToTable("Cartons", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.CartonContent", b =>
+                {
+                    b.Property<long>("ContentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ContentId"));
+
+                    b.Property<int>("CartonId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LotNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("PackedQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("ContentId");
+
+                    b.HasIndex("CartonId");
+
+                    b.HasIndex("ProductCode");
+
+                    b.ToTable("CartonContents", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.CycleCountLine", b =>
+                {
+                    b.Property<long>("LineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("LineId"));
+
+                    b.Property<int>("BinId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("BookQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<DateTime?>("CountedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CountedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal?>("CountedQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<int>("LocationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LotNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("PlanId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("LineId");
+
+                    b.HasIndex("BinId");
+
+                    b.HasIndex("PlanId");
+
+                    b.HasIndex("ProductCode");
+
+                    b.ToTable("CycleCountLines", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.CycleCountPlan", b =>
+                {
+                    b.Property<int>("PlanId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PlanId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PlanCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PlanType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateOnly>("ScheduledDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("PlanId");
+
+                    b.HasIndex("PlanCode")
+                        .IsUnique();
+
+                    b.ToTable("CycleCountPlans", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.FactoryExportLine", b =>
+                {
+                    b.Property<int>("LineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LineId"));
+
+                    b.Property<int>("ExportId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<int>("SourceWarehouseId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SpecificationCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UnitOfMeasure")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("LineId");
+
+                    b.HasIndex("ExportId");
+
+                    b.HasIndex("ProductCode");
+
+                    b.HasIndex("SourceWarehouseId");
+
+                    b.ToTable("FactoryExportLines", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.FactoryReceiptLine", b =>
+                {
+                    b.Property<int>("LineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LineId"));
+
+                    b.Property<int>("DestinationWarehouseId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<int>("ReceiptId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SpecificationCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UnitOfMeasure")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("LineId");
+
+                    b.HasIndex("DestinationWarehouseId");
+
+                    b.HasIndex("ProductCode");
+
+                    b.HasIndex("ReceiptId");
+
+                    b.ToTable("FactoryReceiptLines", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.FactoryWarehouseExport", b =>
+                {
+                    b.Property<int>("ExportId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ExportId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ExportType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ReceiverOrReceivingUnit")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("ReferenceRequestId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("VoucherNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("ExportId");
+
+                    b.HasIndex("VoucherNumber")
+                        .IsUnique();
+
+                    b.ToTable("FactoryWarehouseExports", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.FactoryWarehouseReceipt", b =>
+                {
+                    b.Property<int>("ReceiptId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReceiptId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ReceiptType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int?>("ReferenceRequestId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("SupplierOrTransferringUnit")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("VoucherNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("ReceiptId");
+
+                    b.HasIndex("VoucherNumber")
+                        .IsUnique();
+
+                    b.ToTable("FactoryWarehouseReceipts", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.FinishedProductIntakeRequest", b =>
+                {
+                    b.Property<int>("IntakeRequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IntakeRequestId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("IntakePurpose")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("ProductionOrderId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RequestDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RequestNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("RequesterUnit")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("WarehouseType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("IntakeRequestId");
+
+                    b.HasIndex("ProductionOrderId");
+
+                    b.HasIndex("RequestNumber")
+                        .IsUnique();
+
+                    b.ToTable("FinishedProductIntakeRequests", "wms");
                 });
 
             modelBuilder.Entity("AeroMes.Domain.Wms.GoodsReceiptNote", b =>
@@ -4341,6 +4926,491 @@ namespace AeroMes.Infrastructure.Migrations
                     b.HasIndex("ProductCode");
 
                     b.ToTable("GrnLines", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.IntakeRequestLine", b =>
+                {
+                    b.Property<int>("LineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LineId"));
+
+                    b.Property<decimal?>("ActualReceivedQuantity")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<string>("DefectReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("IntakeRequestId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDefective")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("RequestedQuantity")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<string>("UnitOfMeasure")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("WarehouseId")
+                        .HasColumnType("int");
+
+                    b.HasKey("LineId");
+
+                    b.HasIndex("IntakeRequestId");
+
+                    b.HasIndex("ProductCode");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.ToTable("IntakeRequestLines", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.MaterialRequisition", b =>
+                {
+                    b.Property<int>("RequisitionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RequisitionId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("ProductionOrderId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RequestDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RequesterUnit")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("RequisitionNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("RequisitionId");
+
+                    b.HasIndex("ProductionOrderId");
+
+                    b.HasIndex("RequisitionNumber")
+                        .IsUnique();
+
+                    b.ToTable("MaterialRequisitions", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.MaterialRequisitionLine", b =>
+                {
+                    b.Property<int>("LineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LineId"));
+
+                    b.Property<decimal?>("ActualIssuedQuantity")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("RequestedQuantity")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<int>("RequisitionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UnitOfMeasure")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("WarehouseId")
+                        .HasColumnType("int");
+
+                    b.HasKey("LineId");
+
+                    b.HasIndex("ProductCode");
+
+                    b.HasIndex("RequisitionId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.ToTable("MaterialRequisitionLines", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.MaterialSupplyRequest", b =>
+                {
+                    b.Property<int>("RequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RequestId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("RequestType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("RequesterUnit")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("RequiredByDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("VoucherNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("RequestId");
+
+                    b.HasIndex("VoucherNumber")
+                        .IsUnique();
+
+                    b.ToTable("MaterialSupplyRequests", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.MaterialSupplyRequestLine", b =>
+                {
+                    b.Property<int>("LineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LineId"));
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("RequestId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("RequestedQuantity")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<string>("UnitOfMeasure")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("WarehouseId")
+                        .HasColumnType("int");
+
+                    b.HasKey("LineId");
+
+                    b.HasIndex("ProductCode");
+
+                    b.HasIndex("RequestId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.ToTable("MaterialSupplyRequestLines", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.MaterialTransferLine", b =>
+                {
+                    b.Property<int>("LineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LineId"));
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<int>("SlipId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SpecificationCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UnitOfMeasure")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("LineId");
+
+                    b.HasIndex("ProductCode");
+
+                    b.HasIndex("SlipId");
+
+                    b.ToTable("MaterialTransferLines", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.MaterialTransferSlip", b =>
+                {
+                    b.Property<int>("SlipId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SlipId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DestinationWarehouseId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("ReferenceRequestId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SourceWarehouseId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TransferType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("VoucherNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("SlipId");
+
+                    b.HasIndex("DestinationWarehouseId");
+
+                    b.HasIndex("SourceWarehouseId");
+
+                    b.HasIndex("VoucherNumber")
+                        .IsUnique();
+
+                    b.ToTable("MaterialTransferSlips", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.PickList", b =>
+                {
+                    b.Property<int>("PickListId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PickListId"));
+
+                    b.Property<string>("AssignedTo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ShipmentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("PickListId");
+
+                    b.ToTable("PickLists", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.PickListLine", b =>
+                {
+                    b.Property<long>("PickLineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("PickLineId"));
+
+                    b.Property<int?>("BinId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LocationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LotNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("PickListId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PickSequence")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PickedQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("RequiredQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<int>("ShipmentLineId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PickLineId");
+
+                    b.HasIndex("PickListId");
+
+                    b.ToTable("PickListLines", "wms");
                 });
 
             modelBuilder.Entity("AeroMes.Domain.Wms.PurchaseOrder", b =>
@@ -4490,6 +5560,278 @@ namespace AeroMes.Infrastructure.Migrations
                     b.ToTable("Racks", "wms");
                 });
 
+            modelBuilder.Entity("AeroMes.Domain.Wms.ReplenishmentAlert", b =>
+                {
+                    b.Property<long>("AlertId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("AlertId"));
+
+                    b.Property<DateTime?>("AcknowledgedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AcknowledgedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal>("CurrentQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<int?>("LinkedPoId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LocationId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PolicyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("TriggeredAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("AlertId");
+
+                    b.HasIndex("LinkedPoId");
+
+                    b.HasIndex("PolicyId");
+
+                    b.ToTable("ReplenishmentAlerts", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.ReturnMerchandiseAuthorization", b =>
+                {
+                    b.Property<int>("RmaId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RmaId"));
+
+                    b.Property<DateTime?>("AuthorizedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AuthorizedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ReturnDirection")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ReturnReason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("RmaCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("SourceDocumentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SourceDocumentType")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("RmaId");
+
+                    b.HasIndex("RmaCode")
+                        .IsUnique();
+
+                    b.ToTable("ReturnMerchandiseAuthorizations", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.RmaLine", b =>
+                {
+                    b.Property<int>("RmaLineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RmaLineId"));
+
+                    b.Property<string>("Disposition")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("LotNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("NcrId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("ReceivedQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<decimal>("ReturnQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<int>("RmaId")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("StockMovementId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("RmaLineId");
+
+                    b.HasIndex("ProductCode");
+
+                    b.HasIndex("RmaId");
+
+                    b.ToTable("RmaLines", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.ShipmentLine", b =>
+                {
+                    b.Property<int>("LineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LineId"));
+
+                    b.Property<decimal>("OrderedQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<decimal>("PackedQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<decimal>("PickedQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("ShipmentId")
+                        .HasColumnType("int");
+
+                    b.HasKey("LineId");
+
+                    b.HasIndex("ProductCode");
+
+                    b.HasIndex("ShipmentId");
+
+                    b.ToTable("ShipmentLines", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.ShipmentOrder", b =>
+                {
+                    b.Property<int>("ShipmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ShipmentId"));
+
+                    b.Property<string>("CarrierName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateOnly>("RequestedShipDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("ShipmentCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("SoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TrackingNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("ShipmentId");
+
+                    b.HasIndex("ShipmentCode")
+                        .IsUnique();
+
+                    b.ToTable("ShipmentOrders", "wms");
+                });
+
             modelBuilder.Entity("AeroMes.Domain.Wms.StockMovement", b =>
                 {
                     b.Property<long>("MovementId")
@@ -4549,6 +5891,74 @@ namespace AeroMes.Infrastructure.Migrations
                     b.HasIndex("ProductCode", "LotNumber");
 
                     b.ToTable("StockMovements", "wms");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.StockPolicy", b =>
+                {
+                    b.Property<int>("PolicyId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PolicyId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LeadTimeDays")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LocationId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("MaxQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<decimal>("MinQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("ReorderQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<decimal>("SafetyStockQty")
+                        .HasColumnType("NUMERIC(18,4)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("PolicyId");
+
+                    b.HasIndex("LocationId");
+
+                    b.HasIndex("ProductCode", "LocationId")
+                        .IsUnique();
+
+                    b.ToTable("StockPolicies", "wms");
                 });
 
             modelBuilder.Entity("AeroMes.Domain.Wms.WarehouseZone", b =>
@@ -5676,6 +7086,23 @@ namespace AeroMes.Infrastructure.Migrations
                     b.Navigation("Zone");
                 });
 
+            modelBuilder.Entity("AeroMes.Domain.Wms.BeginningInventoryEntry", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Master.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Master.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Warehouse");
+                });
+
             modelBuilder.Entity("AeroMes.Domain.Wms.Bin", b =>
                 {
                     b.HasOne("AeroMes.Domain.Wms.Rack", "Rack")
@@ -5685,6 +7112,92 @@ namespace AeroMes.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Rack");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.CartonContent", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Wms.Carton", null)
+                        .WithMany("Contents")
+                        .HasForeignKey("CartonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Master.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.CycleCountLine", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Wms.Bin", null)
+                        .WithMany()
+                        .HasForeignKey("BinId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Wms.CycleCountPlan", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Master.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.FactoryExportLine", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Wms.FactoryWarehouseExport", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("ExportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Master.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Master.Warehouse", null)
+                        .WithMany()
+                        .HasForeignKey("SourceWarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.FactoryReceiptLine", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Master.Warehouse", null)
+                        .WithMany()
+                        .HasForeignKey("DestinationWarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Master.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Wms.FactoryWarehouseReceipt", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("ReceiptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.FinishedProductIntakeRequest", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Integration.ProductionOrder", null)
+                        .WithMany()
+                        .HasForeignKey("ProductionOrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("AeroMes.Domain.Wms.GoodsReceiptNote", b =>
@@ -5726,6 +7239,115 @@ namespace AeroMes.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("AeroMes.Domain.Wms.IntakeRequestLine", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Wms.FinishedProductIntakeRequest", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("IntakeRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Master.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Master.Warehouse", null)
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.MaterialRequisition", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Integration.ProductionOrder", null)
+                        .WithMany()
+                        .HasForeignKey("ProductionOrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.MaterialRequisitionLine", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Master.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Wms.MaterialRequisition", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("RequisitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Master.Warehouse", null)
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.MaterialSupplyRequestLine", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Master.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Wms.MaterialSupplyRequest", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("RequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Master.Warehouse", null)
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.MaterialTransferLine", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Master.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Wms.MaterialTransferSlip", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("SlipId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.MaterialTransferSlip", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Master.Warehouse", null)
+                        .WithMany()
+                        .HasForeignKey("DestinationWarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Master.Warehouse", null)
+                        .WithMany()
+                        .HasForeignKey("SourceWarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.PickListLine", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Wms.PickList", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("PickListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("AeroMes.Domain.Wms.PurchaseOrder", b =>
                 {
                     b.HasOne("AeroMes.Domain.Master.Supplier", null)
@@ -5761,6 +7383,50 @@ namespace AeroMes.Infrastructure.Migrations
                     b.Navigation("Aisle");
                 });
 
+            modelBuilder.Entity("AeroMes.Domain.Wms.ReplenishmentAlert", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Wms.PurchaseOrder", null)
+                        .WithMany()
+                        .HasForeignKey("LinkedPoId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AeroMes.Domain.Wms.StockPolicy", null)
+                        .WithMany()
+                        .HasForeignKey("PolicyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.RmaLine", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Master.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Wms.ReturnMerchandiseAuthorization", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("RmaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.ShipmentLine", b =>
+                {
+                    b.HasOne("AeroMes.Domain.Master.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Wms.ShipmentOrder", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("ShipmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("AeroMes.Domain.Wms.StockMovement", b =>
                 {
                     b.HasOne("AeroMes.Domain.Wms.Bin", null)
@@ -5768,6 +7434,21 @@ namespace AeroMes.Infrastructure.Migrations
                         .HasForeignKey("BinId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("AeroMes.Domain.Master.StorageLocation", null)
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AeroMes.Domain.Master.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.StockPolicy", b =>
+                {
                     b.HasOne("AeroMes.Domain.Master.StorageLocation", null)
                         .WithMany()
                         .HasForeignKey("LocationId")
@@ -5992,12 +7673,67 @@ namespace AeroMes.Infrastructure.Migrations
                     b.Navigation("Characteristics");
                 });
 
+            modelBuilder.Entity("AeroMes.Domain.Wms.Carton", b =>
+                {
+                    b.Navigation("Contents");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.CycleCountPlan", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.FactoryWarehouseExport", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.FactoryWarehouseReceipt", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.FinishedProductIntakeRequest", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
             modelBuilder.Entity("AeroMes.Domain.Wms.GoodsReceiptNote", b =>
                 {
                     b.Navigation("Lines");
                 });
 
+            modelBuilder.Entity("AeroMes.Domain.Wms.MaterialRequisition", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.MaterialSupplyRequest", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.MaterialTransferSlip", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.PickList", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
             modelBuilder.Entity("AeroMes.Domain.Wms.PurchaseOrder", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.ReturnMerchandiseAuthorization", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("AeroMes.Domain.Wms.ShipmentOrder", b =>
                 {
                     b.Navigation("Lines");
                 });

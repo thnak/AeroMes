@@ -100,6 +100,31 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<GoodsReceiptNote> GoodsReceiptNotes => Set<GoodsReceiptNote>();
     public DbSet<GrnLine> GrnLines => Set<GrnLine>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<BeginningInventoryEntry> BeginningInventoryEntries => Set<BeginningInventoryEntry>();
+    public DbSet<FactoryWarehouseReceipt> FactoryWarehouseReceipts => Set<FactoryWarehouseReceipt>();
+    public DbSet<FactoryReceiptLine> FactoryReceiptLines => Set<FactoryReceiptLine>();
+    public DbSet<FactoryWarehouseExport> FactoryWarehouseExports => Set<FactoryWarehouseExport>();
+    public DbSet<FactoryExportLine> FactoryExportLines => Set<FactoryExportLine>();
+    public DbSet<MaterialTransferSlip> MaterialTransferSlips => Set<MaterialTransferSlip>();
+    public DbSet<MaterialTransferLine> MaterialTransferLines => Set<MaterialTransferLine>();
+    public DbSet<MaterialSupplyRequest> MaterialSupplyRequests => Set<MaterialSupplyRequest>();
+    public DbSet<MaterialSupplyRequestLine> MaterialSupplyRequestLines => Set<MaterialSupplyRequestLine>();
+    public DbSet<MaterialRequisition> MaterialRequisitions => Set<MaterialRequisition>();
+    public DbSet<MaterialRequisitionLine> MaterialRequisitionLines => Set<MaterialRequisitionLine>();
+    public DbSet<FinishedProductIntakeRequest> FinishedProductIntakeRequests => Set<FinishedProductIntakeRequest>();
+    public DbSet<IntakeRequestLine> IntakeRequestLines => Set<IntakeRequestLine>();
+    public DbSet<CycleCountPlan> CycleCountPlans => Set<CycleCountPlan>();
+    public DbSet<CycleCountLine> CycleCountLines => Set<CycleCountLine>();
+    public DbSet<StockPolicy> StockPolicies => Set<StockPolicy>();
+    public DbSet<ReplenishmentAlert> ReplenishmentAlerts => Set<ReplenishmentAlert>();
+    public DbSet<ReturnMerchandiseAuthorization> Rmas => Set<ReturnMerchandiseAuthorization>();
+    public DbSet<RmaLine> RmaLines => Set<RmaLine>();
+    public DbSet<ShipmentOrder> ShipmentOrders => Set<ShipmentOrder>();
+    public DbSet<ShipmentLine> ShipmentLines => Set<ShipmentLine>();
+    public DbSet<PickList> PickLists => Set<PickList>();
+    public DbSet<PickListLine> PickListLines => Set<PickListLine>();
+    public DbSet<Carton> Cartons => Set<Carton>();
+    public DbSet<CartonContent> CartonContents => Set<CartonContent>();
 
     // qual schema
     public DbSet<DefectCode> DefectCodes => Set<DefectCode>();
@@ -421,6 +446,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.FixedPurchasePrice).HasColumnType("NUMERIC(18,4)");
             e.Property(x => x.TechnicalStandard).HasMaxLength(200);
             e.Property(x => x.QuantityFormula).HasMaxLength(500);
+            e.Property(x => x.PickingStrategy).HasConversion<string>().HasMaxLength(10);
             e.HasQueryFilter(x => !x.IsDeleted);
 
             e.HasMany(x => x.UoMConversions)
@@ -1489,6 +1515,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
             e.Property(x => x.LotNumber).HasMaxLength(50).IsRequired();
             e.Property(x => x.Quantity).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.ExpiryDate).HasColumnType("date");
+            e.Property(x => x.ManufacturedDate).HasColumnType("date");
             e.HasIndex(x => new { x.LocationID, x.ProductCode, x.LotNumber }).IsUnique();
             e.HasIndex(x => new { x.ProductCode, x.LotNumber });
             e.HasIndex(x => x.BinId).HasFilter("[BinId] IS NOT NULL");
@@ -1769,6 +1797,579 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.BinId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        b.Entity<BeginningInventoryEntry>(e =>
+        {
+            e.ToTable("BeginningInventoryEntries", "wms");
+            e.HasKey(x => x.EntryId);
+            e.Property(x => x.EntryId).UseIdentityColumn();
+            e.Property(x => x.Period).HasColumnType("date");
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
+            e.Property(x => x.BeginningQuantity).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.LotNumber).HasMaxLength(100);
+            e.Property(x => x.ExpirationDate).HasColumnType("date");
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.Property(x => x.UpdatedBy).HasMaxLength(450);
+            e.HasIndex(x => new { x.Period, x.WarehouseId, x.ProductCode, x.LotNumber });
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne(x => x.Warehouse)
+                .WithMany()
+                .HasForeignKey(x => x.WarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<Domain.Master.Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<FactoryWarehouseReceipt>(e =>
+        {
+            e.ToTable("FactoryWarehouseReceipts", "wms");
+            e.HasKey(x => x.ReceiptId);
+            e.Property(x => x.ReceiptId).UseIdentityColumn();
+            e.Property(x => x.VoucherNumber).HasMaxLength(30).IsRequired();
+            e.Property(x => x.ReceiptType).HasConversion<string>().HasMaxLength(30);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.SupplierOrTransferringUnit).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.Property(x => x.UpdatedBy).HasMaxLength(450);
+            e.HasIndex(x => x.VoucherNumber).IsUnique();
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(x => x.ReceiptId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines)
+                .HasField("_lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<FactoryReceiptLine>(e =>
+        {
+            e.ToTable("FactoryReceiptLines", "wms");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Quantity).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.SpecificationCode).HasMaxLength(50);
+
+            e.HasOne<Domain.Master.Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<Domain.Master.Warehouse>()
+                .WithMany()
+                .HasForeignKey(x => x.DestinationWarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<FactoryWarehouseExport>(e =>
+        {
+            e.ToTable("FactoryWarehouseExports", "wms");
+            e.HasKey(x => x.ExportId);
+            e.Property(x => x.ExportId).UseIdentityColumn();
+            e.Property(x => x.VoucherNumber).HasMaxLength(30).IsRequired();
+            e.Property(x => x.ExportType).HasConversion<string>().HasMaxLength(30);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.ReceiverOrReceivingUnit).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.Property(x => x.UpdatedBy).HasMaxLength(450);
+            e.HasIndex(x => x.VoucherNumber).IsUnique();
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(x => x.ExportId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines)
+                .HasField("_lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<FactoryExportLine>(e =>
+        {
+            e.ToTable("FactoryExportLines", "wms");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Quantity).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.SpecificationCode).HasMaxLength(50);
+
+            e.HasOne<Domain.Master.Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<Domain.Master.Warehouse>()
+                .WithMany()
+                .HasForeignKey(x => x.SourceWarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<MaterialTransferSlip>(e =>
+        {
+            e.ToTable("MaterialTransferSlips", "wms");
+            e.HasKey(x => x.SlipId);
+            e.Property(x => x.SlipId).UseIdentityColumn();
+            e.Property(x => x.VoucherNumber).HasMaxLength(30).IsRequired();
+            e.Property(x => x.TransferType).HasConversion<string>().HasMaxLength(30);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.Property(x => x.UpdatedBy).HasMaxLength(450);
+            e.HasIndex(x => x.VoucherNumber).IsUnique();
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne<Domain.Master.Warehouse>()
+                .WithMany()
+                .HasForeignKey(x => x.SourceWarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<Domain.Master.Warehouse>()
+                .WithMany()
+                .HasForeignKey(x => x.DestinationWarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(x => x.SlipId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines)
+                .HasField("_lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<MaterialTransferLine>(e =>
+        {
+            e.ToTable("MaterialTransferLines", "wms");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Quantity).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.SpecificationCode).HasMaxLength(50);
+
+            e.HasOne<Domain.Master.Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<MaterialSupplyRequest>(e =>
+        {
+            e.ToTable("MaterialSupplyRequests", "wms");
+            e.HasKey(x => x.RequestId);
+            e.Property(x => x.RequestId).UseIdentityColumn();
+            e.Property(x => x.VoucherNumber).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.VoucherNumber).IsUnique();
+            e.Property(x => x.RequestType).HasMaxLength(30).HasConversion<string>();
+            e.Property(x => x.Status).HasMaxLength(20).HasConversion<string>();
+            e.Property(x => x.RequesterUnit).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.Property(x => x.UpdatedBy).HasMaxLength(450);
+            e.Property(x => x.DeletedBy).HasMaxLength(450);
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(x => x.RequestId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .Metadata.PrincipalToDependent!.SetField("_lines");
+            e.Navigation(x => x.Lines)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<MaterialSupplyRequestLine>(e =>
+        {
+            e.ToTable("MaterialSupplyRequestLines", "wms");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
+            e.Property(x => x.RequestedQuantity).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.Notes).HasMaxLength(200);
+
+            e.HasOne<Domain.Master.Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<Domain.Master.Warehouse>()
+                .WithMany()
+                .HasForeignKey(x => x.WarehouseId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<MaterialRequisition>(e =>
+        {
+            e.ToTable("MaterialRequisitions", "wms");
+            e.HasKey(x => x.RequisitionId);
+            e.Property(x => x.RequisitionId).UseIdentityColumn();
+            e.Property(x => x.RequisitionNumber).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.RequisitionNumber).IsUnique();
+            e.Property(x => x.Status).HasMaxLength(20).HasConversion<string>();
+            e.Property(x => x.RequesterUnit).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.Property(x => x.UpdatedBy).HasMaxLength(450);
+            e.Property(x => x.DeletedBy).HasMaxLength(450);
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne<Domain.Integration.ProductionOrder>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductionOrderId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(x => x.RequisitionId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .Metadata.PrincipalToDependent!.SetField("_lines");
+            e.Navigation(x => x.Lines)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<MaterialRequisitionLine>(e =>
+        {
+            e.ToTable("MaterialRequisitionLines", "wms");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
+            e.Property(x => x.RequestedQuantity).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.ActualIssuedQuantity).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.Notes).HasMaxLength(200);
+
+            e.HasOne<Domain.Master.Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<Domain.Master.Warehouse>()
+                .WithMany()
+                .HasForeignKey(x => x.WarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<FinishedProductIntakeRequest>(e =>
+        {
+            e.ToTable("FinishedProductIntakeRequests", "wms");
+            e.HasKey(x => x.IntakeRequestId);
+            e.Property(x => x.IntakeRequestId).UseIdentityColumn();
+            e.Property(x => x.RequestNumber).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.RequestNumber).IsUnique();
+            e.Property(x => x.IntakePurpose).HasMaxLength(40).HasConversion<string>();
+            e.Property(x => x.WarehouseType).HasMaxLength(20).HasConversion<string>();
+            e.Property(x => x.Status).HasMaxLength(20).HasConversion<string>();
+            e.Property(x => x.RequesterUnit).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.Property(x => x.UpdatedBy).HasMaxLength(450);
+            e.Property(x => x.DeletedBy).HasMaxLength(450);
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne<Domain.Integration.ProductionOrder>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductionOrderId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(x => x.IntakeRequestId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .Metadata.PrincipalToDependent!.SetField("_lines");
+            e.Navigation(x => x.Lines)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<IntakeRequestLine>(e =>
+        {
+            e.ToTable("IntakeRequestLines", "wms");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
+            e.Property(x => x.RequestedQuantity).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.ActualReceivedQuantity).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.DefectReason).HasMaxLength(500);
+            e.Property(x => x.Notes).HasMaxLength(200);
+
+            e.HasOne<Domain.Master.Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<Domain.Master.Warehouse>()
+                .WithMany()
+                .HasForeignKey(x => x.WarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<CycleCountPlan>(e =>
+        {
+            e.ToTable("CycleCountPlans", "wms");
+            e.HasKey(x => x.PlanId);
+            e.Property(x => x.PlanId).UseIdentityColumn();
+            e.Property(x => x.PlanCode).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.PlanCode).IsUnique();
+            e.Property(x => x.PlanType).HasMaxLength(20).HasConversion<string>();
+            e.Property(x => x.Status).HasMaxLength(20).HasConversion<string>();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.Property(x => x.UpdatedBy).HasMaxLength(450);
+            e.Property(x => x.DeletedBy).HasMaxLength(450);
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(x => x.PlanId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .Metadata.PrincipalToDependent!.SetField("_lines");
+            e.Navigation(x => x.Lines)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<CycleCountLine>(e =>
+        {
+            e.ToTable("CycleCountLines", "wms");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(100).IsRequired();
+            e.Property(x => x.BookQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.CountedQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.CountedBy).HasMaxLength(450);
+            e.Property(x => x.Status).HasMaxLength(20).HasConversion<string>();
+            e.Ignore(x => x.VarianceQty);
+            e.Ignore(x => x.VariancePct);
+
+            e.HasOne<Domain.Master.Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<Bin>()
+                .WithMany()
+                .HasForeignKey(x => x.BinId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<StockPolicy>(e =>
+        {
+            e.ToTable("StockPolicies", "wms");
+            e.HasKey(x => x.PolicyId);
+            e.Property(x => x.PolicyId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.MinQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.MaxQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.SafetyStockQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.ReorderQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.Property(x => x.UpdatedBy).HasMaxLength(450);
+            e.Property(x => x.DeletedBy).HasMaxLength(450);
+            e.HasIndex(x => new { x.ProductCode, x.LocationId }).IsUnique();
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne<Domain.Master.Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<Domain.Master.StorageLocation>()
+                .WithMany()
+                .HasForeignKey(x => x.LocationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<ReplenishmentAlert>(e =>
+        {
+            e.ToTable("ReplenishmentAlerts", "wms");
+            e.HasKey(x => x.AlertId);
+            e.Property(x => x.AlertId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.CurrentQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.Status).HasMaxLength(20).HasConversion<string>();
+            e.Property(x => x.AcknowledgedBy).HasMaxLength(450);
+
+            e.HasOne<StockPolicy>()
+                .WithMany()
+                .HasForeignKey(x => x.PolicyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne<Domain.Wms.PurchaseOrder>()
+                .WithMany()
+                .HasForeignKey(x => x.LinkedPoId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<ReturnMerchandiseAuthorization>(e =>
+        {
+            e.ToTable("ReturnMerchandiseAuthorizations", "wms");
+            e.HasKey(x => x.RmaId);
+            e.Property(x => x.RmaId).UseIdentityColumn();
+            e.Property(x => x.RmaCode).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.RmaCode).IsUnique();
+            e.Property(x => x.ReturnDirection).HasMaxLength(20).HasConversion<string>();
+            e.Property(x => x.Status).HasMaxLength(20).HasConversion<string>();
+            e.Property(x => x.SourceDocumentType).HasMaxLength(20);
+            e.Property(x => x.ReturnReason).HasMaxLength(500);
+            e.Property(x => x.AuthorizedBy).HasMaxLength(450);
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.Property(x => x.UpdatedBy).HasMaxLength(450);
+            e.Property(x => x.DeletedBy).HasMaxLength(450);
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(l => l.RmaId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .Metadata.PrincipalToDependent!.SetField("_lines");
+            e.Navigation(x => x.Lines)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<RmaLine>(e =>
+        {
+            e.ToTable("RmaLines", "wms");
+            e.HasKey(x => x.RmaLineId);
+            e.Property(x => x.RmaLineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ReturnQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.ReceivedQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.Disposition).HasMaxLength(30).HasConversion<string>();
+
+            e.HasOne<Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .HasPrincipalKey(p => p.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<ShipmentOrder>(e =>
+        {
+            e.ToTable("ShipmentOrders", "wms");
+            e.HasKey(x => x.ShipmentId);
+            e.Property(x => x.ShipmentId).UseIdentityColumn();
+            e.Property(x => x.ShipmentCode).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.ShipmentCode).IsUnique();
+            e.Property(x => x.CustomerName).HasMaxLength(150).IsRequired();
+            e.Property(x => x.CarrierName).HasMaxLength(100);
+            e.Property(x => x.TrackingNumber).HasMaxLength(100);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.Property(x => x.UpdatedBy).HasMaxLength(450);
+            e.Property(x => x.DeletedBy).HasMaxLength(450);
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(l => l.ShipmentId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .Metadata.PrincipalToDependent!.SetField("_lines");
+            e.Navigation(x => x.Lines)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<ShipmentLine>(e =>
+        {
+            e.ToTable("ShipmentLines", "wms");
+            e.HasKey(x => x.LineId);
+            e.Property(x => x.LineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.OrderedQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.PickedQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.PackedQty).HasColumnType("NUMERIC(18,4)");
+
+            e.HasOne<Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .HasPrincipalKey(p => p.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<PickList>(e =>
+        {
+            e.ToTable("PickLists", "wms");
+            e.HasKey(x => x.PickListId);
+            e.Property(x => x.PickListId).UseIdentityColumn();
+            e.Property(x => x.AssignedTo).HasMaxLength(50);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.Property(x => x.UpdatedBy).HasMaxLength(450);
+            e.Property(x => x.DeletedBy).HasMaxLength(450);
+
+            e.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(l => l.PickListId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .Metadata.PrincipalToDependent!.SetField("_lines");
+            e.Navigation(x => x.Lines)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<PickListLine>(e =>
+        {
+            e.ToTable("PickListLines", "wms");
+            e.HasKey(x => x.PickLineId);
+            e.Property(x => x.PickLineId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.RequiredQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.PickedQty).HasColumnType("NUMERIC(18,4)");
+        });
+
+        b.Entity<Carton>(e =>
+        {
+            e.ToTable("Cartons", "wms");
+            e.HasKey(x => x.CartonId);
+            e.Property(x => x.CartonId).UseIdentityColumn();
+            e.Property(x => x.CartonCode).HasMaxLength(80).IsRequired();
+            e.Property(x => x.GrossWeightKg).HasColumnType("NUMERIC(10,2)");
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.Property(x => x.UpdatedBy).HasMaxLength(450);
+            e.Property(x => x.DeletedBy).HasMaxLength(450);
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasMany(x => x.Contents)
+                .WithOne()
+                .HasForeignKey(l => l.CartonId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .Metadata.PrincipalToDependent!.SetField("_contents");
+            e.Navigation(x => x.Contents)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<CartonContent>(e =>
+        {
+            e.ToTable("CartonContents", "wms");
+            e.HasKey(x => x.ContentId);
+            e.Property(x => x.ContentId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.PackedQty).HasColumnType("NUMERIC(18,4)");
+
+            e.HasOne<Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductCode)
+                .HasPrincipalKey(p => p.ProductCode)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 

@@ -48,6 +48,26 @@ public class InventoryStockRepository(AppDbContext db) : IInventoryStockReposito
                 && s.ProductCode == productCode.Trim().ToUpperInvariant()
                 && s.LotNumber == lotNumber.Trim(), ct);
 
+    public async Task<IReadOnlyList<InventoryStock>> GetByBinsAsync(IEnumerable<int> binIds, CancellationToken ct)
+    {
+        var ids = binIds.ToList();
+        return await db.InventoryStocks.AsNoTracking()
+            .Where(s => s.BinId.HasValue && ids.Contains(s.BinId.Value) && s.Quantity > 0)
+            .OrderBy(s => s.BinId).ThenBy(s => s.ProductCode).ThenBy(s => s.LotNumber)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<InventoryStock>> GetAllNonZeroAsync(CancellationToken ct) =>
+        await db.InventoryStocks.AsNoTracking()
+            .Where(s => s.BinId.HasValue && s.Quantity > 0)
+            .OrderBy(s => s.BinId).ThenBy(s => s.ProductCode).ThenBy(s => s.LotNumber)
+            .ToListAsync(ct);
+
+    public Task<decimal> GetTotalQtyAsync(int locationId, string productCode, CancellationToken ct) =>
+        db.InventoryStocks.AsNoTracking()
+            .Where(s => s.LocationID == locationId && s.ProductCode == productCode.Trim().ToUpperInvariant())
+            .SumAsync(s => s.Quantity, ct);
+
     public async Task AddAsync(InventoryStock entity, CancellationToken ct) =>
         await db.InventoryStocks.AddAsync(entity, ct);
 }

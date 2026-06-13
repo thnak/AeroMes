@@ -85,6 +85,39 @@ using AeroMes.Application.Wms.Queries.GetZones;
 using AeroMes.Application.Wms.Commands.CreatePurchaseOrder;
 using AeroMes.Application.Wms.Commands.CreateGrn;
 using AeroMes.Application.Wms.Commands.AddGrnLine;
+using AeroMes.Application.Wms.Commands.CreateBeginningInventoryEntry;
+using AeroMes.Application.Wms.Commands.UpdateBeginningInventoryEntry;
+using AeroMes.Application.Wms.Commands.CreateFactoryWarehouseReceipt;
+using AeroMes.Application.Wms.Commands.UpdateFactoryWarehouseReceipt;
+using AeroMes.Application.Wms.Queries.GetFactoryWarehouseReceipts;
+using AeroMes.Application.Wms.Queries.GetFactoryWarehouseReceiptById;
+using AeroMes.Application.Wms.Commands.CreateFactoryWarehouseExport;
+using AeroMes.Application.Wms.Queries.GetFactoryWarehouseExports;
+using AeroMes.Application.Wms.Queries.GetFactoryWarehouseExportById;
+using AeroMes.Application.Wms.Commands.CreateMaterialTransferSlip;
+using AeroMes.Application.Wms.Queries.GetMaterialTransferSlips;
+using AeroMes.Application.Wms.Queries.GetMaterialTransferSlipById;
+using AeroMes.Application.Wms.Commands.CreateMaterialSupplyRequest;
+using AeroMes.Application.Wms.Queries.GetMaterialSupplyRequests;
+using AeroMes.Application.Wms.Queries.GetMaterialSupplyRequestById;
+using AeroMes.Application.Wms.Commands.CreateMaterialRequisition;
+using AeroMes.Application.Wms.Commands.FulfillMaterialRequisition;
+using AeroMes.Application.Wms.Queries.GetMaterialRequisitions;
+using AeroMes.Application.Wms.Queries.GetMaterialRequisitionById;
+using AeroMes.Application.Wms.Commands.CreateFinishedProductIntakeRequest;
+using AeroMes.Application.Wms.Commands.ReceiveFinishedProductIntakeRequest;
+using AeroMes.Application.Wms.Queries.GetFinishedProductIntakeRequests;
+using AeroMes.Application.Wms.Queries.GetFinishedProductIntakeRequestById;
+using AeroMes.Application.Wms.Commands.CreateCycleCountPlan;
+using AeroMes.Application.Wms.Commands.ApproveCycleCount;
+using AeroMes.Application.Wms.Queries.GetCycleCountPlans;
+using AeroMes.Application.Wms.Queries.GetCycleCountPlanById;
+using AeroMes.Application.Wms.Queries.GetCycleCountSheet;
+using AeroMes.Application.Wms.Commands.CreateStockPolicy;
+using AeroMes.Application.Wms.Commands.UpdateStockPolicy;
+using AeroMes.Application.Wms.Queries.GetStockPolicies;
+using AeroMes.Application.Wms.Queries.GetReplenishmentAlerts;
+using AeroMes.Application.Wms.Queries.GetStockStatus;
 using AeroMes.Application.Wms.Queries.GetPurchaseOrders;
 using AeroMes.Application.Wms.Queries.GetGrnList;
 using AeroMes.Application.Wms.Queries.GetGrnDetail;
@@ -93,6 +126,21 @@ using AeroMes.Application.Iot.Adapters.Queries.GetAdapterDetail;
 using AeroMes.Application.Iot.Signals.Queries.GetSignals;
 using AeroMes.Application.Iot.StateRules.Queries.GetStateRules;
 using AeroMes.Application.Quality.InspectionPlans;
+using AeroMes.Application.Wms.Queries.GetBeginningInventoryEntries;
+using AeroMes.Application.Wms.Commands.UpdateProductPickingConfig;
+using AeroMes.Application.Wms.Queries.GetLotAllocation;
+using AeroMes.Application.Wms.Services;
+using AeroMes.Application.Wms.Commands.CreateRma;
+using AeroMes.Application.Wms.Commands.AddRmaLine;
+using AeroMes.Application.Wms.Commands.ReceiveRma;
+using AeroMes.Application.Wms.Queries.GetRmaList;
+using AeroMes.Application.Wms.Queries.GetRmaById;
+using AeroMes.Application.Wms.Commands.CreateShipmentOrder;
+using AeroMes.Application.Wms.Commands.CreatePickList;
+using AeroMes.Application.Wms.Commands.CreateCarton;
+using AeroMes.Application.Wms.Queries.GetShipmentList;
+using AeroMes.Application.Wms.Queries.GetShipmentById;
+using AeroMes.Application.Wms.Queries.GetPickListForShipment;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AeroMes.Api.Constants;
@@ -363,6 +411,103 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(UpdateWarehouseRequest))]
 // machine additions
 [JsonSerializable(typeof(DuplicateMachineRequest))]
+// beginning inventory
+[JsonSerializable(typeof(IReadOnlyList<BeginningInventoryEntryDto>))]
+[JsonSerializable(typeof(BeginningInventoryEntryCreatedResult))]
+[JsonSerializable(typeof(CreateBeginningInventoryEntryRequest))]
+[JsonSerializable(typeof(UpdateBeginningInventoryEntryRequest))]
+// factory warehouse receipts
+[JsonSerializable(typeof(IReadOnlyList<FactoryWarehouseReceiptSummaryDto>))]
+[JsonSerializable(typeof(FactoryWarehouseReceiptDetailDto))]
+[JsonSerializable(typeof(FactoryWarehouseReceiptCreatedResult))]
+[JsonSerializable(typeof(CreateFactoryWarehouseReceiptRequest))]
+[JsonSerializable(typeof(UpdateFactoryWarehouseReceiptRequest))]
+[JsonSerializable(typeof(IReadOnlyList<FactoryReceiptLineDto>))]
+// factory warehouse exports
+[JsonSerializable(typeof(IReadOnlyList<FactoryWarehouseExportSummaryDto>))]
+[JsonSerializable(typeof(FactoryWarehouseExportDetailDto))]
+[JsonSerializable(typeof(FactoryWarehouseExportCreatedResult))]
+[JsonSerializable(typeof(CreateFactoryWarehouseExportRequest))]
+[JsonSerializable(typeof(UpdateFactoryWarehouseExportRequest))]
+[JsonSerializable(typeof(IReadOnlyList<FactoryExportLineDto>))]
+// material transfer slips
+[JsonSerializable(typeof(IReadOnlyList<MaterialTransferSlipSummaryDto>))]
+[JsonSerializable(typeof(MaterialTransferSlipDetailDto))]
+[JsonSerializable(typeof(MaterialTransferSlipCreatedResult))]
+[JsonSerializable(typeof(CreateMaterialTransferSlipRequest))]
+[JsonSerializable(typeof(UpdateMaterialTransferSlipRequest))]
+[JsonSerializable(typeof(IReadOnlyList<MaterialTransferLineDto>))]
+// stock policy & replenishment
+[JsonSerializable(typeof(IReadOnlyList<StockPolicyDto>))]
+[JsonSerializable(typeof(StockPolicyCreatedResult))]
+[JsonSerializable(typeof(CreateStockPolicyRequest))]
+[JsonSerializable(typeof(UpdateStockPolicyRequest))]
+[JsonSerializable(typeof(IReadOnlyList<ReplenishmentAlertDto>))]
+[JsonSerializable(typeof(IReadOnlyList<StockStatusItemDto>))]
+// cycle count
+[JsonSerializable(typeof(IReadOnlyList<CycleCountPlanSummaryDto>))]
+[JsonSerializable(typeof(CycleCountPlanDetailDto))]
+[JsonSerializable(typeof(CycleCountPlanCreatedResult))]
+[JsonSerializable(typeof(CreateCycleCountPlanRequest))]
+[JsonSerializable(typeof(GenerateCycleCountLinesRequest))]
+[JsonSerializable(typeof(RecordCycleCountLineRequest))]
+[JsonSerializable(typeof(ApproveCycleCountRequest))]
+[JsonSerializable(typeof(ApproveCycleCountResult))]
+[JsonSerializable(typeof(IReadOnlyList<CycleCountLineDto>))]
+[JsonSerializable(typeof(IReadOnlyList<CycleCountSheetLineDto>))]
+// finished product intake requests
+[JsonSerializable(typeof(IReadOnlyList<FinishedProductIntakeRequestSummaryDto>))]
+[JsonSerializable(typeof(FinishedProductIntakeRequestDetailDto))]
+[JsonSerializable(typeof(FinishedProductIntakeRequestCreatedResult))]
+[JsonSerializable(typeof(CreateFinishedProductIntakeRequestRequest))]
+[JsonSerializable(typeof(UpdateFinishedProductIntakeRequestRequest))]
+[JsonSerializable(typeof(ReceiveFinishedProductIntakeRequestRequest))]
+[JsonSerializable(typeof(IReadOnlyList<IntakeRequestLineDto>))]
+// material requisitions
+[JsonSerializable(typeof(IReadOnlyList<MaterialRequisitionSummaryDto>))]
+[JsonSerializable(typeof(MaterialRequisitionDetailDto))]
+[JsonSerializable(typeof(MaterialRequisitionCreatedResult))]
+[JsonSerializable(typeof(CreateMaterialRequisitionRequest))]
+[JsonSerializable(typeof(UpdateMaterialRequisitionRequest))]
+[JsonSerializable(typeof(FulfillMaterialRequisitionRequest))]
+[JsonSerializable(typeof(IReadOnlyList<MaterialRequisitionLineDto>))]
+// material supply requests
+[JsonSerializable(typeof(IReadOnlyList<MaterialSupplyRequestSummaryDto>))]
+[JsonSerializable(typeof(MaterialSupplyRequestDetailDto))]
+[JsonSerializable(typeof(MaterialSupplyRequestCreatedResult))]
+[JsonSerializable(typeof(CreateMaterialSupplyRequestRequest))]
+[JsonSerializable(typeof(UpdateMaterialSupplyRequestRequest))]
+[JsonSerializable(typeof(IReadOnlyList<MaterialSupplyRequestLineDto>))]
+// lot allocation
+[JsonSerializable(typeof(AllocationResult))]
+[JsonSerializable(typeof(IReadOnlyList<LotAllocation>))]
+[JsonSerializable(typeof(IReadOnlyList<RejectedLot>))]
+[JsonSerializable(typeof(UpdateProductPickingConfigRequest))]
+// RMA (returns)
+[JsonSerializable(typeof(IReadOnlyList<RmaSummaryDto>))]
+[JsonSerializable(typeof(RmaDetailDto))]
+[JsonSerializable(typeof(RmaCreatedResult))]
+[JsonSerializable(typeof(RmaLineAddedResult))]
+[JsonSerializable(typeof(CreateRmaRequest))]
+[JsonSerializable(typeof(AddRmaLineRequest))]
+[JsonSerializable(typeof(ReceiveRmaRequest))]
+[JsonSerializable(typeof(DisposeRmaLineRequest))]
+[JsonSerializable(typeof(IReadOnlyList<RmaLineDto>))]
+[JsonSerializable(typeof(IReadOnlyList<RmaLineReceiptEntry>))]
+// shipments, pick lists & cartons
+[JsonSerializable(typeof(IReadOnlyList<ShipmentSummaryDto>))]
+[JsonSerializable(typeof(ShipmentDetailDto))]
+[JsonSerializable(typeof(ShipmentCreatedResult))]
+[JsonSerializable(typeof(PickListCreatedResult))]
+[JsonSerializable(typeof(PickListDetailDto))]
+[JsonSerializable(typeof(CartonCreatedResult))]
+[JsonSerializable(typeof(CreateShipmentRequest))]
+[JsonSerializable(typeof(AddShipmentLineRequest))]
+[JsonSerializable(typeof(CreatePickListRequest))]
+[JsonSerializable(typeof(ConfirmPickLineRequest))]
+[JsonSerializable(typeof(AddCartonContentRequest))]
+[JsonSerializable(typeof(SealCartonRequest))]
+[JsonSerializable(typeof(DispatchShipmentRequest))]
 // purchase orders & grn
 [JsonSerializable(typeof(IReadOnlyList<PurchaseOrderDto>))]
 [JsonSerializable(typeof(PoCreatedResult))]

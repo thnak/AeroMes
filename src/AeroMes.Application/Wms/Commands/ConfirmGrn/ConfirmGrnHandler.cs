@@ -47,6 +47,7 @@ public class ConfirmGrnHandler(
                 }
 
                 stock.SetBin(line.DestinationBinId);
+                stock.SetLotDates(line.ExpiryDate, line.ManufacturedDate);
                 stock.Adjust(line.ReceivedQty);
 
                 var movement = StockMovement.CreateReceive(
