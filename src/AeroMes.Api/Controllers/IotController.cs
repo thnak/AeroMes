@@ -26,6 +26,7 @@ using AeroMes.Application.Iot.StateRules.Queries.GetStateRules;
 using AeroMes.Domain.Iot;
 using AeroMes.Domain.Iot.Repositories;
 using AeroMes.Infrastructure.Iot;
+using AeroMes.Infrastructure.Iot.Modbus;
 using AeroMes.Infrastructure.Iot.Mqtt;
 using AeroMes.Infrastructure.Iot.OpcUa;
 using LiteBus.Commands.Abstractions;
@@ -612,6 +613,122 @@ public class IotController(
         ClientConfiguration = new OpcUa.ClientConfiguration { DefaultSessionTimeout = 30_000 },
     };
 
+    // ── Modbus commissioning ──────────────────────────────────────────────
+
+    [HttpPost("adapters/{id:int}/read-registers")]
+    [RequirePermission(Permissions.IotWrite)]
+    [ProducesResponseType<ModbusReadRegistersResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ReadModbusRegisters(
+        int id,
+        [FromBody] ModbusReadRegistersRequest req,
+        CancellationToken ct)
+    {
+        var adapter = await adapterRepository.GetByIdAsync(id, ct);
+        if (adapter is null) return NotFound();
+
+        if (adapter.AdapterType != AdapterType.Modbus)
+            return UnprocessableEntity(new { error = "Adapter is not of type Modbus" });
+
+        ModbusAdapterConfig config;
+        try
+        {
+            config = JsonSerializer.Deserialize<ModbusAdapterConfig>(adapter.ConfigJson)
+                     ?? new ModbusAdapterConfig();
+        }
+        catch (Exception ex)
+        {
+            return UnprocessableEntity(new { error = $"Invalid ConfigJson: {ex.Message}" });
+        }
+
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(TimeSpan.FromMilliseconds(config.TimeoutMs));
+
+        using var client = new FluentModbus.ModbusTcpClient
+        {
+            ConnectTimeout = config.TimeoutMs,
+            ReadTimeout = config.TimeoutMs,
+            WriteTimeout = config.TimeoutMs,
+        };
+
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            var endpoint = new System.Net.IPEndPoint(
+                System.Net.IPAddress.Parse(config.Host), config.Port);
+            client.Connect(endpoint, FluentModbus.ModbusEndianness.BigEndian);
+            sw.Stop();
+
+            var regType = req.RegisterType.ToUpperInvariant();
+            var quantity = (ushort)Math.Min(req.Count, 125);
+
+            Memory<byte> rawBytes = regType switch
+            {
+                "HR" => await client.ReadHoldingRegistersAsync(config.UnitId, req.StartAddress, quantity, timeoutCts.Token),
+                "IR" => await client.ReadInputRegistersAsync(config.UnitId, req.StartAddress, quantity, timeoutCts.Token),
+                "CO" => await client.ReadCoilsAsync(config.UnitId, req.StartAddress, quantity, timeoutCts.Token),
+                "DI" => await client.ReadDiscreteInputsAsync(config.UnitId, req.StartAddress, quantity, timeoutCts.Token),
+                _ => throw new ArgumentException($"Unknown register type: {req.RegisterType}. Use HR, IR, CO, or DI."),
+            };
+
+            var registers = new List<ModbusRegisterValue>();
+            var bytesPerRegister = (regType is "CO" or "DI") ? 1 : 2;
+
+            for (var i = 0; i < quantity; i++)
+            {
+                var byteOffset = i * bytesPerRegister;
+                if (byteOffset >= rawBytes.Length) break;
+
+                var sliceLen = Math.Min(bytesPerRegister, rawBytes.Length - byteOffset);
+                var slice = rawBytes.Span.Slice(byteOffset, sliceLen);
+
+                var rawHex = Convert.ToHexString(slice);
+                float parsedFloat = 0f;
+
+                if (sliceLen >= 2)
+                {
+                    // Read as big-endian FLOAT32 for convenience (takes 2 regs = 4 bytes)
+                    if (sliceLen >= 4)
+                        parsedFloat = BitConverter.Int32BitsToSingle(
+                            System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(slice));
+                    else
+                        parsedFloat = System.Buffers.Binary.BinaryPrimitives.ReadUInt16BigEndian(slice);
+                }
+                else if (sliceLen == 1)
+                {
+                    parsedFloat = slice[0];
+                }
+
+                registers.Add(new ModbusRegisterValue(
+                    Address: (ushort)(req.StartAddress + i),
+                    RawHex: rawHex,
+                    ParsedFloat: parsedFloat));
+            }
+
+            client.Disconnect();
+            return Ok(new ModbusReadRegistersResponse(
+                Host: config.Host,
+                Port: config.Port,
+                RegisterType: req.RegisterType,
+                StartAddress: req.StartAddress,
+                LatencyMs: (int)sw.ElapsedMilliseconds,
+                Registers: registers));
+        }
+        catch (OperationCanceledException)
+        {
+            return UnprocessableEntity(new { error = $"Modbus read timed out after {config.TimeoutMs} ms" });
+        }
+        catch (ArgumentException ex)
+        {
+            return UnprocessableEntity(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return UnprocessableEntity(new { error = ex.Message });
+        }
+    }
+
     // ── Pipeline ──────────────────────────────────────────────────────────
 
     [HttpGet("pipeline/stats")]
@@ -625,6 +742,232 @@ public class IotController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult FlushPipeline()
         => Ok(new { message = "Flush acknowledged. Consumer flushes automatically on interval." });
+
+    // ── Webhook Ingest ────────────────────────────────────────────────────
+
+    private static readonly TimeSpan TimestampTolerance = TimeSpan.FromMinutes(5);
+    private const int MaxSignalsPerRequest = 500;
+
+    private async Task<AdapterInstance?> ResolveWebhookAdapter(HttpRequest request, CancellationToken ct)
+    {
+        if (!request.Headers.TryGetValue("X-Api-Key", out var keyValues) || keyValues.Count == 0)
+            return null;
+        var apiKey = keyValues[0];
+        if (string.IsNullOrWhiteSpace(apiKey))
+            return null;
+        var adapter = await adapterRepository.GetByApiKeyAsync(apiKey!, ct);
+        if (adapter is null || adapter.AdapterType != AdapterType.Webhook)
+            return null;
+        return adapter;
+    }
+
+    private static (List<WebhookSignalPayload> signals, string? error) ParseSignals(JsonDocument doc)
+    {
+        var signals = new List<WebhookSignalPayload>();
+
+        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var el in doc.RootElement.EnumerateArray())
+            {
+                var payload = ParseSingleSignal(el);
+                if (payload is not null)
+                    signals.Add(payload);
+            }
+        }
+        else if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+                 doc.RootElement.TryGetProperty("signals", out _))
+        {
+            // Machine bundle: { machineCode, timestamp?, signals: { tagKey: value } }
+            var machineCode = doc.RootElement.TryGetProperty("machineCode", out var mc) ? mc.GetString() : null;
+            DateTimeOffset? bundleTs = null;
+            if (doc.RootElement.TryGetProperty("timestamp", out var tsProp))
+            {
+                if (tsProp.TryGetDateTimeOffset(out var ts))
+                    bundleTs = ts;
+            }
+            if (doc.RootElement.TryGetProperty("signals", out var signalsProp))
+            {
+                foreach (var prop in signalsProp.EnumerateObject())
+                {
+                    var value = prop.Value.ValueKind switch
+                    {
+                        JsonValueKind.Number => prop.Value.GetDecimal(),
+                        _ => 0m
+                    };
+                    signals.Add(new WebhookSignalPayload(machineCode ?? string.Empty, prop.Name, null, value, null, bundleTs));
+                }
+            }
+        }
+        else if (doc.RootElement.ValueKind == JsonValueKind.Object)
+        {
+            var payload = ParseSingleSignal(doc.RootElement);
+            if (payload is not null)
+                signals.Add(payload);
+        }
+        else
+        {
+            return (signals, "Unrecognized payload shape");
+        }
+
+        return (signals, null);
+    }
+
+    private static WebhookSignalPayload? ParseSingleSignal(JsonElement el)
+    {
+        var machineCode = el.TryGetProperty("machineCode", out var mc) ? mc.GetString() : null;
+        var tagKey = el.TryGetProperty("tagKey", out var tk) ? tk.GetString() : null;
+        var sourceAddress = el.TryGetProperty("sourceAddress", out var sa) ? sa.GetString() : null;
+        decimal value = 0;
+        if (el.TryGetProperty("value", out var vp) && vp.ValueKind == JsonValueKind.Number)
+            value = vp.GetDecimal();
+        var unit = el.TryGetProperty("unit", out var u) ? u.GetString() : null;
+        DateTimeOffset? timestamp = null;
+        if (el.TryGetProperty("timestamp", out var tsProp) && tsProp.TryGetDateTimeOffset(out var ts))
+            timestamp = ts;
+        return new WebhookSignalPayload(machineCode ?? string.Empty, tagKey, sourceAddress, value, unit, timestamp);
+    }
+
+    private async Task<(WebhookIngestResponse response, int statusCode)> ProcessSignalsAsync(
+        List<WebhookSignalPayload> signals, int adapterId, bool persist, CancellationToken ct)
+    {
+        var errors = new List<WebhookIngestError>();
+        var accepted = 0;
+        var rejected = 0;
+        var now = DateTimeOffset.UtcNow;
+
+        foreach (var (signal, idx) in signals.Select((s, i) => (s, i)))
+        {
+            if (signal.Timestamp.HasValue)
+            {
+                var diff = (signal.Timestamp.Value - now).Duration();
+                if (diff > TimestampTolerance)
+                {
+                    errors.Add(new WebhookIngestError(idx, signal.TagKey, "Timestamp out of tolerance"));
+                    rejected++;
+                    continue;
+                }
+            }
+
+            bool ok;
+            if (persist)
+            {
+                var msg = new AdapterRawMessage(
+                    adapterId,
+                    signal.SourceAddress ?? signal.TagKey ?? string.Empty,
+                    signal.Value,
+                    signal.Timestamp ?? now,
+                    "Webhook");
+                ok = await pipeline.IngestAsync(msg, ct);
+            }
+            else
+            {
+                ok = true; // test mode: treat all timestamp-valid signals as accepted
+            }
+
+            if (ok)
+                accepted++;
+            else
+            {
+                errors.Add(new WebhookIngestError(idx, signal.TagKey, "Signal rejected by pipeline (unmapped or filtered)"));
+                rejected++;
+            }
+        }
+
+        var statusCode = accepted == 0 && rejected > 0 ? 400
+            : rejected > 0 ? 207
+            : 202;
+
+        return (new WebhookIngestResponse(accepted, rejected, errors.Count > 0 ? errors : null), statusCode);
+    }
+
+    [HttpPost("ingest")]
+    [AllowAnonymous]
+    [ProducesResponseType<WebhookIngestResponse>(StatusCodes.Status202Accepted)]
+    [ProducesResponseType<WebhookIngestResponse>(StatusCodes.Status207MultiStatus)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> WebhookIngest(CancellationToken ct)
+    {
+        var adapter = await ResolveWebhookAdapter(Request, ct);
+        if (adapter is null)
+            return Unauthorized();
+
+        JsonDocument doc;
+        try
+        {
+            doc = await JsonDocument.ParseAsync(Request.Body, cancellationToken: ct);
+        }
+        catch
+        {
+            return BadRequest(new { error = "Invalid JSON body" });
+        }
+
+        using (doc)
+        {
+            var (signals, parseError) = ParseSignals(doc);
+            if (parseError is not null)
+                return BadRequest(new { error = parseError });
+
+            if (signals.Count > MaxSignalsPerRequest)
+                return BadRequest(new { error = $"Batch limit exceeded: max {MaxSignalsPerRequest} signals per request." });
+
+            var (response, statusCode) = await ProcessSignalsAsync(signals, adapter.AdapterID, persist: true, ct);
+            return statusCode switch
+            {
+                400 => BadRequest(response),
+                207 => StatusCode(StatusCodes.Status207MultiStatus, response),
+                _ => Accepted(response),
+            };
+        }
+    }
+
+    [HttpPost("ingest/test")]
+    [AllowAnonymous]
+    [ProducesResponseType<WebhookIngestResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> WebhookIngestTest(CancellationToken ct)
+    {
+        var adapter = await ResolveWebhookAdapter(Request, ct);
+        if (adapter is null)
+            return Unauthorized();
+
+        JsonDocument doc;
+        try
+        {
+            doc = await JsonDocument.ParseAsync(Request.Body, cancellationToken: ct);
+        }
+        catch
+        {
+            return BadRequest(new { error = "Invalid JSON body" });
+        }
+
+        using (doc)
+        {
+            var (signals, parseError) = ParseSignals(doc);
+            if (parseError is not null)
+                return BadRequest(new { error = parseError });
+
+            if (signals.Count > MaxSignalsPerRequest)
+                return BadRequest(new { error = $"Batch limit exceeded: max {MaxSignalsPerRequest} signals per request." });
+
+            var (response, _) = await ProcessSignalsAsync(signals, adapter.AdapterID, persist: false, ct);
+            return Ok(response);
+        }
+    }
+
+    [HttpGet("ingest/stats")]
+    [AllowAnonymous]
+    [ProducesResponseType<PipelineStats>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> WebhookIngestStats(CancellationToken ct)
+    {
+        var adapter = await ResolveWebhookAdapter(Request, ct);
+        if (adapter is null)
+            return Unauthorized();
+
+        return Ok(pipeline.GetStats());
+    }
 }
 
 public record CreateSignalTagRequest(string Key, string DisplayName, string Category, string DataType,
@@ -650,3 +993,15 @@ public record OpcBrowseRequest(string? NodeId);
 public record OpcNodeInfo(string NodeId, string DisplayName, string NodeClass, string DataType);
 public record OpcReadNodeRequest(string NodeId);
 public record OpcNodeValue(string NodeId, string Value, string DataType, string StatusCode, DateTimeOffset SourceTimestamp);
+public record ModbusReadRegistersRequest(string RegisterType, ushort StartAddress, int Count);
+public record ModbusRegisterValue(ushort Address, string RawHex, float ParsedFloat);
+public record ModbusReadRegistersResponse(
+    string Host, int Port, string RegisterType, ushort StartAddress,
+    int LatencyMs, List<ModbusRegisterValue> Registers);
+// webhook ingest
+public record WebhookSignalPayload(string MachineCode, string? TagKey, string? SourceAddress,
+    decimal Value, string? Unit, DateTimeOffset? Timestamp);
+public record WebhookMachineBundlePayload(string MachineCode, DateTimeOffset? Timestamp,
+    Dictionary<string, decimal> Signals);
+public record WebhookIngestResponse(int Accepted, int Rejected, IReadOnlyList<WebhookIngestError>? Errors);
+public record WebhookIngestError(int Index, string? TagKey, string Reason);

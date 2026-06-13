@@ -26,6 +26,10 @@ public class AdapterRepository(AppDbContext db) : IAdapterRepository
             .OrderBy(x => x.AdapterID)
             .ToListAsync(ct);
 
+    public Task<AdapterInstance?> GetByApiKeyAsync(string apiKey, CancellationToken ct) =>
+        db.AdapterInstances
+            .FirstOrDefaultAsync(a => a.WebhookApiKey == apiKey && a.IsEnabled, ct);
+
     public Task<bool> ExistsAsync(int id, CancellationToken ct) =>
         db.AdapterInstances.AnyAsync(x => x.AdapterID == id, ct);
 

@@ -9,6 +9,7 @@ using AeroMes.Domain.Wms.Repositories;
 using AeroMes.Infrastructure.Data;
 using AeroMes.Infrastructure.Identity;
 using AeroMes.Infrastructure.Iot;
+using AeroMes.Infrastructure.Iot.Modbus;
 using AeroMes.Infrastructure.Iot.Mqtt;
 using AeroMes.Infrastructure.Iot.OpcUa;
 using AeroMes.Infrastructure.Repositories;
@@ -210,6 +211,14 @@ public static class DependencyInjection
                 sp.GetRequiredService<IServiceScopeFactory>(),
                 sp.GetRequiredService<ISignalIngestionPipeline>(),
                 sp.GetRequiredService<ILogger<OpcUaAdapterManager>>(),
+                sp.GetRequiredService<ILoggerFactory>()));
+
+        // Modbus TCP adapter manager — starts one ModbusTcpAdapterService per enabled Modbus adapter
+        services.AddHostedService(sp =>
+            new ModbusTcpAdapterManager(
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                sp.GetRequiredService<ISignalIngestionPipeline>(),
+                sp.GetRequiredService<ILogger<ModbusTcpAdapterManager>>(),
                 sp.GetRequiredService<ILoggerFactory>()));
 
         return services;

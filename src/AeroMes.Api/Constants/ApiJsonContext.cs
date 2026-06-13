@@ -632,6 +632,19 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<OpcNodeInfo>))]
 [JsonSerializable(typeof(OpcReadNodeRequest))]
 [JsonSerializable(typeof(OpcNodeValue))]
+// iot modbus
+[JsonSerializable(typeof(ModbusReadRegistersRequest))]
+[JsonSerializable(typeof(ModbusRegisterValue))]
+[JsonSerializable(typeof(ModbusReadRegistersResponse))]
+[JsonSerializable(typeof(List<ModbusRegisterValue>))]
+// iot webhook ingest
+[JsonSerializable(typeof(WebhookSignalPayload))]
+[JsonSerializable(typeof(IReadOnlyList<WebhookSignalPayload>))]
+[JsonSerializable(typeof(WebhookMachineBundlePayload))]
+[JsonSerializable(typeof(WebhookIngestResponse))]
+[JsonSerializable(typeof(WebhookIngestError))]
+[JsonSerializable(typeof(IReadOnlyList<WebhookIngestError>))]
+[JsonSerializable(typeof(Dictionary<string, decimal>))]
 public partial class ApiJsonContext : JsonSerializerContext
 {
 
