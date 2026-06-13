@@ -58,6 +58,7 @@ public static class Permissions
 
     // Quality
     public const string QualityRead = "Quality:Read";
+    public const string QualityWrite = "Quality:Write";
     public const string QualityCreate = "Quality:Create";
     public const string QualityUpdate = "Quality:Update";
     public const string QualityApprove = "Quality:Approve";
@@ -110,7 +111,7 @@ public static class Permissions
         UserRead, UserCreate, UserUpdate, UserDelete, UserManageRoles, UserResetPassword,
         RoleRead, RoleCreate, RoleUpdate, RoleDelete, RoleManagePermissions,
         ReportRead, ReportExport,
-        QualityRead, QualityCreate, QualityUpdate, QualityApprove,
+        QualityRead, QualityWrite, QualityCreate, QualityUpdate, QualityApprove,
         NcrRead, NcrCreate, NcrClose,
         WarehouseRead, WarehouseReceive, WarehousePutAway, WarehousePick, WarehouseDispatch,
         CycleCountRead, CycleCountApprove,

@@ -92,6 +92,7 @@ using AeroMes.Application.Iot.Adapters.Queries.GetAdapters;
 using AeroMes.Application.Iot.Adapters.Queries.GetAdapterDetail;
 using AeroMes.Application.Iot.Signals.Queries.GetSignals;
 using AeroMes.Application.Iot.StateRules.Queries.GetStateRules;
+using AeroMes.Application.Quality.InspectionPlans;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AeroMes.Api.Constants;
@@ -390,6 +391,18 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<BinStockDto>))]
 [JsonSerializable(typeof(IReadOnlyList<ZoneMapDto>))]
 [JsonSerializable(typeof(ZoneMapDto))]
+// inspection plans
+[JsonSerializable(typeof(IReadOnlyList<InspectionPlanListDto>))]
+[JsonSerializable(typeof(InspectionPlanDetailDto))]
+[JsonSerializable(typeof(InspectionCharacteristicDto))]
+[JsonSerializable(typeof(IReadOnlyList<InspectionCharacteristicDto>))]
+[JsonSerializable(typeof(InspectionPlanCreatedResult))]
+[JsonSerializable(typeof(CharacteristicCreatedResult))]
+[JsonSerializable(typeof(CreateInspectionPlanRequest))]
+[JsonSerializable(typeof(UpdateInspectionPlanRequest))]
+[JsonSerializable(typeof(AddCharacteristicRequest))]
+[JsonSerializable(typeof(UpdateCharacteristicRequest))]
+[JsonSerializable(typeof(ReorderCharacteristicsRequest))]
 // iot
 [JsonSerializable(typeof(AdapterDto))]
 [JsonSerializable(typeof(AdapterDetailDto))]

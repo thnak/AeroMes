@@ -1,10 +1,12 @@
 import {
+  Alert,
   Box,
   Button,
   Chip,
   Grid,
   IconButton,
   MenuItem,
+  Select,
   Stack,
   TextField,
   Tooltip,
@@ -12,8 +14,13 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
-import type { GridColDef, GridRenderCellParams, GridRowSelectionModel } from '@mui/x-data-grid';
+import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ConfirmDialog,
   EmptyState,
@@ -23,240 +30,432 @@ import {
   PageRoot,
   RefreshButton,
   SolarIcon,
+  TablePageSkeleton,
   TableToolbar,
 } from '../../components';
+import {
+  useGetApiV1QualityInspectionPlans,
+  getGetApiV1QualityInspectionPlansQueryKey,
+  postApiV1QualityInspectionPlans,
+  putApiV1QualityInspectionPlansId,
+  deleteApiV1QualityInspectionPlansId,
+  patchApiV1QualityInspectionPlansIdActivate,
+  patchApiV1QualityInspectionPlansIdDeactivate,
+} from '../../api/quality/quality';
+import type { InspectionPlanListDto } from '../../api/model';
+import { getErrorMessage } from '../../lib/apiClient';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Zod schema ───────────────────────────────────────────────────────────────
 
-interface InspectionPlan {
-  id: string;
-  planCode: string;
-  productCode: string;
-  productName: string;
-  inspectionType: string;
-  aqlLevel: string;
-  inspectionLevel: 'I' | 'II' | 'III' | 'S1' | 'S2' | 'S3' | 'S4';
-  checkpoints: number;
-  isActive: boolean;
-  version: string;
-  updatedAt: string;
+const PlanSchema = z.object({
+  code: z
+    .string()
+    .min(1, 'Code is required')
+    .max(50)
+    .regex(/^[A-Z0-9\-]+$/, 'Uppercase letters, digits, hyphens only'),
+  name: z.string().min(1, 'Name is required').max(200),
+  routingStepId: z.number().int().positive('Must be a positive integer'),
+  productCode: z.string().max(50).nullable().optional(),
+  samplingMethod: z.enum(['FULL', 'AQL', 'FIXED_N']),
+  sampleSize: z.number().int().positive().nullable().optional(),
+  acceptNumber: z.number().int().min(0, 'Must be 0 or more'),
+  rejectNumber: z.number().int().min(1, 'Must be at least 1'),
+  inspectionType: z.enum(['DIMENSIONAL', 'VISUAL', 'FUNCTIONAL', 'COMBINED']),
+  notes: z.string().max(500).nullable().optional(),
+});
+
+type PlanFormValues = z.infer<typeof PlanSchema>;
+
+// ─── Chip helpers ─────────────────────────────────────────────────────────────
+
+const INSPECTION_TYPE_COLORS: Record<string, string> = {
+  DIMENSIONAL: '#1D4ED8',
+  VISUAL:      '#15803D',
+  FUNCTIONAL:  '#C2410C',
+  COMBINED:    '#7C3AED',
+};
+
+const SAMPLING_METHOD_COLORS: Record<string, string> = {
+  FULL:    '#0F766E',
+  AQL:     '#1D4ED8',
+  FIXED_N: '#64748B',
+};
+
+// ─── Form ─────────────────────────────────────────────────────────────────────
+
+function PlanForm({
+  defaultValues,
+  isEdit,
+  onSubmit,
+  saveError,
+}: {
+  defaultValues: Partial<PlanFormValues>;
+  isEdit: boolean;
+  onSubmit: (data: PlanFormValues) => void;
+  saveError: string;
+}) {
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<PlanFormValues>({
+    resolver: zodResolver(PlanSchema),
+    defaultValues: {
+      samplingMethod: 'FULL',
+      inspectionType: 'DIMENSIONAL',
+      acceptNumber: 0,
+      rejectNumber: 1,
+      ...defaultValues,
+    },
+  });
+
+  return (
+    <Box component="form" id="plan-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <Grid container spacing={2}>
+        {saveError && (
+          <Grid size={{ xs: 12 }}>
+            <Alert severity="error" sx={{ fontSize: 12 }}>
+              {saveError}
+            </Alert>
+          </Grid>
+        )}
+
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            {...register('code')}
+            label="Plan Code"
+            fullWidth
+            required
+            disabled={isEdit}
+            error={!!errors.code}
+            helperText={errors.code?.message}
+            slotProps={{ htmlInput: { style: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } } }}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Controller
+            name="inspectionType"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                select
+                label="Inspection Type"
+                fullWidth
+                required
+                error={!!errors.inspectionType}
+                helperText={errors.inspectionType?.message}
+              >
+                <MenuItem value="DIMENSIONAL">Dimensional</MenuItem>
+                <MenuItem value="VISUAL">Visual</MenuItem>
+                <MenuItem value="FUNCTIONAL">Functional</MenuItem>
+                <MenuItem value="COMBINED">Combined</MenuItem>
+              </TextField>
+            )}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <TextField
+            {...register('name')}
+            label="Plan Name"
+            fullWidth
+            required
+            error={!!errors.name}
+            helperText={errors.name?.message}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            {...register('routingStepId', { valueAsNumber: true })}
+            label="Routing Step ID"
+            type="number"
+            fullWidth
+            required
+            error={!!errors.routingStepId}
+            helperText={errors.routingStepId?.message}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            {...register('productCode')}
+            label="Product Code"
+            fullWidth
+            error={!!errors.productCode}
+            helperText={errors.productCode?.message ?? 'Optional — leave blank to apply to all products'}
+            slotProps={{ htmlInput: { style: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } } }}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Controller
+            name="samplingMethod"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                select
+                label="Sampling Method"
+                fullWidth
+                required
+                error={!!errors.samplingMethod}
+                helperText={errors.samplingMethod?.message}
+              >
+                <MenuItem value="FULL">Full</MenuItem>
+                <MenuItem value="AQL">AQL</MenuItem>
+                <MenuItem value="FIXED_N">Fixed N</MenuItem>
+              </TextField>
+            )}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            {...register('sampleSize', { valueAsNumber: true, setValueAs: (v: string) => v === '' ? null : Number(v) })}
+            label="Sample Size"
+            type="number"
+            fullWidth
+            error={!!errors.sampleSize}
+            helperText={errors.sampleSize?.message ?? 'Required for AQL / Fixed N methods'}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            {...register('acceptNumber', { valueAsNumber: true })}
+            label="Accept Number (Ac)"
+            type="number"
+            fullWidth
+            required
+            error={!!errors.acceptNumber}
+            helperText={errors.acceptNumber?.message}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            {...register('rejectNumber', { valueAsNumber: true })}
+            label="Reject Number (Re)"
+            type="number"
+            fullWidth
+            required
+            error={!!errors.rejectNumber}
+            helperText={errors.rejectNumber?.message}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <TextField
+            {...register('notes')}
+            label="Notes"
+            fullWidth
+            multiline
+            rows={3}
+            error={!!errors.notes}
+            helperText={errors.notes?.message}
+            placeholder="Optional notes…"
+          />
+        </Grid>
+      </Grid>
+    </Box>
+  );
 }
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const MOCK_PLANS: InspectionPlan[] = [
-  { id: '1', planCode: 'QP-001', productCode: 'FRM-A001', productName: 'Frame Assembly A',    inspectionType: 'Final + Incoming', aqlLevel: '1.0',  inspectionLevel: 'II',  checkpoints: 12, isActive: true,  version: 'Rev.B', updatedAt: '2026-05-10' },
-  { id: '2', planCode: 'QP-002', productCode: 'PNL-B002', productName: 'Panel Sub-assembly B', inspectionType: 'Incoming',         aqlLevel: '0.65', inspectionLevel: 'II',  checkpoints: 8,  isActive: true,  version: 'Rev.A', updatedAt: '2026-04-22' },
-  { id: '3', planCode: 'QP-003', productCode: 'SHT-C003', productName: 'Shaft Housing C',      inspectionType: 'Final',            aqlLevel: '0.25', inspectionLevel: 'III', checkpoints: 15, isActive: true,  version: 'Rev.C', updatedAt: '2026-05-18' },
-  { id: '4', planCode: 'QP-004', productCode: 'BRK-D004', productName: 'Bracket Set D',        inspectionType: 'Incoming',         aqlLevel: '1.5',  inspectionLevel: 'I',   checkpoints: 5,  isActive: true,  version: 'Rev.A', updatedAt: '2026-03-15' },
-  { id: '5', planCode: 'QP-005', productCode: 'MTR-E005', productName: 'Motor Mount E',         inspectionType: 'In-Process + Final', aqlLevel: '1.0', inspectionLevel: 'II', checkpoints: 10, isActive: true,  version: 'Rev.B', updatedAt: '2026-05-28' },
-  { id: '6', planCode: 'QP-006', productCode: 'HNG-J010', productName: 'Hinge Assembly J',     inspectionType: 'Final',            aqlLevel: '0.65', inspectionLevel: 'III', checkpoints: 12, isActive: true,  version: 'Rev.A', updatedAt: '2026-04-05' },
-  { id: '7', planCode: 'QP-007', productCode: 'WHL-L012', productName: 'Wheel & Hub L',         inspectionType: 'Final',            aqlLevel: '0.25', inspectionLevel: 'III', checkpoints: 18, isActive: true,  version: 'Rev.D', updatedAt: '2026-06-01' },
-  { id: '8', planCode: 'QP-008', productCode: 'GRD-G007', productName: 'Guard Assembly G',     inspectionType: 'Incoming',         aqlLevel: '1.5',  inspectionLevel: 'I',   checkpoints: 6,  isActive: false, version: 'Rev.A', updatedAt: '2026-02-14' },
-];
-
-const AQL_LEVELS = ['0.065', '0.1', '0.25', '0.65', '1.0', '1.5', '2.5', '4.0'];
-const INSPECTION_LEVELS = ['I', 'II', 'III', 'S1', 'S2', 'S3', 'S4'] as const;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 type DrawerMode = 'create' | 'edit';
 
 export default function InspectionPlanPage() {
-  const [rows, setRows]                 = useState<InspectionPlan[]>(MOCK_PLANS);
-  const [search, setSearch]             = useState('');
-  const [productFilter, setProductFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [selection, setSelection]       = useState<GridRowSelectionModel>({ type: 'include', ids: new Set() });
-  const [drawerOpen, setDrawerOpen]     = useState(false);
-  const [drawerMode, setDrawerMode]     = useState<DrawerMode>('create');
-  const [editTarget, setEditTarget]     = useState<InspectionPlan | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<InspectionPlan | null>(null);
-  const [saving, setSaving]             = useState(false);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  // Form state
-  const [formProductCode, setFormProductCode]     = useState('');
-  const [formProductName, setFormProductName]     = useState('');
-  const [formInspectionType, setFormInspectionType] = useState('');
-  const [formAqlLevel, setFormAqlLevel]           = useState('1.0');
-  const [formLevel, setFormLevel]                 = useState<InspectionPlan['inspectionLevel']>('II');
-  const [formCheckpoints, setFormCheckpoints]     = useState('');
-  const [formVersion, setFormVersion]             = useState('Rev.A');
-  const [formIsActive, setFormIsActive]           = useState(true);
+  const [search, setSearch]           = useState('');
+  const [typeFilter, setTypeFilter]   = useState('');
+  const [activeFilter, setActiveFilter] = useState<'' | 'true' | 'false'>('');
+  const [drawerOpen, setDrawerOpen]   = useState(false);
+  const [drawerMode, setDrawerMode]   = useState<DrawerMode>('create');
+  const [editTarget, setEditTarget]   = useState<InspectionPlanListDto | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<InspectionPlanListDto | null>(null);
+  const [saveError, setSaveError]     = useState('');
+  const [formKey, setFormKey]         = useState(0);
 
-  const productOptions = [...new Set(MOCK_PLANS.map((p) => p.productCode))].sort();
+  // ─── Query ──────────────────────────────────────────────────────────────────
+
+  const queryParams = useMemo(() => ({
+    ...(activeFilter !== '' ? { isActive: activeFilter === 'true' } : {}),
+  }), [activeFilter]);
+
+  const { data: plans = [], isLoading, error, refetch } = useGetApiV1QualityInspectionPlans(queryParams);
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: getGetApiV1QualityInspectionPlansQueryKey() });
+
+  // ─── Mutations ──────────────────────────────────────────────────────────────
+
+  const createMutation = useMutation({
+    mutationFn: (data: PlanFormValues) =>
+      postApiV1QualityInspectionPlans({
+        code: data.code,
+        name: data.name,
+        routingStepId: data.routingStepId,
+        productCode: data.productCode ?? null,
+        samplingMethod: data.samplingMethod,
+        sampleSize: data.sampleSize ?? null,
+        acceptNumber: data.acceptNumber,
+        rejectNumber: data.rejectNumber,
+        inspectionType: data.inspectionType,
+        notes: data.notes ?? null,
+      }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: PlanFormValues) =>
+      putApiV1QualityInspectionPlansId(Number(editTarget!.planId), {
+        name: data.name,
+        routingStepId: data.routingStepId,
+        productCode: data.productCode ?? null,
+        samplingMethod: data.samplingMethod,
+        sampleSize: data.sampleSize ?? null,
+        acceptNumber: data.acceptNumber,
+        rejectNumber: data.rejectNumber,
+        inspectionType: data.inspectionType,
+        notes: data.notes ?? null,
+      }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteApiV1QualityInspectionPlansId(id),
+    onSuccess: () => { invalidate(); setDeleteTarget(null); },
+  });
+
+  const activateMutation = useMutation({
+    mutationFn: (id: number) => patchApiV1QualityInspectionPlansIdActivate(id),
+    onSuccess: () => invalidate(),
+  });
+
+  const deactivateMutation = useMutation({
+    mutationFn: (id: number) => patchApiV1QualityInspectionPlansIdDeactivate(id),
+    onSuccess: () => invalidate(),
+  });
+
+  const saving = createMutation.isPending || updateMutation.isPending;
+
+  // ─── Filter (client-side search + type filter) ────────────────────────────
 
   const filtered = useMemo(() => {
-    let r = rows;
-    if (search)        r = r.filter((p) => p.planCode.toLowerCase().includes(search.toLowerCase()) || p.productCode.toLowerCase().includes(search.toLowerCase()) || p.productName.toLowerCase().includes(search.toLowerCase()));
-    if (productFilter) r = r.filter((p) => p.productCode === productFilter);
-    if (statusFilter)  r = r.filter((p) => statusFilter === 'active' ? p.isActive : !p.isActive);
+    let r = plans;
+    if (search) {
+      const q = search.toLowerCase();
+      r = r.filter(
+        (p) =>
+          p.code.toLowerCase().includes(q) ||
+          p.name.toLowerCase().includes(q) ||
+          (p.productCode ?? '').toLowerCase().includes(q),
+      );
+    }
+    if (typeFilter) r = r.filter((p) => p.inspectionType === typeFilter);
     return r;
-  }, [rows, search, productFilter, statusFilter]);
+  }, [plans, search, typeFilter]);
+
+  // ─── Drawer helpers ────────────────────────────────────────────────────────
 
   function openCreate() {
+    setSaveError('');
     setDrawerMode('create');
     setEditTarget(null);
-    setFormProductCode('');
-    setFormProductName('');
-    setFormInspectionType('');
-    setFormAqlLevel('1.0');
-    setFormLevel('II');
-    setFormCheckpoints('');
-    setFormVersion('Rev.A');
-    setFormIsActive(true);
+    setFormKey((k) => k + 1);
     setDrawerOpen(true);
   }
 
-  function openEdit(p: InspectionPlan) {
+  function openEdit(p: InspectionPlanListDto) {
+    setSaveError('');
     setDrawerMode('edit');
     setEditTarget(p);
-    setFormProductCode(p.productCode);
-    setFormProductName(p.productName);
-    setFormInspectionType(p.inspectionType);
-    setFormAqlLevel(p.aqlLevel);
-    setFormLevel(p.inspectionLevel);
-    setFormCheckpoints(String(p.checkpoints));
-    setFormVersion(p.version);
-    setFormIsActive(p.isActive);
+    setFormKey((k) => k + 1);
     setDrawerOpen(true);
   }
 
-  function handleSave() {
-    setSaving(true);
-    setTimeout(() => {
-      const newRow: Partial<InspectionPlan> = {
-        productCode: formProductCode,
-        productName: formProductName,
-        inspectionType: formInspectionType,
-        aqlLevel: formAqlLevel,
-        inspectionLevel: formLevel,
-        checkpoints: Number(formCheckpoints) || 0,
-        version: formVersion,
-        isActive: formIsActive,
-        updatedAt: new Date().toISOString().slice(0, 10),
-      };
-      if (drawerMode === 'create') {
-        const nextNum = rows.length + 1;
-        setRows((prev) => [
-          ...prev,
-          {
-            id: String(Date.now()),
-            planCode: `QP-${String(nextNum).padStart(3, '0')}`,
-            ...newRow,
-          } as InspectionPlan,
-        ]);
-      } else if (editTarget) {
-        setRows((prev) => prev.map((p) => p.id === editTarget.id ? { ...p, ...newRow } : p));
-      }
-      setSaving(false);
-      setDrawerOpen(false);
-    }, 800);
+  function handleSave(data: PlanFormValues) {
+    setSaveError('');
+    if (drawerMode === 'create') createMutation.mutate(data);
+    else updateMutation.mutate(data);
   }
 
-  function handleDelete() {
-    if (deleteTarget) {
-      setRows((prev) => prev.filter((p) => p.id !== deleteTarget.id));
-      setDeleteTarget(null);
-    }
-  }
+  // ─── Columns ───────────────────────────────────────────────────────────────
 
-  const columns: GridColDef<InspectionPlan>[] = [
+  const columns: GridColDef<InspectionPlanListDto>[] = [
     {
-      field: 'planCode',
-      headerName: 'Plan Code',
-      width: 105,
-      renderCell: (params: GridRenderCellParams<InspectionPlan>) => (
-        <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 600, color: 'primary.main' }}>
+      field: 'code',
+      headerName: 'Code',
+      width: 140,
+      renderCell: (params: GridRenderCellParams<InspectionPlanListDto>) => (
+        <Typography
+          variant="body2"
+          sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 600, color: 'primary.main' }}
+        >
           {params.value}
         </Typography>
       ),
     },
     {
-      field: 'productCode',
-      headerName: 'Product',
-      width: 200,
-      renderCell: (params: GridRenderCellParams<InspectionPlan>) => (
-        <Stack spacing={0}>
-          <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, fontWeight: 600, color: 'primary.main', lineHeight: 1.3 }}>
-            {params.row.productCode}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11, lineHeight: 1.3 }}>
-            {params.row.productName}
-          </Typography>
-        </Stack>
-      ),
+      field: 'name',
+      headerName: 'Name',
+      flex: 1,
+      minWidth: 180,
     },
     {
       field: 'inspectionType',
       headerName: 'Inspection Type',
-      width: 175,
-      renderCell: (params: GridRenderCellParams<InspectionPlan>) => (
-        <Chip
-          label={params.value}
-          size="small"
-          sx={(t) => ({
-            height: 20, fontSize: '0.6875rem', fontWeight: 600,
-            bgcolor: alpha(t.palette.primary.main, 0.08), color: 'primary.main',
-            border: 'none', '& .MuiChip-label': { px: 0.75 },
-          })}
-        />
-      ),
+      width: 150,
+      renderCell: (params: GridRenderCellParams<InspectionPlanListDto>) => {
+        const color = INSPECTION_TYPE_COLORS[params.value as string] ?? '#64748B';
+        return (
+          <Chip
+            label={params.value}
+            size="small"
+            sx={{
+              height: 20,
+              fontSize: '0.6875rem',
+              fontWeight: 600,
+              bgcolor: alpha(color, 0.08),
+              color,
+              border: 'none',
+              '& .MuiChip-label': { px: 0.75 },
+            }}
+          />
+        );
+      },
     },
     {
-      field: 'aqlLevel',
-      headerName: 'AQL',
-      width: 80,
-      align: 'center',
-      headerAlign: 'center',
-      renderCell: (params: GridRenderCellParams<InspectionPlan>) => (
-        <Box
-          component="span"
-          sx={{
-            fontFamily: 'ui-monospace, monospace', fontSize: 11, fontWeight: 700,
-            px: 0.75, py: 0.25, borderRadius: 0.5,
-            bgcolor: alpha('#7C3AED', 0.08), color: '#7C3AED',
-          }}
-        >
-          {params.value}
-        </Box>
-      ),
-    },
-    {
-      field: 'inspectionLevel',
-      headerName: 'Level',
-      width: 70,
-      align: 'center',
-      headerAlign: 'center',
-      renderCell: (params: GridRenderCellParams<InspectionPlan>) => (
-        <Typography variant="body2" sx={{ fontSize: 12, fontWeight: 600 }}>
-          {params.value}
-        </Typography>
-      ),
-    },
-    {
-      field: 'checkpoints',
-      headerName: 'Checkpoints',
+      field: 'samplingMethod',
+      headerName: 'Sampling',
       width: 105,
-      align: 'center',
-      headerAlign: 'center',
-      renderCell: (params: GridRenderCellParams<InspectionPlan>) => (
-        <Typography variant="body2" sx={{ fontSize: 12 }}>
-          {params.value}
-        </Typography>
-      ),
-    },
-    {
-      field: 'version',
-      headerName: 'Version',
-      width: 80,
-      align: 'center',
-      headerAlign: 'center',
-      renderCell: (params: GridRenderCellParams<InspectionPlan>) => (
-        <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, color: 'text.secondary' }}>
-          {params.value}
-        </Typography>
-      ),
+      renderCell: (params: GridRenderCellParams<InspectionPlanListDto>) => {
+        const color = SAMPLING_METHOD_COLORS[params.value as string] ?? '#64748B';
+        return (
+          <Chip
+            label={params.value}
+            size="small"
+            sx={{
+              height: 20,
+              fontSize: '0.6875rem',
+              fontWeight: 600,
+              bgcolor: alpha(color, 0.08),
+              color,
+              border: 'none',
+              '& .MuiChip-label': { px: 0.75 },
+            }}
+          />
+        );
+      },
     },
     {
       field: 'isActive',
@@ -264,47 +463,113 @@ export default function InspectionPlanPage() {
       width: 90,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (params: GridRenderCellParams<InspectionPlan>) => (
+      renderCell: (params: GridRenderCellParams<InspectionPlanListDto>) => (
         <Chip
           label={params.value ? 'Active' : 'Inactive'}
           size="small"
           sx={{
-            height: 20, fontSize: '0.6875rem', fontWeight: 600,
+            height: 20,
+            fontSize: '0.6875rem',
+            fontWeight: 600,
             bgcolor: params.value ? alpha('#15803D', 0.1) : alpha('#94A3B8', 0.1),
             color: params.value ? '#15803D' : '#94A3B8',
-            border: 'none', '& .MuiChip-label': { px: 0.75 },
+            border: 'none',
+            '& .MuiChip-label': { px: 0.75 },
           }}
         />
       ),
     },
     {
-      field: 'actions',
-      headerName: '',
+      field: 'characteristicCount',
+      headerName: 'Chars',
       width: 80,
-      sortable: false,
       align: 'center',
-      renderCell: (params: GridRenderCellParams<InspectionPlan>) => (
-        <Stack direction="row" spacing={0.25}>
-          <Tooltip title="Edit">
-            <IconButton size="small" onClick={() => openEdit(params.row)} sx={{ color: 'text.secondary' }}>
-              <SolarIcon name="edit" size={16} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Delete">
-            <IconButton size="small" onClick={() => setDeleteTarget(params.row)} sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}>
-              <SolarIcon name="delete" size={16} />
-            </IconButton>
-          </Tooltip>
+      headerAlign: 'center',
+      renderCell: (params: GridRenderCellParams<InspectionPlanListDto>) => (
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'center' }}>
+          <SolarIcon name="complete" size={14} />
+          <Typography variant="body2" sx={{ fontSize: 12 }}>
+            {params.value}
+          </Typography>
         </Stack>
       ),
     },
+    {
+      field: 'actions',
+      headerName: '',
+      width: 110,
+      sortable: false,
+      align: 'center',
+      renderCell: (params: GridRenderCellParams<InspectionPlanListDto>) => {
+        const id = Number(params.row.planId);
+        const isToggling =
+          activateMutation.isPending || deactivateMutation.isPending;
+        return (
+          <Stack direction="row" spacing={0.25} onClick={(e) => e.stopPropagation()}>
+            <Tooltip title="Edit">
+              <IconButton
+                size="small"
+                onClick={() => openEdit(params.row)}
+                sx={{ color: 'text.secondary' }}
+              >
+                <SolarIcon name="edit" size={16} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={params.row.isActive ? 'Deactivate' : 'Activate'}>
+              <IconButton
+                size="small"
+                disabled={isToggling}
+                onClick={() =>
+                  params.row.isActive
+                    ? deactivateMutation.mutate(id)
+                    : activateMutation.mutate(id)
+                }
+                sx={{ color: 'text.secondary' }}
+              >
+                <SolarIcon name={params.row.isActive ? 'pause' : 'resume'} size={16} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton
+                size="small"
+                onClick={() => setDeleteTarget(params.row)}
+                sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+              >
+                <SolarIcon name="delete" size={16} />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        );
+      },
+    },
   ];
+
+  // ─── Loading / error states ───────────────────────────────────────────────
+
+  if (isLoading) return <TablePageSkeleton />;
+  if (error) {
+    return (
+      <PageRoot>
+        <PageHeader
+          title="Inspection Plans"
+          breadcrumbs={[{ label: 'Quality' }, { label: 'Inspection Plans' }]}
+        />
+        <EmptyState
+          icon="emptyTable"
+          title="Failed to load inspection plans"
+          description={getErrorMessage(error)}
+        />
+      </PageRoot>
+    );
+  }
+
+  const hasFilters = !!(search || typeFilter || activeFilter);
 
   return (
     <PageRoot>
       <PageHeader
         title="Inspection Plans"
-        subtitle="Define AQL sampling plans and inspection checkpoints per product"
+        subtitle="Define QC sampling plans and inspection triggers per routing step"
         breadcrumbs={[{ label: 'Quality' }, { label: 'Inspection Plans' }]}
         actions={
           <Button
@@ -321,29 +586,40 @@ export default function InspectionPlanPage() {
       <TableToolbar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search plan code or product…"
-        filters={[
-          {
-            label: 'Product',
-            value: productFilter,
-            options: productOptions.map((p) => ({ label: p, value: p })),
-            onChange: setProductFilter,
-          },
-          {
-            label: 'Status',
-            value: statusFilter,
-            options: [
-              { label: 'Active',   value: 'active' },
-              { label: 'Inactive', value: 'inactive' },
-            ],
-            onChange: setStatusFilter,
-          },
-        ]}
+        searchPlaceholder="Search code, name or product…"
         totalCount={filtered.length}
         actions={
-          <Stack direction="row" spacing={0.5}>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+            {/* Inspection type filter */}
+            <Select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              size="small"
+              displayEmpty
+              sx={{ minWidth: 140 }}
+            >
+              <MenuItem value="">All Types</MenuItem>
+              <MenuItem value="DIMENSIONAL">Dimensional</MenuItem>
+              <MenuItem value="VISUAL">Visual</MenuItem>
+              <MenuItem value="FUNCTIONAL">Functional</MenuItem>
+              <MenuItem value="COMBINED">Combined</MenuItem>
+            </Select>
+
+            {/* Active / inactive filter */}
+            <Select
+              value={activeFilter}
+              onChange={(e) => setActiveFilter(e.target.value as '' | 'true' | 'false')}
+              size="small"
+              displayEmpty
+              sx={{ minWidth: 120 }}
+            >
+              <MenuItem value="">All Status</MenuItem>
+              <MenuItem value="true">Active</MenuItem>
+              <MenuItem value="false">Inactive</MenuItem>
+            </Select>
+
             <ExportButton />
-            <RefreshButton />
+            <RefreshButton onClick={() => void refetch()} />
           </Stack>
         }
       />
@@ -351,26 +627,27 @@ export default function InspectionPlanPage() {
       <Box sx={{ flex: 1, minHeight: 400 }}>
         <DataGrid
           rows={filtered}
+          getRowId={(row) => Number(row.planId)}
           columns={columns}
           density="compact"
-          checkboxSelection
           disableRowSelectionOnClick
-          rowSelectionModel={selection}
-          onRowSelectionModelChange={setSelection}
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+          onRowClick={(params) =>
+            navigate(`/quality/inspection-plans/${Number(params.row.planId)}/characteristics`)
+          }
           slots={{
             noRowsOverlay: () => (
               <EmptyState
-                icon={search || productFilter || statusFilter ? 'emptySearch' : 'emptyTable'}
-                title={search || productFilter || statusFilter ? 'No plans match your filters' : 'No inspection plans yet'}
+                icon={hasFilters ? 'emptySearch' : 'emptyTable'}
+                title={hasFilters ? 'No plans match your filters' : 'No inspection plans yet'}
                 description={
-                  search || productFilter || statusFilter
+                  hasFilters
                     ? 'Try adjusting your search or filters.'
                     : 'Create your first inspection plan to get started.'
                 }
                 action={
-                  !search && !productFilter && !statusFilter ? (
+                  !hasFilters ? (
                     <Button variant="contained" size="small" onClick={openCreate}>
                       New Plan
                     </Button>
@@ -381,11 +658,23 @@ export default function InspectionPlanPage() {
             ),
           }}
           sx={{
-            border: '1px solid', borderColor: 'divider', borderRadius: 2, bgcolor: 'background.paper',
-            '& .MuiDataGrid-columnHeaders': { bgcolor: (t) => alpha(t.palette.primary.main, 0.04), borderBottom: '1px solid', borderColor: 'divider' },
-            '& .MuiDataGrid-row:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.03) },
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            bgcolor: 'background.paper',
+            cursor: 'pointer',
+            '& .MuiDataGrid-columnHeaders': {
+              bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            },
+            '& .MuiDataGrid-row:hover': {
+              bgcolor: (t) => alpha(t.palette.primary.main, 0.03),
+            },
             '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': { outline: 'none' },
-            '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': { outline: 'none' },
+            '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': {
+              outline: 'none',
+            },
           }}
         />
       </Box>
@@ -394,119 +683,60 @@ export default function InspectionPlanPage() {
       <FormDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title={drawerMode === 'create' ? 'New Inspection Plan' : `Edit ${editTarget?.planCode}`}
-        subtitle={drawerMode === 'create' ? 'Define AQL sampling and inspection checkpoints' : editTarget?.productName}
-        onSubmit={handleSave}
+        title={drawerMode === 'create' ? 'New Inspection Plan' : `Edit ${editTarget?.code ?? ''}`}
+        subtitle={
+          drawerMode === 'create'
+            ? 'Define sampling method and inspection parameters'
+            : editTarget?.name
+        }
+        onSubmit={() => void (document.getElementById('plan-form') as HTMLFormElement | null)?.requestSubmit()}
         submitLabel={drawerMode === 'create' ? 'Create Plan' : 'Save Changes'}
         loading={saving}
       >
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="Product Code"
-              value={formProductCode}
-              onChange={(e) => setFormProductCode(e.target.value)}
-              fullWidth
-              required
-              slotProps={{ htmlInput: { style: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } } }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="Product Name"
-              value={formProductName}
-              onChange={(e) => setFormProductName(e.target.value)}
-              fullWidth
-              required
-            />
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              label="Inspection Type"
-              value={formInspectionType}
-              onChange={(e) => setFormInspectionType(e.target.value)}
-              fullWidth
-              required
-              placeholder="e.g. Final, Incoming, In-Process + Final"
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              select
-              label="AQL Level"
-              value={formAqlLevel}
-              onChange={(e) => setFormAqlLevel(e.target.value)}
-              fullWidth
-              required
-            >
-              {AQL_LEVELS.map((a) => (
-                <MenuItem key={a} value={a}>{a}</MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              select
-              label="Inspection Level"
-              value={formLevel}
-              onChange={(e) => setFormLevel(e.target.value as InspectionPlan['inspectionLevel'])}
-              fullWidth
-              required
-            >
-              {INSPECTION_LEVELS.map((l) => (
-                <MenuItem key={l} value={l}>{l}</MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="Checkpoints"
-              type="number"
-              value={formCheckpoints}
-              onChange={(e) => setFormCheckpoints(e.target.value)}
-              fullWidth
-              required
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="Version"
-              value={formVersion}
-              onChange={(e) => setFormVersion(e.target.value)}
-              fullWidth
-              required
-              placeholder="e.g. Rev.A"
-            />
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              select
-              label="Status"
-              value={formIsActive ? 'active' : 'inactive'}
-              onChange={(e) => setFormIsActive(e.target.value === 'active')}
-              fullWidth
-            >
-              <MenuItem value="active">Active</MenuItem>
-              <MenuItem value="inactive">Inactive</MenuItem>
-            </TextField>
-          </Grid>
-        </Grid>
+        <PlanForm
+          key={formKey}
+          isEdit={drawerMode === 'edit'}
+          saveError={saveError}
+          defaultValues={
+            editTarget
+              ? {
+                  code: editTarget.code,
+                  name: editTarget.name,
+                  routingStepId: Number(editTarget.routingStepId),
+                  productCode: editTarget.productCode ?? undefined,
+                  samplingMethod: editTarget.samplingMethod as PlanFormValues['samplingMethod'],
+                  sampleSize:
+                    editTarget.sampleSize != null ? Number(editTarget.sampleSize) : undefined,
+                  acceptNumber: Number(editTarget.acceptNumber),
+                  rejectNumber: Number(editTarget.rejectNumber),
+                  inspectionType: editTarget.inspectionType as PlanFormValues['inspectionType'],
+                }
+              : {}
+          }
+          onSubmit={handleSave}
+        />
       </FormDrawer>
 
       {/* Delete confirmation */}
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
+        onConfirm={() => deleteMutation.mutate(Number(deleteTarget!.planId))}
         title="Delete Inspection Plan"
         description={
           <>
-            Delete plan <strong>{deleteTarget?.planCode}</strong> for <strong>{deleteTarget?.productCode}</strong>?
-            This cannot be undone and may affect active inspection orders.
+            Delete plan <strong>{deleteTarget?.code}</strong>
+            {deleteTarget?.productCode ? (
+              <>
+                {' '}for product <strong>{deleteTarget.productCode}</strong>
+              </>
+            ) : null}
+            ? This cannot be undone.
           </>
         }
         confirmLabel="Delete"
         confirmColor="error"
+        loading={deleteMutation.isPending}
       />
     </PageRoot>
   );

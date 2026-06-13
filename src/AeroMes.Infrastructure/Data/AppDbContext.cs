@@ -104,6 +104,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     // qual schema
     public DbSet<DefectCode> DefectCodes => Set<DefectCode>();
     public DbSet<DefectDetail> DefectDetails => Set<DefectDetail>();
+    public DbSet<InspectionPlan> InspectionPlans => Set<InspectionPlan>();
+    public DbSet<InspectionCharacteristic> InspectionCharacteristics => Set<InspectionCharacteristic>();
 
     // iot schema
     public DbSet<AdapterInstance> AdapterInstances => Set<AdapterInstance>();
@@ -1532,6 +1534,40 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.DefectCodeID);
 
             // ProductionLog ↔ DefectDetails relationship configured on ProductionLog side
+        });
+
+        b.Entity<InspectionPlan>(e =>
+        {
+            e.ToTable("InspectionPlans", "qual");
+            e.HasKey(x => x.PlanId);
+            e.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.Code).IsUnique();
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.SamplingMethod).HasMaxLength(20).IsRequired();
+            e.Property(x => x.InspectionType).HasMaxLength(30).IsRequired();
+            e.Property(x => x.ProductCode).HasMaxLength(50);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.CreatedBy).HasMaxLength(100).IsRequired();
+            e.HasMany(x => x.Characteristics)
+                .WithOne(c => c.Plan)
+                .HasForeignKey(c => c.PlanId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Characteristics)
+                .HasField("_characteristics")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<InspectionCharacteristic>(e =>
+        {
+            e.ToTable("InspectionCharacteristics", "qual");
+            e.HasKey(x => x.CharId);
+            e.Property(x => x.CharName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.MeasurementType).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Unit).HasMaxLength(30);
+            e.Property(x => x.AttributeSpec).HasMaxLength(200);
+            e.Property(x => x.SeverityLevel).HasMaxLength(20).IsRequired();
+            e.Property(x => x.DefectCodeLink).HasMaxLength(50);
+            e.Property(x => x.Notes).HasMaxLength(255);
         });
     }
 
