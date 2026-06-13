@@ -26,6 +26,7 @@ using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production.Repositories;
 using AeroMes.Application.Production.Commands.CreateProductionPlan;
 using AeroMes.Application.Quality.SamplingMethods.Commands.CreateSamplingMethod;
+using AeroMes.Application.Production.Commands.CreateMaterialPurchaseRequest;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrderDetail;
 using AeroMes.Application.Integration.Queries.GetMultiProductionOrders;
 using AeroMes.Application.Integration.Commands.SyncSalesOrders;
@@ -1066,6 +1067,17 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<DefectParetoDto>))]
 [JsonSerializable(typeof(List<DefectParetoDto>))]
 [JsonSerializable(typeof(QualitySummaryByStyleDto))]
+// material purchase request — #89
+[JsonSerializable(typeof(CreatePurchaseRequestRequest))]
+[JsonSerializable(typeof(PurchaseRequestLineInput))]
+[JsonSerializable(typeof(IReadOnlyList<PurchaseRequestLineInput>))]
+[JsonSerializable(typeof(List<PurchaseRequestLineInput>))]
+[JsonSerializable(typeof(ApproveRequestBody))]
+[JsonSerializable(typeof(MaterialPurchaseRequestDto))]
+[JsonSerializable(typeof(PagedResult<MaterialPurchaseRequestDto>))]
+[JsonSerializable(typeof(MaterialPurchaseRequestLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<MaterialPurchaseRequestLineDto>))]
+[JsonSerializable(typeof(List<MaterialPurchaseRequestLineDto>))]
 // sampling method catalog — #78
 [JsonSerializable(typeof(CreateSamplingMethodRequest))]
 [JsonSerializable(typeof(UpdateSamplingMethodRequest))]

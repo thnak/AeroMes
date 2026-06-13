@@ -141,6 +141,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<DisassemblyOrder> DisassemblyOrders => Set<DisassemblyOrder>();
     public DbSet<ProductionPlanByOrder> ProductionPlansByOrder => Set<ProductionPlanByOrder>();
     public DbSet<ProductionPlanOrderLine> ProductionPlanOrderLines => Set<ProductionPlanOrderLine>();
+    public DbSet<MaterialPurchaseRequest> MaterialPurchaseRequests => Set<MaterialPurchaseRequest>();
+    public DbSet<MaterialPurchaseRequestLine> MaterialPurchaseRequestLines => Set<MaterialPurchaseRequestLine>();
 
     // wms schema
     public DbSet<WarehouseZone> WarehouseZones => Set<WarehouseZone>();
@@ -2226,6 +2228,40 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.PlannedQty).HasColumnType("DECIMAL(18,4)");
             e.Property(x => x.ActualQty).HasColumnType("DECIMAL(18,4)");
             e.Ignore(x => x.IsLate);
+        });
+
+        b.Entity<MaterialPurchaseRequest>(e =>
+        {
+            e.ToTable("MaterialPurchaseRequests", "prod");
+            e.HasKey(x => x.RequestID);
+            e.Property(x => x.RequestNumber).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Requestor).HasMaxLength(100).IsRequired();
+            e.Property(x => x.RequestingUnit).HasMaxLength(100);
+            e.Property(x => x.ProcurementPurpose).HasMaxLength(500);
+            e.Property(x => x.SalesOrderCode).HasMaxLength(50);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.SourceType).HasConversion<string>().HasMaxLength(20);
+            e.HasIndex(x => x.RequestNumber).IsUnique();
+            e.HasMany(x => x.Lines).WithOne()
+                .HasForeignKey(x => x.RequestID).OnDelete(DeleteBehavior.Cascade);
+            e.Navigation(x => x.Lines).HasField("_lines")
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        b.Entity<MaterialPurchaseRequestLine>(e =>
+        {
+            e.ToTable("MaterialPurchaseRequestLines", "prod");
+            e.HasKey(x => x.LineID);
+            e.Property(x => x.MaterialCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.MaterialName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.UnitOfMeasure).HasMaxLength(20).IsRequired();
+            e.Property(x => x.RequiredQty).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.CalculatedQty).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.Length).HasColumnType("DECIMAL(14,4)");
+            e.Property(x => x.Width).HasColumnType("DECIMAL(14,4)");
+            e.Property(x => x.Height).HasColumnType("DECIMAL(14,4)");
+            e.Property(x => x.Radius).HasColumnType("DECIMAL(14,4)");
+            e.Property(x => x.Weight).HasColumnType("DECIMAL(14,4)");
         });
     }
 

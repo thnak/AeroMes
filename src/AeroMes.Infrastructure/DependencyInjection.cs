@@ -141,6 +141,7 @@ public static class DependencyInjection
         services.AddScoped<IDisassemblyOrderRepository, DisassemblyOrderRepository>();
         services.AddScoped<IProductionPlanByOrderRepository, ProductionPlanByOrderRepository>();
         services.AddScoped<ISamplingMethodRepository, SamplingMethodRepository>();
+        services.AddScoped<IMaterialPurchaseRequestRepository, MaterialPurchaseRequestRepository>();
 
         // ERP client + background sync
         services.AddHttpClient("erp").ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
