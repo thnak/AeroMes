@@ -184,6 +184,7 @@ using AeroMes.Application.Master.DisassemblyBoms.Commands.CreateDisassemblyBom;
 using AeroMes.Application.Master.DisassemblyBoms.Queries.GetDisassemblyBoms;
 using AeroMes.Application.Master.DisassemblyBoms.Queries.GetDisassemblyBomById;
 using AeroMes.Application.Master.Boms.Commands.UpdateBomByProducts;
+using AeroMes.Application.Cost.WOCosts.Queries.GetWOCostBreakdown;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Quality;
 using AeroMes.Domain.Quality.Repositories;
@@ -1215,6 +1216,25 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(List<QualityCriteriaDto>))]
 [JsonSerializable(typeof(CriteriaType))]
 [JsonSerializable(typeof(CriteriaStatus))]
+// WO actual cost capture — #74
+[JsonSerializable(typeof(PostMaterialCostRequest))]
+[JsonSerializable(typeof(CloseJobCostRequest))]
+[JsonSerializable(typeof(CloseWORequest))]
+[JsonSerializable(typeof(WOCostSummaryDto))]
+[JsonSerializable(typeof(WOMaterialCostLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<WOMaterialCostLineDto>))]
+[JsonSerializable(typeof(List<WOMaterialCostLineDto>))]
+[JsonSerializable(typeof(WOLaborCostLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<WOLaborCostLineDto>))]
+[JsonSerializable(typeof(List<WOLaborCostLineDto>))]
+[JsonSerializable(typeof(WOMachineCostLineDto))]
+[JsonSerializable(typeof(IReadOnlyList<WOMachineCostLineDto>))]
+[JsonSerializable(typeof(List<WOMachineCostLineDto>))]
+[JsonSerializable(typeof(WOCostBreakdownResult))]
+[JsonSerializable(typeof(VarianceReportItemDto))]
+[JsonSerializable(typeof(IReadOnlyList<VarianceReportItemDto>))]
+[JsonSerializable(typeof(List<VarianceReportItemDto>))]
+[JsonSerializable(typeof(PagedResult<VarianceReportItemDto>))]
 // cost rate master — #53
 [JsonSerializable(typeof(UpsertLaborGradeRequest))]
 [JsonSerializable(typeof(LaborGradeDto))]

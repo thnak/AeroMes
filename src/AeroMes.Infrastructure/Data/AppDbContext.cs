@@ -211,6 +211,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<QualityStandardSet> QualityStandardSets => Set<QualityStandardSet>();
     public DbSet<QualityStandardSetCriteria> QualityStandardSetCriteria => Set<QualityStandardSetCriteria>();
     public DbSet<QualityStandardSetStageCriteria> QualityStandardSetStageCriteria => Set<QualityStandardSetStageCriteria>();
+    public DbSet<WOCostSummary> WOCostSummaries => Set<WOCostSummary>();
+    public DbSet<WOMaterialCostLine> WOMaterialCostLines => Set<WOMaterialCostLine>();
+    public DbSet<WOLaborCostLine> WOLaborCostLines => Set<WOLaborCostLine>();
+    public DbSet<WOMachineCostLine> WOMachineCostLines => Set<WOMachineCostLine>();
 
     // iot schema
     public DbSet<AdapterInstance> AdapterInstances => Set<AdapterInstance>();
@@ -4498,6 +4502,61 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.ApprovedBy).HasMaxLength(50);
             e.Property(x => x.CreatedBy).HasMaxLength(50);
             e.HasIndex(x => x.ProductCode);
+        });
+
+        b.Entity<WOCostSummary>(e =>
+        {
+            e.ToTable("WOCostSummaries", "cost");
+            e.HasKey(x => x.WOCostID);
+            e.Property(x => x.WOCostID).UseIdentityColumn();
+            e.HasIndex(x => x.WOID).IsUnique();
+            e.Property(x => x.StdTotalCost).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.ActMaterialCost).HasColumnType("DECIMAL(18,4)").HasDefaultValue(0m);
+            e.Property(x => x.ActLaborCost).HasColumnType("DECIMAL(18,4)").HasDefaultValue(0m);
+            e.Property(x => x.ActMachineCost).HasColumnType("DECIMAL(18,4)").HasDefaultValue(0m);
+            e.Property(x => x.ActMaintenanceCost).HasColumnType("DECIMAL(18,4)").HasDefaultValue(0m);
+            e.Ignore(x => x.ActTotalCost);
+            e.Ignore(x => x.TotalVariance);
+            e.Property(x => x.VarianceDetailJson).HasColumnType("nvarchar(max)");
+        });
+
+        b.Entity<WOMaterialCostLine>(e =>
+        {
+            e.ToTable("WOMaterialCostLines", "cost");
+            e.HasKey(x => x.LineID);
+            e.Property(x => x.LineID).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(50);
+            e.Property(x => x.QtyConsumed).HasColumnType("DECIMAL(18,4)").IsRequired();
+            e.Property(x => x.ActualUnitCost).HasColumnType("DECIMAL(18,6)").IsRequired();
+            e.Ignore(x => x.LineTotal);
+            e.HasIndex(x => x.WOID);
+        });
+
+        b.Entity<WOLaborCostLine>(e =>
+        {
+            e.ToTable("WOLaborCostLines", "cost");
+            e.HasKey(x => x.LineID);
+            e.Property(x => x.LineID).UseIdentityColumn();
+            e.Property(x => x.OperatorID).HasMaxLength(50).IsRequired();
+            e.Property(x => x.ActualHours).HasColumnType("DECIMAL(8,4)").IsRequired();
+            e.Property(x => x.HourlyRateSnapshot).HasColumnType("DECIMAL(12,4)").IsRequired();
+            e.Property(x => x.OvertimeMultiplierSnapshot).HasColumnType("DECIMAL(5,2)").HasDefaultValue(1.5m);
+            e.Ignore(x => x.LineTotal);
+            e.HasIndex(x => x.WOID);
+        });
+
+        b.Entity<WOMachineCostLine>(e =>
+        {
+            e.ToTable("WOMachineCostLines", "cost");
+            e.HasKey(x => x.LineID);
+            e.Property(x => x.LineID).UseIdentityColumn();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.RuntimeHours).HasColumnType("DECIMAL(8,4)").IsRequired();
+            e.Property(x => x.EnergyKWh).HasColumnType("DECIMAL(10,3)");
+            e.Property(x => x.TotalRateSnapshot).HasColumnType("DECIMAL(14,4)").IsRequired();
+            e.Ignore(x => x.LineTotal);
+            e.HasIndex(x => x.WOID);
         });
     }
 }
