@@ -448,7 +448,7 @@ export default function ProductsPage() {
     {
       field: 'actions',
       headerName: '',
-      width: 110,
+      width: 140,
       sortable: false,
       align: 'center',
       renderCell: (params: GridRenderCellParams<ProductDto>) => (
@@ -456,6 +456,11 @@ export default function ProductsPage() {
           <Tooltip title="View Detail">
             <IconButton size="small" onClick={() => navigate(`/master/products/${params.row.productCode}`)} sx={{ color: 'text.secondary' }}>
               <SolarIcon name="eye" size={16} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Edit BOM">
+            <IconButton size="small" onClick={() => navigate(`/master/products/${params.row.productCode}/bom`)} sx={{ color: 'text.secondary' }}>
+              <SolarIcon name="bom" size={16} />
             </IconButton>
           </Tooltip>
           <Tooltip title="Edit">

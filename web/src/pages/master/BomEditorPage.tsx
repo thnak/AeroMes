@@ -1,9 +1,12 @@
+import Autocomplete from '@mui/material/Autocomplete';
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
+  Grid,
   IconButton,
   Stack,
   Table,
@@ -16,168 +19,235 @@ import {
   Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ConfirmDialog,
+  EmptyState,
+  FormDrawer,
   PageHeader,
   PageRoot,
   SolarIcon,
+  TablePageSkeleton,
 } from '../../components';
+import {
+  useGetApiV1BomItemsParentCode,
+  getGetApiV1BomItemsParentCodeQueryKey,
+  postApiV1BomItems,
+  putApiV1BomItemsId,
+  deleteApiV1BomItemsId,
+} from '../../api/bom-items/bom-items';
+import {
+  useGetApiV1Products,
+  useGetApiV1ProductsCode,
+} from '../../api/products/products';
+import type { BomItemDto } from '../../api/model';
+import { getErrorMessage } from '../../lib/apiClient';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Form schema ──────────────────────────────────────────────────────────────
 
-type BomComponentType = 'Raw' | 'Semi' | 'Purchased';
+const BomItemSchema = z.object({
+  childProductCode: z.string().min(1, 'Child product is required'),
+  requiredQty:      z.coerce.number().positive('Quantity must be positive'),
+  scrapFactor:      z.coerce.number().min(0, 'Cannot be negative').max(100, 'Max 100%'),
+});
 
-interface BomRow {
-  id: string;
-  level: number;
-  componentCode: string;
-  componentName: string;
-  qty: number;
-  uom: string;
-  type: BomComponentType;
-  unitCost: number;
-  totalCost: number;
-}
+type BomItemFormValues = z.infer<typeof BomItemSchema>;
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+// ─── Form component ───────────────────────────────────────────────────────────
 
-const PRODUCT_META: Record<string, { code: string; name: string; version: string }> = {
-  '1': { code: 'FRM-A001', name: 'Frame Assembly A',      version: 'Rev.C' },
-  '2': { code: 'PNL-B002', name: 'Panel Sub-assembly B',  version: 'Rev.B' },
-  '3': { code: 'SHT-C003', name: 'Shaft Housing C',       version: 'Rev.A' },
-};
+function BomItemForm({
+  defaultValues,
+  isEdit,
+  productOptions,
+  onSubmit,
+}: {
+  defaultValues: Partial<BomItemFormValues>;
+  isEdit: boolean;
+  productOptions: { code: string; name: string }[];
+  onSubmit: (data: BomItemFormValues) => void;
+}) {
+  const { register, control, handleSubmit, formState: { errors } } = useForm<BomItemFormValues>({
+    resolver: zodResolver(BomItemSchema) as any,
+    defaultValues: { scrapFactor: 0, ...defaultValues },
+  });
 
-const INITIAL_BOM: BomRow[] = [
-  { id: '1', level: 1, componentCode: 'FRM-A001-01', componentName: 'Main Frame Body',      qty: 1,   uom: 'EA',  type: 'Semi',      unitCost: 45.00, totalCost: 45.00 },
-  { id: '2', level: 2, componentCode: 'SHT-001',     componentName: 'Steel Sheet 3mm',      qty: 4,   uom: 'KG',  type: 'Raw',       unitCost: 2.50,  totalCost: 10.00 },
-  { id: '3', level: 2, componentCode: 'WLD-001',     componentName: 'Welding Wire ER70S-6', qty: 0.5, uom: 'KG',  type: 'Raw',       unitCost: 8.00,  totalCost: 4.00  },
-  { id: '4', level: 1, componentCode: 'FRM-A001-02', componentName: 'Mounting Bracket Set', qty: 4,   uom: 'EA',  type: 'Semi',      unitCost: 12.00, totalCost: 48.00 },
-  { id: '5', level: 2, componentCode: 'BRK-D004',    componentName: 'Bracket D',            qty: 4,   uom: 'EA',  type: 'Semi',      unitCost: 8.00,  totalCost: 32.00 },
-  { id: '6', level: 2, componentCode: 'FAB-001',     componentName: 'Fastener M8x25',       qty: 16,  uom: 'EA',  type: 'Purchased', unitCost: 0.15,  totalCost: 2.40  },
-  { id: '7', level: 1, componentCode: 'FRM-A001-03', componentName: 'Cover Plate Assembly', qty: 1,   uom: 'EA',  type: 'Semi',      unitCost: 28.00, totalCost: 28.00 },
-  { id: '8', level: 2, componentCode: 'COV-F006',    componentName: 'Cover Plate F',        qty: 1,   uom: 'EA',  type: 'Semi',      unitCost: 18.00, totalCost: 18.00 },
-  { id: '9', level: 2, componentCode: 'GSK-001',     componentName: 'Gasket Set',           qty: 1,   uom: 'SET', type: 'Purchased', unitCost: 6.50,  totalCost: 6.50  },
-];
-
-const TYPE_COLORS: Record<BomComponentType, string> = {
-  Raw:       '#15803D',
-  Semi:      '#1D4ED8',
-  Purchased: '#7C3AED',
-};
-
-// ─── Inline edit state ────────────────────────────────────────────────────────
-
-interface EditingQty {
-  id: string;
-  qty: string;
+  return (
+    <Box component="form" id="bom-item-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 12 }}>
+          <Controller
+            name="childProductCode"
+            control={control}
+            render={({ field }) => (
+              <Autocomplete
+                disabled={isEdit}
+                options={productOptions}
+                getOptionLabel={(opt) => typeof opt === 'string' ? opt : `${opt.code} — ${opt.name}`}
+                isOptionEqualToValue={(opt, val) => opt.code === val.code}
+                value={productOptions.find((p) => p.code === field.value) ?? null}
+                onChange={(_, val) => field.onChange(val?.code ?? '')}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Child Product"
+                    required
+                    error={!!errors.childProductCode}
+                    helperText={errors.childProductCode?.message}
+                  />
+                )}
+              />
+            )}
+          />
+        </Grid>
+        <Grid size={{ xs: 6 }}>
+          <TextField
+            {...register('requiredQty')}
+            label="Required Qty"
+            type="number"
+            fullWidth
+            required
+            error={!!errors.requiredQty}
+            helperText={errors.requiredQty?.message}
+            slotProps={{ htmlInput: { min: 0.0001, step: 0.0001 } }}
+          />
+        </Grid>
+        <Grid size={{ xs: 6 }}>
+          <TextField
+            {...register('scrapFactor')}
+            label="Scrap Factor (%)"
+            type="number"
+            fullWidth
+            error={!!errors.scrapFactor}
+            helperText={errors.scrapFactor?.message ?? '0 = no scrap'}
+            slotProps={{ htmlInput: { min: 0, max: 100, step: 0.01 } }}
+          />
+        </Grid>
+      </Grid>
+    </Box>
+  );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+type DrawerMode = 'create' | 'edit';
+
 export default function BomEditorPage() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const { id: productCode } = useParams<{ id: string }>();
+  const navigate             = useNavigate();
+  const queryClient          = useQueryClient();
 
-  const meta = PRODUCT_META[id ?? ''] ?? PRODUCT_META['1'];
+  const [drawerOpen, setDrawerOpen]     = useState(false);
+  const [drawerMode, setDrawerMode]     = useState<DrawerMode>('create');
+  const [editTarget, setEditTarget]     = useState<BomItemDto | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<BomItemDto | null>(null);
+  const [saveError, setSaveError]       = useState('');
 
-  const [rows, setRows]             = useState<BomRow[]>(INITIAL_BOM);
-  const [editingQty, setEditingQty] = useState<EditingQty | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<BomRow | null>(null);
-  const [saved, setSaved]           = useState(false);
+  const { data: product }                                          = useGetApiV1ProductsCode(productCode ?? '');
+  const { data: bomItems = [], isLoading, error, refetch }         = useGetApiV1BomItemsParentCode(productCode ?? '');
+  const { data: allProducts = [] }                                 = useGetApiV1Products({ activeOnly: false });
 
-  const totalCost = rows.reduce((sum, r) => sum + (r.level === 1 ? r.totalCost : 0), 0);
-  const componentCount = rows.length;
-  const maxLevel = Math.max(...rows.map((r) => r.level));
+  const productNameMap = useMemo(
+    () => new Map(allProducts.map((p) => [p.productCode, p.productName])),
+    [allProducts],
+  );
 
-  function startEditQty(row: BomRow) {
-    setEditingQty({ id: row.id, qty: String(row.qty) });
+  const existingChildCodes = useMemo(
+    () => new Set(bomItems.map((b) => b.childProductCode)),
+    [bomItems],
+  );
+
+  const availableForAdd = useMemo(
+    () =>
+      allProducts
+        .filter((p) => p.isActive && p.productCode !== productCode && !existingChildCodes.has(p.productCode))
+        .map((p) => ({ code: p.productCode, name: p.productName })),
+    [allProducts, productCode, existingChildCodes],
+  );
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: getGetApiV1BomItemsParentCodeQueryKey(productCode ?? '') });
+
+  const createMutation = useMutation({
+    mutationFn: (data: BomItemFormValues) =>
+      postApiV1BomItems({
+        parentProductCode: productCode!,
+        childProductCode:  data.childProductCode,
+        requiredQty:       data.requiredQty,
+        scrapFactor:       data.scrapFactor,
+      }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: BomItemFormValues) =>
+      putApiV1BomItemsId(Number(editTarget!.bomID), {
+        requiredQty: data.requiredQty,
+        scrapFactor: data.scrapFactor,
+      }),
+    onSuccess: () => { invalidate(); setDrawerOpen(false); },
+    onError: (err) => setSaveError(getErrorMessage(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteApiV1BomItemsId(id),
+    onSuccess: () => { invalidate(); setDeleteTarget(null); },
+  });
+
+  const saving = createMutation.isPending || updateMutation.isPending;
+
+  function openCreate() {
+    setSaveError(''); setDrawerMode('create'); setEditTarget(null); setDrawerOpen(true);
+  }
+  function openEdit(row: BomItemDto) {
+    setSaveError(''); setDrawerMode('edit'); setEditTarget(row); setDrawerOpen(true);
+  }
+  function handleSave(data: BomItemFormValues) {
+    setSaveError('');
+    if (drawerMode === 'create') createMutation.mutate(data);
+    else updateMutation.mutate(data);
   }
 
-  function saveQty(row: BomRow) {
-    if (!editingQty) return;
-    const newQty = Number(editingQty.qty);
-    if (Number.isNaN(newQty) || newQty <= 0) return;
-    setRows((prev) => prev.map((r) =>
-      r.id === row.id
-        ? { ...r, qty: newQty, totalCost: +(newQty * r.unitCost).toFixed(2) }
-        : r
-    ));
-    setEditingQty(null);
-  }
-
-  function handleDelete() {
-    if (deleteTarget) {
-      setRows((prev) => prev.filter((r) => r.id !== deleteTarget.id));
-      setDeleteTarget(null);
-    }
-  }
-
-  function addComponent() {
-    const newRow: BomRow = {
-      id:            String(Date.now()),
-      level:         1,
-      componentCode: 'NEW-001',
-      componentName: 'New Component',
-      qty:           1,
-      uom:           'EA',
-      type:          'Purchased',
-      unitCost:      0,
-      totalCost:     0,
-    };
-    setRows((prev) => [...prev, newRow]);
-    setEditingQty({ id: newRow.id, qty: '1' });
-  }
-
-  function handleSaveBom() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
+  if (isLoading) return <TablePageSkeleton />;
+  if (error) return (
+    <PageRoot>
+      <PageHeader
+        title="BOM Editor"
+        breadcrumbs={[{ label: 'Master Data' }, { label: 'Products', href: '/master/products' }, { label: productCode ?? '' }, { label: 'BOM' }]}
+      />
+      <EmptyState icon="emptyTable" title="Failed to load BOM" description={getErrorMessage(error)} />
+    </PageRoot>
+  );
 
   return (
     <PageRoot>
       <PageHeader
-        title={`BOM — ${meta.code}`}
-        subtitle={`${meta.name} · ${meta.version}`}
+        title={`BOM — ${productCode}`}
+        subtitle={product?.productName ?? ''}
         breadcrumbs={[
           { label: 'Master Data' },
           { label: 'Products', href: '/master/products' },
-          { label: meta.code },
+          { label: productCode ?? '' },
           { label: 'BOM' },
         ]}
         actions={
           <>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<SolarIcon name="back" size={16} />}
-              onClick={() => navigate('/master/products')}
-            >
+            <Button variant="outlined" size="small" startIcon={<SolarIcon name="back" size={16} />} onClick={() => navigate(-1)}>
               Back
             </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<SolarIcon name="add" size={16} />}
-              onClick={addComponent}
-            >
+            <Button variant="contained" size="small" startIcon={<SolarIcon name="add" size={16} />} onClick={openCreate}>
               Add Component
-            </Button>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<SolarIcon name={saved ? 'success' : 'download'} size={16} />}
-              onClick={handleSaveBom}
-              color={saved ? 'success' : 'primary'}
-            >
-              {saved ? 'Saved' : 'Save BOM'}
             </Button>
           </>
         }
       />
 
-      {/* Summary chips */}
+      {/* Summary */}
       <Card variant="outlined" sx={{ borderRadius: 2, mb: 2 }}>
         <CardContent sx={{ py: '12px !important' }}>
           <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
@@ -185,9 +255,8 @@ export default function BomEditorPage() {
               BOM Summary
             </Typography>
             {[
-              { label: `${componentCount} components`, color: '#1D4ED8' },
-              { label: `${maxLevel} levels`,           color: '#0D9488' },
-              { label: `Total cost ~$${totalCost.toFixed(2)}`, color: '#15803D' },
+              { label: `${bomItems.length} component${bomItems.length !== 1 ? 's' : ''}`, color: '#1D4ED8' },
+              { label: `${bomItems.filter((b) => b.isActive).length} active`, color: '#15803D' },
             ].map((item) => (
               <Chip
                 key={item.label}
@@ -211,147 +280,94 @@ export default function BomEditorPage() {
       {/* BOM Table */}
       <Card variant="outlined" sx={{ borderRadius: 2 }}>
         <CardContent sx={{ pb: '12px !important' }}>
-          <Typography
-            variant="subtitle2"
-            sx={{ mb: 2, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.6875rem', letterSpacing: 0.5 }}
-          >
-            BOM Structure
-          </Typography>
+          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.6875rem', letterSpacing: 0.5 }}>
+              Components
+            </Typography>
+            <Tooltip title="Refresh">
+              <IconButton size="small" onClick={() => refetch()} sx={{ color: 'text.secondary' }}>
+                <SolarIcon name="refresh" size={16} />
+              </IconButton>
+            </Tooltip>
+          </Stack>
 
-          <Table size="small">
-            <TableHead>
-              <TableRow
-                sx={{ '& th': { py: 0.75, fontWeight: 600, fontSize: '0.75rem', borderColor: 'divider', color: 'text.secondary', bgcolor: (t) => alpha(t.palette.primary.main, 0.03) } }}
-              >
-                <TableCell width={90}>Level</TableCell>
-                <TableCell width={150}>Component Code</TableCell>
-                <TableCell>Component Name</TableCell>
-                <TableCell width={80} align="right">Qty</TableCell>
-                <TableCell width={60} align="center">UOM</TableCell>
-                <TableCell width={100} align="center">Type</TableCell>
-                <TableCell width={100} align="right">Unit Cost</TableCell>
-                <TableCell width={100} align="right">Total Cost</TableCell>
-                <TableCell width={80} align="center">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((row) => {
-                const isEditingThisQty = editingQty?.id === row.id;
-                const typeColor = TYPE_COLORS[row.type];
-                return (
+          {bomItems.length === 0 ? (
+            <Box sx={{ py: 4 }}>
+              <EmptyState
+                icon="emptyTable"
+                title="No components yet"
+                description="Click 'Add Component' to define the bill of materials for this product."
+                action={<Button variant="contained" size="small" onClick={openCreate}>Add Component</Button>}
+                compact
+              />
+            </Box>
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ '& th': { py: 0.75, fontWeight: 600, fontSize: '0.75rem', borderColor: 'divider', color: 'text.secondary', bgcolor: (t) => alpha(t.palette.primary.main, 0.03) } }}>
+                  <TableCell width={160}>Component Code</TableCell>
+                  <TableCell>Component Name</TableCell>
+                  <TableCell width={110} align="right">Req. Qty</TableCell>
+                  <TableCell width={100} align="right">Scrap %</TableCell>
+                  <TableCell width={90} align="center">Status</TableCell>
+                  <TableCell width={80} align="center" />
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {bomItems.map((row) => (
                   <TableRow
-                    key={row.id}
+                    key={String(row.bomID)}
                     sx={{
                       '& td': { py: 0.5, fontSize: '0.8125rem', borderColor: 'divider' },
                       '&:last-child td': { border: 0 },
-                      bgcolor: row.level === 1 ? (t) => alpha(t.palette.primary.main, 0.015) : 'transparent',
+                      '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.02) },
                     }}
                   >
-                    {/* Level */}
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, ml: (row.level - 1) * 2 }}>
-                        <Chip
-                          label={`L${row.level}`}
-                          size="small"
-                          sx={{
-                            height: 18,
-                            fontSize: '0.625rem',
-                            fontWeight: 700,
-                            bgcolor: row.level === 1 ? alpha('#1D4ED8', 0.12) : alpha('#94A3B8', 0.12),
-                            color: row.level === 1 ? '#1D4ED8' : '#64748B',
-                            border: 'none',
-                            '& .MuiChip-label': { px: 0.5 },
-                          }}
-                        />
-                      </Box>
-                    </TableCell>
-
-                    {/* Component Code */}
-                    <TableCell>
-                      <Box sx={{ ml: (row.level - 1) * 2 }}>
-                        <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 600, color: 'primary.main' }}>
-                          {row.componentCode}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-
-                    {/* Component Name */}
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontSize: 12, fontWeight: row.level === 1 ? 600 : 400 }}>
-                        {row.componentName}
+                      <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, fontWeight: 600, color: 'primary.main' }}>
+                        {row.childProductCode}
                       </Typography>
                     </TableCell>
-
-                    {/* Qty */}
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontSize: 12 }}>
+                        {productNameMap.get(row.childProductCode) ?? (
+                          <Box component="span" sx={{ color: 'text.disabled', fontStyle: 'italic' }}>Unknown</Box>
+                        )}
+                      </Typography>
+                    </TableCell>
                     <TableCell align="right">
-                      {isEditingThisQty ? (
-                        <TextField
-                          size="small"
-                          type="number"
-                          value={editingQty.qty}
-                          onChange={(e) => setEditingQty((prev) => prev ? { ...prev, qty: e.target.value } : null)}
-                          onBlur={() => saveQty(row)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') saveQty(row); if (e.key === 'Escape') setEditingQty(null); }}
-                          autoFocus
-                          sx={{ width: 70 }}
-                          slotProps={{ htmlInput: { style: { fontSize: 12, textAlign: 'right' }, min: 0.01, step: 0.01 } }}
-                        />
-                      ) : (
-                        <Typography
-                          variant="body2"
-                          sx={{ fontSize: 12, cursor: 'pointer', '&:hover': { color: 'primary.main', textDecoration: 'underline' } }}
-                          onClick={() => startEditQty(row)}
-                        >
-                          {row.qty}
-                        </Typography>
-                      )}
+                      <Typography variant="body2" sx={{ fontSize: 12, fontWeight: 500 }}>
+                        {Number(row.requiredQty)}
+                      </Typography>
                     </TableCell>
-
-                    {/* UOM */}
-                    <TableCell align="center">
-                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>{row.uom}</Typography>
+                    <TableCell align="right">
+                      <Typography variant="body2" sx={{ fontSize: 12, color: Number(row.scrapFactor) > 0 ? '#D97706' : 'text.disabled' }}>
+                        {Number(row.scrapFactor) > 0 ? `${Number(row.scrapFactor)}%` : '—'}
+                      </Typography>
                     </TableCell>
-
-                    {/* Type */}
                     <TableCell align="center">
                       <Chip
-                        label={row.type}
+                        label={row.isActive ? 'Active' : 'Inactive'}
                         size="small"
                         sx={{
-                          height: 18,
-                          fontSize: '0.625rem',
+                          height: 20,
+                          fontSize: '0.6875rem',
                           fontWeight: 600,
-                          bgcolor: alpha(typeColor, 0.1),
-                          color: typeColor,
+                          bgcolor: row.isActive ? alpha('#15803D', 0.1) : alpha('#94A3B8', 0.1),
+                          color: row.isActive ? '#15803D' : '#94A3B8',
                           border: 'none',
-                          '& .MuiChip-label': { px: 0.5 },
+                          '& .MuiChip-label': { px: 0.75 },
                         }}
                       />
                     </TableCell>
-
-                    {/* Unit Cost */}
-                    <TableCell align="right">
-                      <Typography variant="body2" sx={{ fontSize: 12 }}>
-                        {row.unitCost > 0 ? `$${row.unitCost.toFixed(2)}` : '—'}
-                      </Typography>
-                    </TableCell>
-
-                    {/* Total Cost */}
-                    <TableCell align="right">
-                      <Typography variant="body2" sx={{ fontSize: 12, fontWeight: row.level === 1 ? 600 : 400 }}>
-                        {row.totalCost > 0 ? `$${row.totalCost.toFixed(2)}` : '—'}
-                      </Typography>
-                    </TableCell>
-
-                    {/* Actions */}
                     <TableCell align="center">
                       <Stack direction="row" spacing={0.25} sx={{ justifyContent: 'center' }}>
-                        <Tooltip title="Edit Qty">
-                          <IconButton size="small" onClick={() => startEditQty(row)} sx={{ color: 'text.secondary' }}>
+                        <Tooltip title="Edit">
+                          <IconButton size="small" onClick={() => openEdit(row)} sx={{ color: 'text.secondary' }}>
                             <SolarIcon name="edit" size={14} />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Delete">
+                        <Tooltip title="Remove">
                           <IconButton size="small" onClick={() => setDeleteTarget(row)} sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}>
                             <SolarIcon name="delete" size={14} />
                           </IconButton>
@@ -359,75 +375,69 @@ export default function BomEditorPage() {
                       </Stack>
                     </TableCell>
                   </TableRow>
-                );
-              })}
-
-              {rows.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={9} sx={{ textAlign: 'center', py: 4, color: 'text.secondary', fontSize: 13 }}>
-                    No BOM components defined. Click "Add Component" to start.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-
-          {/* Total row */}
-          {rows.length > 0 && (
-            <Box
-              sx={{
-                mt: 1,
-                pt: 1,
-                borderTop: '2px solid',
-                borderColor: 'divider',
-                display: 'flex',
-                justifyContent: 'flex-end',
-                pr: 10,
-              }}
-            >
-              <Typography variant="body2" sx={{ fontWeight: 700, fontSize: 13 }}>
-                Total Material Cost:&nbsp;
-                <Typography component="span" variant="body2" sx={{ fontWeight: 800, color: '#15803D', fontSize: 14 }}>
-                  ${totalCost.toFixed(2)}
-                </Typography>
-              </Typography>
-            </Box>
+                ))}
+              </TableBody>
+            </Table>
           )}
 
-          {/* Footer note */}
-          <Box
-            sx={{
-              mt: 2,
-              p: 1.5,
-              borderRadius: 1,
-              bgcolor: (t) => alpha(t.palette.warning.main, 0.06),
-              border: '1px solid',
-              borderColor: (t) => alpha(t.palette.warning.main, 0.2),
-            }}
-          >
+          <Box sx={{ mt: 2, p: 1.5, borderRadius: 1, bgcolor: (t) => alpha(t.palette.warning.main, 0.06), border: '1px solid', borderColor: (t) => alpha(t.palette.warning.main, 0.2) }}>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <SolarIcon name="warning" size={14} color="#D97706" />
               <Typography variant="caption" color="text.secondary">
-                BOM changes take effect from next released Work Order
+                BOM changes take effect from the next released Work Order.
               </Typography>
             </Stack>
           </Box>
         </CardContent>
       </Card>
 
+      {/* Drawer */}
+      <FormDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title={drawerMode === 'create' ? 'Add Component' : `Edit ${editTarget?.childProductCode}`}
+        subtitle={
+          drawerMode === 'create'
+            ? 'Select a child product and set the required quantity'
+            : (productNameMap.get(editTarget?.childProductCode ?? '') ?? '')
+        }
+        onSubmit={() => document.getElementById('bom-item-form')?.dispatchEvent(new Event('submit', { bubbles: true }))}
+        submitLabel={drawerMode === 'create' ? 'Add Component' : 'Save Changes'}
+        loading={saving}
+      >
+        {saveError && <Alert severity="error" sx={{ mb: 2 }}>{saveError}</Alert>}
+        <BomItemForm
+          key={drawerMode === 'edit' ? String(editTarget?.bomID) : 'new'}
+          isEdit={drawerMode === 'edit'}
+          productOptions={
+            drawerMode === 'create'
+              ? availableForAdd
+              : (editTarget ? [{ code: editTarget.childProductCode, name: productNameMap.get(editTarget.childProductCode) ?? '' }] : [])
+          }
+          defaultValues={
+            editTarget
+              ? { childProductCode: editTarget.childProductCode, requiredQty: Number(editTarget.requiredQty), scrapFactor: Number(editTarget.scrapFactor) }
+              : {}
+          }
+          onSubmit={handleSave}
+        />
+      </FormDrawer>
+
+      {/* Confirm delete */}
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(Number(deleteTarget.bomID))}
         title="Remove BOM Component"
         description={
           <>
-            Remove <strong>{deleteTarget?.componentName}</strong> ({deleteTarget?.componentCode}) from this BOM?
-            This action cannot be undone.
+            Remove <strong>{productNameMap.get(deleteTarget?.childProductCode ?? '') ?? deleteTarget?.childProductCode}</strong> ({deleteTarget?.childProductCode}) from this BOM?
+            This cannot be undone.
           </>
         }
         confirmLabel="Remove"
         confirmColor="error"
+        loading={deleteMutation.isPending}
       />
     </PageRoot>
   );
