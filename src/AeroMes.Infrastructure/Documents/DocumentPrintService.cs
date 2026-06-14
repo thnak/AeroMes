@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 
 namespace AeroMes.Infrastructure.Documents;
 
-public sealed class DocumentPrintService(AppDbContext db, IFileStorage fileStorage)
+public sealed partial class DocumentPrintService(AppDbContext db, IFileStorage fileStorage)
     : IDocumentPrintService
 {
     static DocumentPrintService()
@@ -34,8 +34,8 @@ public sealed class DocumentPrintService(AppDbContext db, IFileStorage fileStora
         string documentType, string documentId, int templateId, CancellationToken ct)
     {
         var template = await db.DocumentTemplates.AsNoTracking()
-            .FirstOrDefaultAsync(t => t.TemplateId == templateId, ct)
-            ?? throw new InvalidOperationException($"Mẫu in #{templateId} không tồn tại.");
+                           .FirstOrDefaultAsync(t => t.TemplateId == templateId, ct)
+                       ?? throw new InvalidOperationException($"Mẫu in #{templateId} không tồn tại.");
 
         var fields = await BuildFieldDictionaryAsync(documentType, documentId, ct);
         var detailRows = await BuildDetailRowsAsync(documentType, documentId, ct);
@@ -61,8 +61,8 @@ public sealed class DocumentPrintService(AppDbContext db, IFileStorage fileStora
             throw new ArgumentException($"ID lệnh sản xuất không hợp lệ: {documentId}");
 
         var po = await db.ProductionOrders.AsNoTracking()
-            .FirstOrDefaultAsync(p => p.POID == poid, ct)
-            ?? throw new InvalidOperationException($"Lệnh sản xuất #{poid} không tồn tại.");
+                     .FirstOrDefaultAsync(p => p.POID == poid, ct)
+                 ?? throw new InvalidOperationException($"Lệnh sản xuất #{poid} không tồn tại.");
 
         var product = await db.Products.AsNoTracking()
             .FirstOrDefaultAsync(p => p.ProductCode == po.ProductCode, ct);
@@ -246,6 +246,7 @@ public sealed class DocumentPrintService(AppDbContext db, IFileStorage fileStora
                         break;
                     }
                 }
+
                 if (detailRowIndex > 0) break;
             }
 
@@ -291,10 +292,16 @@ public sealed class DocumentPrintService(AppDbContext db, IFileStorage fileStora
     }
 
     private static string SubstituteHeader(string template, Dictionary<string, string> fields)
-        => Regex.Replace(template, @"\{\{(\w+)\}\}", m =>
+        => SubstituteHeaderRegex().Replace(template, m =>
             fields.TryGetValue(m.Groups[1].Value, out var val) ? val : m.Value);
 
     private static string SubstituteDetail(string template, Dictionary<string, string> row)
-        => Regex.Replace(template, @"##Detail_(\w+)", m =>
+        => SubstituteDetailRegex().Replace(template, m =>
             row.TryGetValue(m.Groups[1].Value, out var val) ? val : string.Empty);
+
+    [GeneratedRegex(@"\{\{(\w+)\}\}")]
+    private static partial Regex SubstituteHeaderRegex();
+
+    [GeneratedRegex(@"##Detail_(\w+)")]
+    private static partial Regex SubstituteDetailRegex();
 }
