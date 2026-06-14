@@ -65,6 +65,10 @@ public static class Permissions
     public const string ReportRead = "Report:Read";
     public const string ReportExport = "Report:Export";
 
+    // Dashboard
+    public const string DashboardViewManager = "Dashboard:ViewManager";
+    public const string DashboardViewEmployee = "Dashboard:ViewEmployee";
+
     // Quality
     public const string QualityRead = "Quality:Read";
     public const string QualityWrite = "Quality:Write";
@@ -215,6 +219,7 @@ public static class Permissions
         UserRead, UserCreate, UserUpdate, UserDelete, UserManageRoles, UserResetPassword,
         RoleRead, RoleCreate, RoleUpdate, RoleDelete, RoleManagePermissions,
         ReportRead, ReportExport,
+        DashboardViewManager, DashboardViewEmployee,
         QualityRead, QualityWrite, QualityCreate, QualityUpdate, QualityApprove,
         NcrRead, NcrCreate, NcrClose,
         CostRead, CostWrite,
