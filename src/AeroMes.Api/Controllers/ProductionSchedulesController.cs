@@ -4,9 +4,11 @@ using AeroMes.Application.Common;
 using AeroMes.Application.Production.Schedule.Commands.AssignPrimaryCapacity;
 using AeroMes.Application.Production.Schedule.Commands.AutoArrangeSchedule;
 using AeroMes.Application.Production.Schedule.Commands.CompleteSchedule;
+using AeroMes.Application.Production.Schedule.Commands.ConfirmSchedule;
 using AeroMes.Application.Production.Schedule.Commands.CreateSchedule;
 using AeroMes.Application.Production.Schedule.Commands.DeleteSchedule;
 using AeroMes.Application.Production.Schedule.Commands.UpdateScheduleLines;
+using AeroMes.Application.Production.Schedule.Queries.GetDispatchList;
 using AeroMes.Application.Production.Schedule.Queries.GetPendingOrders;
 using AeroMes.Application.Production.Schedule.Queries.GetScheduleDetail;
 using AeroMes.Application.Production.Schedule.Queries.GetScheduleList;
@@ -136,6 +138,30 @@ public class ProductionSchedulesController(ICommandMediator commandMediator, IQu
         var result = await commandMediator.SendAsync(new DeleteScheduleCommand(id), null, ct);
         if (!result.IsSuccess) return result.ToErrorResult();
         return Ok();
+    }
+
+    [HttpPost("{id:int}/confirm")]
+    [RequirePermission(Permissions.MasterDataWrite)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Confirm(int id, CancellationToken ct)
+    {
+        var result = await commandMediator.SendAsync(
+            new ConfirmScheduleCommand(id, User.Identity?.Name), null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return Ok();
+    }
+
+    [HttpGet("dispatch")]
+    [RequirePermission(Permissions.ProductionRead)]
+    [ProducesResponseType<IReadOnlyList<DispatchItemDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetDispatchList(
+        [FromQuery] int workCenterId,
+        [FromQuery] DateOnly? date,
+        CancellationToken ct)
+    {
+        var targetDate = date ?? DateOnly.FromDateTime(DateTime.Today);
+        return Ok(await queryMediator.QueryAsync(new GetDispatchListQuery(workCenterId, targetDate), null, ct));
     }
 }
 

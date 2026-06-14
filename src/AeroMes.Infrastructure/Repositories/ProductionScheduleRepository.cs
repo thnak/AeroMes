@@ -149,4 +149,69 @@ public class ProductionScheduleRepository(AppDbContext db) : IProductionSchedule
 
         return new CapacityInfo(step.DefaultWorkCenterID, step.StandardCycleTime);
     }
+
+    public async Task<IReadOnlyList<DispatchItemDto>> GetDispatchListAsync(
+        int workCenterId, DateOnly date, CancellationToken ct)
+    {
+        var dayStart = date.ToDateTime(TimeOnly.MinValue);
+        var dayEnd = date.ToDateTime(TimeOnly.MaxValue);
+
+        var lines = await db.ProductionScheduleLines.AsNoTracking()
+            .Where(l =>
+                l.WorkCenterID == workCenterId &&
+                l.PlannedEnd >= dayStart &&
+                l.PlannedStart <= dayEnd)
+            .Join(db.ProductionSchedules,
+                l => l.ScheduleId,
+                s => s.ScheduleId,
+                (l, s) => new { Line = l, Schedule = s })
+            .Where(x => x.Schedule.Status == ScheduleStatus.Confirmed ||
+                         x.Schedule.Status == ScheduleStatus.InProgress)
+            .OrderBy(x => x.Line.SequenceNo)
+            .Select(x => new { x.Line, ScheduleStatus = x.Schedule.Status.ToString() })
+            .ToListAsync(ct);
+
+        var poIds = lines.Select(x => x.Line.POID).Distinct().ToList();
+        var orders = await db.ProductionOrders.AsNoTracking()
+            .Where(po => poIds.Contains(po.POID))
+            .Join(db.Products, po => po.ProductCode, p => p.ProductCode,
+                (po, p) => new { po.POID, po.POCode, po.ProductCode, ProductName = p.ProductName })
+            .ToDictionaryAsync(x => x.POID, ct);
+
+        var wcs = await db.WorkCenters.AsNoTracking()
+            .Where(wc => wc.WorkCenterID == workCenterId)
+            .Select(wc => new { wc.WorkCenterID, wc.WorkCenterName })
+            .FirstOrDefaultAsync(ct);
+
+        return lines.Select(x =>
+        {
+            orders.TryGetValue(x.Line.POID, out var po);
+            return new DispatchItemDto(
+                x.Line.POID,
+                po?.POCode ?? string.Empty,
+                po?.ProductCode ?? string.Empty,
+                po?.ProductName,
+                x.Line.WorkCenterID,
+                wcs?.WorkCenterName ?? string.Empty,
+                x.Line.PlannedStart,
+                x.Line.PlannedEnd,
+                x.Line.SequenceNo,
+                x.ScheduleStatus,
+                x.Line.Notes);
+        }).ToList();
+    }
+
+    public async Task<Dictionary<int, int>> GetUsedMinutesPerWorkCenterAsync(int scheduleId, CancellationToken ct)
+    {
+        var lines = await db.ProductionScheduleLines.AsNoTracking()
+            .Where(l => l.ScheduleId == scheduleId)
+            .Select(l => new { l.WorkCenterID, l.PlannedStart, l.PlannedEnd })
+            .ToListAsync(ct);
+
+        return lines
+            .GroupBy(l => l.WorkCenterID)
+            .ToDictionary(
+                g => g.Key,
+                g => (int)g.Sum(l => (l.PlannedEnd - l.PlannedStart).TotalMinutes));
+    }
 }

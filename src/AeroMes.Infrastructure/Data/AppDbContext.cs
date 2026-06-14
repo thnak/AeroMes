@@ -130,6 +130,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
 
     public DbSet<ProductionSchedule> ProductionSchedules => Set<ProductionSchedule>();
     public DbSet<ProductionScheduleLine> ProductionScheduleLines => Set<ProductionScheduleLine>();
+    public DbSet<CapacityCalendar> CapacityCalendars => Set<CapacityCalendar>();
     public DbSet<WorkOrder> WorkOrders => Set<WorkOrder>();
     public DbSet<Job> Jobs => Set<Job>();
     public DbSet<ProductionLog> ProductionLogs => Set<ProductionLog>();
@@ -2473,6 +2474,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.Notes).HasMaxLength(500);
             e.HasIndex(x => x.ScheduleId);
             e.HasIndex(x => new { x.ScheduleId, x.POID });
+        });
+
+        b.Entity<CapacityCalendar>(e =>
+        {
+            e.ToTable("CapacityCalendars", "sched");
+            e.HasKey(x => new { x.WorkCenterID, x.CalendarDate, x.ShiftTemplateId });
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasOne(x => x.WorkCenter).WithMany().HasForeignKey(x => x.WorkCenterID).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.CalendarDate, x.WorkCenterID });
         });
 
         b.Entity<MaterialPurchaseRequest>(e =>

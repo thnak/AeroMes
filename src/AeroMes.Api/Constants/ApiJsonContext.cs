@@ -1344,6 +1344,13 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(StageCapacityType))]
 [JsonSerializable(typeof(PlannedTimeSource))]
 
+// Production Schedule — dispatch & capacity calendar
+[JsonSerializable(typeof(DispatchItemDto))]
+[JsonSerializable(typeof(IReadOnlyList<DispatchItemDto>))]
+[JsonSerializable(typeof(List<DispatchItemDto>))]
+[JsonSerializable(typeof(CapacityCalendarDto))]
+[JsonSerializable(typeof(IReadOnlyList<CapacityCalendarDto>))]
+[JsonSerializable(typeof(List<CapacityCalendarDto>))]
 // Production Schedule
 [JsonSerializable(typeof(ScheduleListDto))]
 [JsonSerializable(typeof(PagedResult<ScheduleListDto>))]

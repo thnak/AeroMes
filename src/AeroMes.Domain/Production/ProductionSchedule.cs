@@ -3,7 +3,7 @@ using AeroMes.Domain.Exceptions;
 
 namespace AeroMes.Domain.Production;
 
-public enum ScheduleStatus { Draft, InProgress, Completed, Approved }
+public enum ScheduleStatus { Draft, InProgress, Completed, Approved, Confirmed }
 
 public class ProductionSchedule : AuditableEntity
 {
@@ -45,6 +45,16 @@ public class ProductionSchedule : AuditableEntity
         _lines.AddRange(lines);
     }
 
+    public void Confirm(string updatedBy)
+    {
+        if (Status is ScheduleStatus.Confirmed or ScheduleStatus.Approved or ScheduleStatus.Completed)
+            throw new DomainException($"Schedule is already {Status}.");
+        if (_lines.Count == 0)
+            throw new DomainException("Cannot confirm a schedule with no lines.");
+        Status = ScheduleStatus.Confirmed;
+        Touch(updatedBy);
+    }
+
     public void Complete(string updatedBy)
     {
         if (Status is ScheduleStatus.Approved or ScheduleStatus.Completed)
@@ -55,8 +65,8 @@ public class ProductionSchedule : AuditableEntity
 
     public void SaveAsDraft(string updatedBy)
     {
-        if (Status is ScheduleStatus.Approved)
-            throw new DomainException("Cannot revert an approved schedule to Draft.");
+        if (Status is ScheduleStatus.Approved or ScheduleStatus.Confirmed)
+            throw new DomainException($"Cannot revert a {Status} schedule to Draft.");
         Status = ScheduleStatus.Draft;
         Touch(updatedBy);
     }

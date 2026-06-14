@@ -21,6 +21,19 @@ public record PendingOrderDto(
 
 public record CapacityInfo(int WorkCenterID, double CycleTimeSeconds);
 
+public record DispatchItemDto(
+    int POID,
+    string POCode,
+    string ProductCode,
+    string? ProductName,
+    int WorkCenterID,
+    string WorkCenterName,
+    DateTime PlannedStart,
+    DateTime PlannedEnd,
+    int SequenceNo,
+    string ScheduleStatus,
+    string? Notes);
+
 public interface IProductionScheduleRepository
 {
     Task<int> AddAsync(ProductionSchedule schedule, CancellationToken ct);
@@ -35,4 +48,6 @@ public interface IProductionScheduleRepository
     Task<Dictionary<int, List<(DateTime Start, DateTime End)>>> GetScheduledSlotsByWorkCenterAsync(
         DateTime periodStart, DateTime periodEnd, int scheduleId, CancellationToken ct);
     Task<CapacityInfo?> GetPrimaryCapacityAsync(string productCode, CancellationToken ct);
+    Task<IReadOnlyList<DispatchItemDto>> GetDispatchListAsync(int workCenterId, DateOnly date, CancellationToken ct);
+    Task<Dictionary<int, int>> GetUsedMinutesPerWorkCenterAsync(int scheduleId, CancellationToken ct);
 }
