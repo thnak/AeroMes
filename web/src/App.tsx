@@ -130,6 +130,7 @@ const OutputPage = lazy(() => import('./pages/tablet/OutputPage'));
 const DowntimeStartPage = lazy(() => import('./pages/tablet/DowntimeStartPage'));
 const DowntimeActivePage = lazy(() => import('./pages/tablet/DowntimeActivePage'));
 const FinishJobPage = lazy(() => import('./pages/tablet/FinishJobPage'));
+const ChecksheetPage = lazy(() => import('./pages/tablet/ChecksheetPage'));
 
 function PageLoader() {
   return (
@@ -162,6 +163,7 @@ export default function App() {
             <Route path="downtime/start" element={<DowntimeStartPage />} />
             <Route path="downtime/active" element={<DowntimeActivePage />} />
             <Route path="finish" element={<FinishJobPage />} />
+            <Route path="checksheet" element={<ChecksheetPage />} />
           </Route>
         </Route>
 
