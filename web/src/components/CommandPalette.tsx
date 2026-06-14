@@ -14,8 +14,16 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { SearchResultDto } from '../api/model';
 import { api } from '../lib/apiClient';
+
+interface SearchResultDto {
+  id: string;
+  entityType: string;
+  code: string;
+  title: string;
+  subtitle?: string;
+  highlight?: string;
+}
 import type { IconKey } from '../lib/icons';
 import SolarIcon from './SolarIcon';
 

@@ -76,8 +76,10 @@ const MachineFleetsPage        = lazy(() => import('./pages/iot/MachineFleetsPag
 const MachineSignalMonitorPage = lazy(() => import('./pages/iot/MachineSignalMonitorPage'));
 const RuleEnginePage           = lazy(() => import('./pages/iot/RuleEnginePage'));
 
-// Dashboard (TV mode — no sidebar)
+// Dashboard
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
+const ManagerKpiDashboardPage = lazy(() => import('./pages/dashboard/ManagerKpiDashboardPage'));
+const EmployeeDashboardPage = lazy(() => import('./pages/dashboard/EmployeeDashboardPage'));
 
 // Lab
 const LabRequestsPage = lazy(() => import('./pages/lab/LabRequestsPage'));
@@ -177,6 +179,26 @@ export default function App() {
           element={
             <AuthGuard>
               <DashboardPage />
+            </AuthGuard>
+          }
+        />
+
+        {/* Manager KPI dashboard */}
+        <Route
+          path="/manager-dashboard"
+          element={
+            <AuthGuard>
+              <ManagerKpiDashboardPage />
+            </AuthGuard>
+          }
+        />
+
+        {/* Employee personal dashboard */}
+        <Route
+          path="/my-dashboard"
+          element={
+            <AuthGuard>
+              <EmployeeDashboardPage />
             </AuthGuard>
           }
         />
