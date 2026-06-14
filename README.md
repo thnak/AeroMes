@@ -11,7 +11,20 @@
   <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white" />
   <img alt="SQL Server" src="https://img.shields.io/badge/SQL%20Server-EF%20Core%2010-CC2927?logo=microsoftsqlserver&logoColor=white" />
+  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-Android-7F52FF?logo=kotlin&logoColor=white" />
+  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white" />
+  <img alt="Android" src="https://img.shields.io/badge/Android-12%2B%20(SDK%2031)-3DDC84?logo=android&logoColor=white" />
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green" />
+</p>
+
+<p align="center">
+  <strong>Android milestones</strong><br/>
+  <a href="https://github.com/thnak/AeroMes/milestone/24"><img alt="vA0.1 Foundation" src="https://img.shields.io/github/milestones/progress-percent/thnak/AeroMes/24?label=vA0.1%20Foundation&color=7F52FF" /></a>
+  <a href="https://github.com/thnak/AeroMes/milestone/25"><img alt="vA0.2 Production" src="https://img.shields.io/github/milestones/progress-percent/thnak/AeroMes/25?label=vA0.2%20Production&color=DC2626" /></a>
+  <a href="https://github.com/thnak/AeroMes/milestone/26"><img alt="vA0.3 Warehouse" src="https://img.shields.io/github/milestones/progress-percent/thnak/AeroMes/26?label=vA0.3%20Warehouse&color=D97706" /></a>
+  <a href="https://github.com/thnak/AeroMes/milestone/27"><img alt="vA0.4 Quality" src="https://img.shields.io/github/milestones/progress-percent/thnak/AeroMes/27?label=vA0.4%20Quality&color=15803D" /></a>
+  <a href="https://github.com/thnak/AeroMes/milestone/28"><img alt="vA0.5 Traceability" src="https://img.shields.io/github/milestones/progress-percent/thnak/AeroMes/28?label=vA0.5%20Traceability&color=1D4ED8" /></a>
+  <a href="https://github.com/thnak/AeroMes/milestone/29"><img alt="vA0.6 Maintenance" src="https://img.shields.io/github/milestones/progress-percent/thnak/AeroMes/29?label=vA0.6%20OI%20%26%20SOP&color=6B21A8" /></a>
 </p>
 
 ---
@@ -39,6 +52,13 @@
 
 ### Integration
 - Sales Orders and Production Orders for ERP hand-off
+
+### Android PDA & Tablet OI
+Native **Kotlin + Jetpack Compose** app for Newland, Urovo, and Zebra industrial devices (minSdk 31). Covers:
+- **Handheld PDA** — GRN receiving, material pick/issue, production qty logging, downtime report, lot lookup, label print/verify, quality inspection, NCR raise
+- **Tablet Operator Interface** — full-screen job + SOP + quality panel, station grid, shift handover, supervisor floor board with live OEE and IoT gauges
+- Vendor-agnostic **Scanner HAL** (`Flow<ScanEvent>`) with GENERIC (CameraX + ML Kit) fallback for dev phones
+- **Offline-first** — Room DB + sync queue; critical scans recorded without network, auto-synced on reconnect
 
 ### Security & Identity
 - **Dual authentication** — Cookie-based for the web frontend, JWT Bearer for PDA / API clients; both share the same session pipeline
@@ -85,6 +105,9 @@ All writes go through **CQRS commands** (MediatR + `ValidationBehavior`). Errors
 | ORM | EF Core 10 (SQL Server, JSON columns, soft delete) |
 | Identity | ASP.NET Core Identity + custom JWT token service |
 | Frontend | React 19 · TypeScript 6 · Vite 8 · MUI v9 |
+| Android | Kotlin · Jetpack Compose · Material 3 · Hilt · Coroutines/Flow |
+| Scanner HAL | Newland, Urovo, Zebra, GENERIC (CameraX + ML Kit) |
+| Android DB | Room (offline-first) · WorkManager (sync queue) |
 | Testing | xUnit · integration tests with real SQL Server |
 | API Docs | .NET OpenAPI + Scalar |
 
