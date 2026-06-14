@@ -55,6 +55,7 @@ const InventoryTracePage = lazy(() => import('./pages/production/InventoryTraceP
 const GrnPage = lazy(() => import('./pages/warehouse/GrnPage'));
 const PurchaseOrdersPage = lazy(() => import('./pages/warehouse/PurchaseOrdersPage'));
 const ShipmentsPage = lazy(() => import('./pages/warehouse/ShipmentsPage'));
+const CycleCountsPage = lazy(() => import('./pages/warehouse/CycleCountsPage'));
 const SchedulePage = lazy(() => import('./pages/schedule/SchedulePage'));
 
 // Quality
@@ -207,6 +208,7 @@ export default function App() {
             <Route path="warehouse/grn" element={<GrnPage />} />
             <Route path="warehouse/purchase-orders" element={<PurchaseOrdersPage />} />
             <Route path="warehouse/shipments" element={<ShipmentsPage />} />
+            <Route path="warehouse/cycle-counts" element={<CycleCountsPage />} />
           </Route>
 
           {/* ── Master Data module ────────────────────────────── */}

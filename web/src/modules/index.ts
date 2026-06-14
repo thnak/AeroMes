@@ -180,6 +180,7 @@ export const MODULES: ModuleConfig[] = [
       { label: 'Receipts (GRN)', path: '/warehouse/grn' },
       { label: 'Purchase Orders', path: '/warehouse/purchase-orders' },
       { label: 'Shipments', path: '/warehouse/shipments' },
+      { label: 'Cycle Counts', path: '/warehouse/cycle-counts' },
     ],
   },
   {
