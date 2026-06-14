@@ -173,6 +173,8 @@ public static class DependencyInjection
         services.AddScoped<IQualityCostSummaryRepository, QualityCostSummaryRepository>();
         services.AddScoped<IMaintenanceOrderRepository, MaintenanceOrderRepository>();
         services.AddScoped<IMachineTcoRepository, MachineTcoRepository>();
+        services.AddScoped<IMaintenancePlanRepository, MaintenancePlanRepository>();
+        services.AddScoped<IMachineRuntimeRepository, MachineRuntimeRepository>();
         services.AddScoped<IEnergyRepository, EnergyRepository>();
 
         // ERP client + background sync

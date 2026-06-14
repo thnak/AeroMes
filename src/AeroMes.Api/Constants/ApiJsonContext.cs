@@ -197,6 +197,9 @@ using AeroMes.Application.Cost.StandardCost.Queries.GetStandardCosts;
 using AeroMes.Application.Production.MRP.Commands.UpdateMrp;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Alert;
+using AeroMes.Domain.Maintenance;
+using AeroMes.Domain.Maintenance.Repositories;
+using AeroMes.Application.Maintenance.Commands.CompletePmWorkOrder;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Quality;
 using AeroMes.Domain.Quality.Repositories;
@@ -1500,6 +1503,20 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(MpsDataSource))]
 [JsonSerializable(typeof(MpsStatus))]
 [JsonSerializable(typeof(MpsDistributionStrategy))]
+// preventive maintenance (#9)
+[JsonSerializable(typeof(PmTemplateDto))]
+[JsonSerializable(typeof(IReadOnlyList<PmTemplateDto>))]
+[JsonSerializable(typeof(List<PmTemplateDto>))]
+[JsonSerializable(typeof(MwoCalendarDto))]
+[JsonSerializable(typeof(IReadOnlyList<MwoCalendarDto>))]
+[JsonSerializable(typeof(List<MwoCalendarDto>))]
+[JsonSerializable(typeof(ChecklistResultInput))]
+[JsonSerializable(typeof(IReadOnlyList<ChecklistResultInput>))]
+[JsonSerializable(typeof(List<ChecklistResultInput>))]
+[JsonSerializable(typeof(CompletePmWorkOrderRequest))]
+[JsonSerializable(typeof(PmTriggerType))]
+[JsonSerializable(typeof(MwoStatus))]
+[JsonSerializable(typeof(MwoTriggeredBy))]
 // alert engine (#11)
 [JsonSerializable(typeof(AlertEventDto))]
 [JsonSerializable(typeof(IReadOnlyList<AlertEventDto>))]

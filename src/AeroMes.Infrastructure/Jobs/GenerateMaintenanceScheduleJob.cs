@@ -1,15 +1,24 @@
+using AeroMes.Application.Common;
+using AeroMes.Application.Maintenance.Commands.GenerateScheduledMaintenance;
 using Hangfire;
+using LiteBus.Commands.Abstractions;
 using Microsoft.Extensions.Logging;
 
 namespace AeroMes.Infrastructure.Jobs;
 
-public class GenerateMaintenanceScheduleJob(ILogger<GenerateMaintenanceScheduleJob> logger)
+public class GenerateMaintenanceScheduleJob(
+    ICommandMediator commandMediator,
+    ILogger<GenerateMaintenanceScheduleJob> logger)
 {
     [DisableConcurrentExecution(120)]
-    public Task ExecuteAsync(CancellationToken ct = default)
+    public async Task ExecuteAsync(CancellationToken ct = default)
     {
-        logger.LogInformation("GenerateMaintenanceScheduleJob: checking for due PM plans.");
-        // Full implementation wired to maintenance plan evaluation will be added in issue #9.
-        return Task.CompletedTask;
+        var result = await commandMediator.SendAsync(
+            new GenerateScheduledMaintenanceCommand(DateTime.UtcNow), null, ct);
+
+        if (result.IsSuccess)
+            logger.LogInformation("GenerateMaintenanceScheduleJob: generated {Count} PM work orders.", result.Value);
+        else
+            logger.LogWarning("GenerateMaintenanceScheduleJob failed: {Errors}", result.Errors);
     }
 }

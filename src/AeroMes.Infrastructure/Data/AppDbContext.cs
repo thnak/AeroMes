@@ -293,6 +293,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<MaintenanceOrder> MaintenanceOrders => Set<MaintenanceOrder>();
     public DbSet<MaintCostLine> MaintCostLines => Set<MaintCostLine>();
     public DbSet<MachineTcoSummary> MachineTcoSummaries => Set<MachineTcoSummary>();
+    public DbSet<MaintenancePlanTemplate> MaintenancePlanTemplates => Set<MaintenancePlanTemplate>();
+    public DbSet<MaintenanceChecklistItem> MaintenanceChecklistItems => Set<MaintenanceChecklistItem>();
+    public DbSet<MaintenanceWorkOrder> MaintenanceWorkOrders => Set<MaintenanceWorkOrder>();
+    public DbSet<MaintenanceChecklistResult> MaintenanceChecklistResults => Set<MaintenanceChecklistResult>();
+    public DbSet<MachineRuntimeAccumulator> MachineRuntimeAccumulators => Set<MachineRuntimeAccumulator>();
 
     // cost schema
     public DbSet<ScrapTransaction> ScrapTransactions => Set<ScrapTransaction>();
@@ -4645,6 +4650,69 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.MttrHours).HasColumnType("DECIMAL(8,2)");
             e.Property(x => x.LastRefreshedAt).HasColumnType("datetime2(3)");
             e.HasIndex(x => new { x.MachineCode, x.PeriodYear, x.PeriodMonth }).IsUnique();
+        });
+
+        b.Entity<MaintenancePlanTemplate>(e =>
+        {
+            e.ToTable("PmPlanTemplates", "maint");
+            e.HasKey(x => x.TemplateId);
+            e.Property(x => x.TemplateId).UseIdentityColumn();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.PlanName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.TriggerType).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Priority).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.LastGeneratedAt).HasColumnType("datetime2(3)");
+            e.HasMany(x => x.Items).WithOne(i => i.Template)
+                .HasForeignKey(i => i.TemplateId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<MaintenanceChecklistItem>(e =>
+        {
+            e.ToTable("PmChecklistItems", "maint");
+            e.HasKey(x => x.ItemId);
+            e.Property(x => x.ItemId).UseIdentityColumn();
+            e.Property(x => x.Description).HasMaxLength(255).IsRequired();
+            e.Property(x => x.PartCode).HasMaxLength(50);
+        });
+
+        b.Entity<MaintenanceWorkOrder>(e =>
+        {
+            e.ToTable("PmWorkOrders", "maint");
+            e.HasKey(x => x.MwoId);
+            e.Property(x => x.MwoId).UseIdentityColumn();
+            e.Property(x => x.MachineCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.TriggeredBy).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Priority).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.AssignedTo).HasMaxLength(50);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.PlannedStartAt).HasColumnType("datetime2(3)");
+            e.Property(x => x.ActualStartAt).HasColumnType("datetime2(3)");
+            e.Property(x => x.ActualEndAt).HasColumnType("datetime2(3)");
+            e.HasOne(x => x.Template).WithMany()
+                .HasForeignKey(x => x.TemplateId).IsRequired(false).OnDelete(DeleteBehavior.SetNull);
+            e.HasMany(x => x.Results).WithOne()
+                .HasForeignKey(r => r.MwoId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<MaintenanceChecklistResult>(e =>
+        {
+            e.ToTable("PmChecklistResults", "maint");
+            e.HasKey(x => x.ResultId);
+            e.Property(x => x.ResultId).UseIdentityColumn();
+            e.Property(x => x.ObservationNotes).HasMaxLength(255);
+            e.Property(x => x.CompletedBy).HasMaxLength(50);
+            e.Property(x => x.CompletedAt).HasColumnType("datetime2(3)");
+            e.HasOne(x => x.Item).WithMany()
+                .HasForeignKey(x => x.ItemId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<MachineRuntimeAccumulator>(e =>
+        {
+            e.ToTable("MachineRuntimeAccumulators", "maint");
+            e.HasKey(x => x.MachineCode);
+            e.Property(x => x.MachineCode).HasMaxLength(50);
+            e.Property(x => x.LastUpdatedAt).HasColumnType("datetime2(3)");
         });
     }
 

@@ -1,6 +1,7 @@
 using AeroMes.Application.Common;
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Exceptions;
+using AeroMes.Domain.Maintenance.Repositories;
 using AeroMes.Domain.Master.Repositories;
 using AeroMes.Domain.Production;
 using AeroMes.Domain.Production.Repositories;
@@ -17,6 +18,7 @@ public class StartJobHandler(
     IWorkOrderAutoRulesRepository autoRulesRepo,
     IJobRepository jobRepo,
     IInspectionOrderRepository inspectionOrderRepo,
+    IMaintenancePlanRepository pmRepo,
     IUnitOfWork uow,
     IValidator<StartJobCommand> validator)
     : ICommandHandler<StartJobCommand, ValidationResult<StartJobResult>>
@@ -40,6 +42,11 @@ public class StartJobHandler(
                 return ValidationResult<StartJobResult>.NotFound($"Machine '{cmd.MachineCode}' was not found.");
 
             await EnsureCertifiedAsync(workOrder, cmd.OperatorId, ct);
+
+            // PM gate: block if machine has overdue high/critical scheduled PM
+            if (await pmRepo.HasBlockingMwoAsync(cmd.MachineCode, ct))
+                throw new DomainException(
+                    $"Máy '{cmd.MachineCode}' có lệnh bảo trì phòng ngừa ưu tiên cao/khẩn đến hạn chưa thực hiện.");
 
             // QC gate: if prior job on this work order had a QC step, check inspection cleared
             var priorJob = await jobRepo.GetLatestCompletedJobAsync(cmd.WorkOrderId, ct);
