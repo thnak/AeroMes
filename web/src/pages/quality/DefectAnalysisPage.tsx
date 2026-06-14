@@ -4,74 +4,45 @@ import {
   Card,
   CardContent,
   Chip,
-  Divider,
   Grid,
   LinearProgress,
+  Skeleton,
   Stack,
   Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
+  EmptyState,
   ExportButton,
   PageHeader,
   PageRoot,
   RefreshButton,
   SolarIcon,
 } from '../../components';
+import { useGetApiV1ReportsQuality } from '../../api/reports/reports';
+import type { QualityReportRowDto } from '../../api/model';
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+type Range = '7d' | '30d' | '90d';
 
-const KPI_DATA = [
-  { label: 'Total Defects',  value: '628',     sub: 'Last 30 days',    color: '#DC2626', icon: 'defect' as const },
-  { label: 'Defect Rate',    value: '1.3%',    sub: 'vs 1.8% prev',    color: '#D97706', icon: 'quality' as const },
-  { label: 'Top Defect',     value: 'Scratch', sub: '198 occurrences', color: '#7C3AED', icon: 'qualityOee' as const },
-  { label: 'Top Product',    value: 'FRM-A001',sub: '312 defects',     color: '#1D4ED8', icon: 'production' as const },
-];
+const RANGE_DAYS: Record<Range, number> = { '7d': 7, '30d': 30, '90d': 90 };
 
-const PARETO_DATA = [
-  { name: 'Surface Scratch',  code: 'DC-001', count: 198, pct: 100 },
-  { name: 'Dimension OOT',    code: 'DC-002', count: 142, pct: 71.7 },
-  { name: 'Weld Porosity',    code: 'DC-003', count: 89,  pct: 44.9 },
-  { name: 'Missing Treatment',code: 'DC-004', count: 76,  pct: 38.4 },
-  { name: 'Delamination',     code: 'DC-008', count: 68,  pct: 34.3 },
-  { name: 'Hole Misalignment',code: 'DC-005', count: 55,  pct: 27.8 },
-];
-
-const CATEGORY_DATA = [
-  { label: 'Visual',      count: 284, pct: 45.2, color: '#DC2626' },
-  { label: 'Dimensional', count: 198, pct: 31.5, color: '#D97706' },
-  { label: 'Process',     count: 89,  pct: 14.2, color: '#7C3AED' },
-  { label: 'Material',    count: 42,  pct: 6.7,  color: '#1D4ED8' },
-  { label: 'Functional',  count: 15,  pct: 2.4,  color: '#0D9488' },
-];
-
-interface DefectLogRow {
-  id: string;
-  date: string;
-  productCode: string;
-  lotNo: string;
-  defectCode: string;
-  defectName: string;
-  qty: number;
-  operator: string;
-  disposition: string;
+function rangeParams(range: Range) {
+  const to = new Date();
+  const from = new Date(to.getTime() - RANGE_DAYS[range] * 24 * 60 * 60 * 1000);
+  return {
+    from: from.toISOString().split('T')[0],
+    to: to.toISOString().split('T')[0],
+  };
 }
 
-const DEFECT_LOG: DefectLogRow[] = [
-  { id: '1', date: '2026-06-10', productCode: 'FRM-A001', lotNo: 'LOT-A1042', defectCode: 'DC-001', defectName: 'Surface Scratch',   qty: 3,  operator: 'Nguyen Van A', disposition: 'Rework' },
-  { id: '2', date: '2026-06-09', productCode: 'SHT-C003', lotNo: 'LOT-C0312', defectCode: 'DC-002', defectName: 'Dimension OOT',     qty: 5,  operator: 'Le Van C',    disposition: 'Scrap' },
-  { id: '3', date: '2026-06-09', productCode: 'PNL-B002', lotNo: 'LOT-B0891', defectCode: 'DC-008', defectName: 'Delamination',       qty: 2,  operator: 'Tran Thi B',  disposition: 'Under Review' },
-  { id: '4', date: '2026-06-08', productCode: 'FRM-A001', lotNo: 'LOT-A1038', defectCode: 'DC-003', defectName: 'Weld Porosity',      qty: 3,  operator: 'Le Van C',    disposition: 'Under Review' },
-  { id: '5', date: '2026-06-07', productCode: 'WHL-L012', lotNo: 'LOT-L0045', defectCode: 'DC-002', defectName: 'Dimension OOT',     qty: 4,  operator: 'Tran Thi B',  disposition: 'Rework' },
-  { id: '6', date: '2026-06-06', productCode: 'HNG-J010', lotNo: 'LOT-J0218', defectCode: 'DC-007', defectName: 'Torque NC',          qty: 15, operator: 'Nguyen Van A', disposition: 'Under Review' },
-  { id: '7', date: '2026-06-05', productCode: 'BRK-D004', lotNo: 'LOT-D2201', defectCode: 'DC-004', defectName: 'Missing Treatment',  qty: 8,  operator: 'Pham Thi D',  disposition: 'Rework' },
-  { id: '8', date: '2026-06-04', productCode: 'MTR-E005', lotNo: 'LOT-E0091', defectCode: 'DC-005', defectName: 'Hole Misalignment',  qty: 8,  operator: 'Pham Thi D',  disposition: 'Scrap' },
-];
+const CATEGORY_COLORS = ['#DC2626', '#D97706', '#7C3AED', '#1D4ED8', '#0D9488', '#15803D', '#475569'];
 
-// ─── KPI card ─────────────────────────────────────────────────────────────────
+function numVal(v: number | string): number {
+  return typeof v === 'number' ? v : parseFloat(v) || 0;
+}
 
-function KpiCard({ label, value, sub, color, icon }: { label: string; value: string; sub: string; color: string; icon: string }) {
+function KpiCard({ label, value, sub, color, icon }: { label: string; value: string; sub: string; color: string; icon: Parameters<typeof SolarIcon>[0]['name'] }) {
   return (
     <Card variant="outlined" sx={{ height: '100%' }}>
       <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
@@ -88,7 +59,7 @@ function KpiCard({ label, value, sub, color, icon }: { label: string; value: str
             </Typography>
           </Box>
           <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: alpha(color, 0.1) }}>
-            <SolarIcon name={icon as Parameters<typeof SolarIcon>[0]['name']} size={20} color={color} />
+            <SolarIcon name={icon} size={20} color={color} />
           </Box>
         </Stack>
       </CardContent>
@@ -96,10 +67,27 @@ function KpiCard({ label, value, sub, color, icon }: { label: string; value: str
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default function DefectAnalysisPage() {
-  const [_dateRange, setDateRange] = useState('30d');
+  const [range, setRange] = useState<Range>('30d');
+  const params = useMemo(() => rangeParams(range), [range]);
+
+  const { data: resp, isLoading, refetch } = useGetApiV1ReportsQuality(params);
+  const report = resp?.data;
+  const rows: QualityReportRowDto[] = report?.rows ?? [];
+  const totalDefects = numVal(report?.totalDefects ?? 0);
+
+  const sorted = useMemo(() => [...rows].sort((a, b) => numVal(b.totalQuantity) - numVal(a.totalQuantity)), [rows]);
+  const maxCount = sorted.length > 0 ? numVal(sorted[0].totalQuantity) : 1;
+  const topDefect = sorted[0];
+
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, number>();
+    rows.forEach((r) => {
+      const cat = r.category ?? 'Uncategorized';
+      map.set(cat, (map.get(cat) ?? 0) + numVal(r.totalQuantity));
+    });
+    return [...map.entries()].sort((a, b) => b[1] - a[1]);
+  }, [rows]);
 
   return (
     <PageRoot>
@@ -110,244 +98,210 @@ export default function DefectAnalysisPage() {
         actions={
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <Stack direction="row" spacing={0.5}>
-              {(['7d', '30d', '90d'] as const).map((r) => (
-                <Button
-                  key={r}
-                  variant={_dateRange === r ? 'contained' : 'outlined'}
-                  size="small"
-                  onClick={() => setDateRange(r)}
-                  sx={{ minWidth: 48 }}
-                >
+              {(['7d', '30d', '90d'] as Range[]).map((r) => (
+                <Button key={r} variant={range === r ? 'contained' : 'outlined'} size="small"
+                  onClick={() => setRange(r)} sx={{ minWidth: 48 }}>
                   {r}
                 </Button>
               ))}
             </Stack>
             <ExportButton />
-            <RefreshButton />
+            <RefreshButton onClick={() => refetch()} />
           </Stack>
         }
       />
 
       {/* KPI row */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
-        {KPI_DATA.map((kpi) => (
-          <Grid key={kpi.label} size={{ xs: 12, sm: 6, md: 3 }}>
-            <KpiCard {...kpi} />
-          </Grid>
-        ))}
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          {isLoading
+            ? <Skeleton variant="rectangular" height={96} sx={{ borderRadius: 1 }} />
+            : <KpiCard label="Total Defects" value={totalDefects.toLocaleString()} sub={`Last ${RANGE_DAYS[range]} days`} color="#DC2626" icon="warning" />}
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          {isLoading
+            ? <Skeleton variant="rectangular" height={96} sx={{ borderRadius: 1 }} />
+            : <KpiCard label="Defect Types" value={rows.length.toString()} sub="Unique defect codes" color="#D97706" icon="quality" />}
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          {isLoading
+            ? <Skeleton variant="rectangular" height={96} sx={{ borderRadius: 1 }} />
+            : <KpiCard label="Top Defect" value={topDefect?.defectCode ?? '—'} sub={topDefect ? `${numVal(topDefect.totalQuantity).toLocaleString()} pcs` : 'No data'} color="#7C3AED" icon="qualityOee" />}
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          {isLoading
+            ? <Skeleton variant="rectangular" height={96} sx={{ borderRadius: 1 }} />
+            : <KpiCard label="Categories" value={categoryMap.length.toString()} sub="Defect categories" color="#1D4ED8" icon="production" />}
+        </Grid>
       </Grid>
 
-      {/* Charts row */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
-        {/* Defect Trend chart */}
-        <Grid size={{ xs: 12, md: 7 }}>
-          <Card variant="outlined" sx={{ height: '100%' }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
-                Defect Trend
-              </Typography>
-              <Box
-                sx={{
-                  height: 260,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  bgcolor: (t) => alpha(t.palette.primary.main, 0.03),
-                  borderRadius: 1,
-                  border: '1px dashed',
-                  borderColor: 'divider',
-                }}
-              >
-                <Typography variant="body2" color="text.disabled">
-                  Chart: Defect Trend · Last 30 days
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
         {/* Pareto */}
-        <Grid size={{ xs: 12, md: 5 }}>
+        <Grid size={{ xs: 12, md: 7 }}>
           <Card variant="outlined" sx={{ height: '100%' }}>
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
                 Top Defects (Pareto)
               </Typography>
-              <Stack spacing={1.5}>
-                {PARETO_DATA.map((item) => (
-                  <Box key={item.code}>
-                    <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                        <Typography variant="caption" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, color: 'text.secondary' }}>
-                          {item.code}
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: 12 }}>
-                          {item.name}
-                        </Typography>
-                      </Stack>
-                      <Typography variant="body2" sx={{ fontSize: 12, fontWeight: 600, minWidth: 32, textAlign: 'right' }}>
-                        {item.count}
-                      </Typography>
-                    </Stack>
-                    <LinearProgress
-                      variant="determinate"
-                      value={item.pct}
-                      sx={{
-                        height: 6,
-                        borderRadius: 3,
-                        bgcolor: (t) => alpha(t.palette.primary.main, 0.08),
-                        '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: '#DC2626' },
-                      }}
-                    />
-                  </Box>
-                ))}
-              </Stack>
+              {isLoading ? (
+                <Stack spacing={1.5}>
+                  {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} height={32} sx={{ borderRadius: 1 }} />)}
+                </Stack>
+              ) : sorted.length === 0 ? (
+                <EmptyState icon="emptyTable" title="No defects in this period" compact />
+              ) : (
+                <Stack spacing={1.5}>
+                  {sorted.slice(0, 10).map((item) => {
+                    const count = numVal(item.totalQuantity);
+                    const barPct = (count / maxCount) * 100;
+                    return (
+                      <Box key={item.defectCode}>
+                        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0 }}>
+                            <Typography variant="caption" sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, color: 'text.secondary', flexShrink: 0 }}>
+                              {item.defectCode}
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontSize: 12 }} noWrap>
+                              {item.defectName}
+                            </Typography>
+                            {item.category && (
+                              <Chip label={item.category} size="small"
+                                sx={{ height: 16, fontSize: '0.625rem', flexShrink: 0, '& .MuiChip-label': { px: 0.75 } }} />
+                            )}
+                          </Stack>
+                          <Typography variant="body2" sx={{ fontSize: 12, fontWeight: 600, minWidth: 40, textAlign: 'right', flexShrink: 0 }}>
+                            {count.toLocaleString()}
+                          </Typography>
+                        </Stack>
+                        <LinearProgress variant="determinate" value={barPct}
+                          sx={{
+                            height: 6, borderRadius: 3,
+                            bgcolor: (t) => alpha(t.palette.primary.main, 0.08),
+                            '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: '#DC2626' },
+                          }}
+                        />
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Category breakdown */}
+        <Grid size={{ xs: 12, md: 5 }}>
+          <Card variant="outlined" sx={{ height: '100%' }}>
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
+                Defects by Category
+              </Typography>
+              {isLoading ? (
+                <Stack spacing={1}>
+                  {[1, 2, 3, 4].map((i) => <Skeleton key={i} height={52} sx={{ borderRadius: 1 }} />)}
+                </Stack>
+              ) : categoryMap.length === 0 ? (
+                <EmptyState icon="emptyTable" title="No data" compact />
+              ) : (
+                <Stack spacing={1}>
+                  {categoryMap.map(([cat, count], idx) => {
+                    const color = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+                    const pct = totalDefects > 0 ? (count / totalDefects) * 100 : 0;
+                    return (
+                      <Box key={cat}
+                        sx={{
+                          p: 1.5, borderRadius: 1.5, border: '1px solid', borderColor: 'divider',
+                          borderLeft: '4px solid', borderLeftColor: color, bgcolor: alpha(color, 0.03),
+                        }}
+                      >
+                        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'baseline', mb: 0.5 }}>
+                          <Typography variant="caption" color="text.secondary"
+                            sx={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                            {cat}
+                          </Typography>
+                          <Stack direction="row" spacing={0.75} sx={{ alignItems: 'baseline' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 700, color }}>{count.toLocaleString()}</Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>{pct.toFixed(1)}%</Typography>
+                          </Stack>
+                        </Stack>
+                        <LinearProgress variant="determinate" value={pct}
+                          sx={{
+                            height: 4, borderRadius: 2,
+                            bgcolor: alpha(color, 0.1),
+                            '& .MuiLinearProgress-bar': { borderRadius: 2, bgcolor: color },
+                          }}
+                        />
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              )}
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Defects by Category */}
-      <Card variant="outlined" sx={{ mb: 2 }}>
-        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-            Defects by Category
-          </Typography>
-          <Grid container spacing={2}>
-            {CATEGORY_DATA.map((cat) => (
-              <Grid key={cat.label} size={{ xs: 12, sm: 6, md: 'auto' }} sx={{ flex: '1 1 0' }}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: 1.5,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderLeft: '4px solid',
-                    borderLeftColor: cat.color,
-                    bgcolor: alpha(cat.color, 0.03),
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    {cat.label}
-                  </Typography>
-                  <Stack direction="row" spacing={0.75} sx={{ alignItems: 'baseline', mt: 0.5 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: cat.color }}>
-                      {cat.count}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
-                      {cat.pct}%
-                    </Typography>
-                  </Stack>
-                  <LinearProgress
-                    variant="determinate"
-                    value={cat.pct}
-                    sx={{
-                      mt: 1, height: 4, borderRadius: 2,
-                      bgcolor: alpha(cat.color, 0.1),
-                      '& .MuiLinearProgress-bar': { borderRadius: 2, bgcolor: cat.color },
-                    }}
-                  />
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-        </CardContent>
-      </Card>
-
-      {/* Recent Defect Log */}
+      {/* Defect detail table */}
       <Card variant="outlined">
         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
-            Recent Defect Log
+            Defect Summary
           </Typography>
-          <Box sx={{ overflowX: 'auto' }}>
-            <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-              <Box component="thead">
-                <Box component="tr" sx={{ borderBottom: '2px solid', borderColor: 'divider' }}>
-                  {['Date', 'Product', 'Lot', 'Defect Code', 'Defect Name', 'Qty', 'Operator', 'Disposition'].map((h) => (
-                    <Box
-                      key={h}
-                      component="th"
-                      sx={{
-                        textAlign: 'left', py: 0.75, px: 1, fontSize: 11, fontWeight: 600,
-                        color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.4,
-                        bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {h}
-                    </Box>
-                  ))}
+          {isLoading ? (
+            <Stack spacing={1}>{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} height={32} />)}</Stack>
+          ) : sorted.length === 0 ? (
+            <EmptyState icon="emptyTable" title="No defects recorded in this period" compact />
+          ) : (
+            <Box sx={{ overflowX: 'auto' }}>
+              <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <Box component="thead">
+                  <Box component="tr" sx={{ borderBottom: '2px solid', borderColor: 'divider' }}>
+                    {['Code', 'Defect Name', 'Category', 'Qty', '% of Total'].map((h) => (
+                      <Box key={h} component="th"
+                        sx={{
+                          textAlign: 'left', py: 0.75, px: 1, fontSize: 11, fontWeight: 600,
+                          color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.4,
+                          bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
+                          whiteSpace: 'nowrap',
+                        }}>
+                        {h}
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+                <Box component="tbody">
+                  {sorted.map((row, i) => {
+                    const count = numVal(row.totalQuantity);
+                    const pct = numVal(row.percentage);
+                    return (
+                      <Box key={row.defectCode} component="tr"
+                        sx={{
+                          borderBottom: '1px solid', borderColor: 'divider',
+                          bgcolor: i % 2 === 1 ? (t) => alpha(t.palette.primary.main, 0.01) : 'transparent',
+                          '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.03) },
+                        }}>
+                        <Box component="td" sx={{ py: 0.75, px: 1, fontFamily: 'ui-monospace, monospace', fontSize: 11, fontWeight: 600, color: 'primary.main', whiteSpace: 'nowrap' }}>
+                          {row.defectCode}
+                        </Box>
+                        <Box component="td" sx={{ py: 0.75, px: 1 }}>{row.defectName}</Box>
+                        <Box component="td" sx={{ py: 0.75, px: 1 }}>
+                          {row.category
+                            ? <Chip label={row.category} size="small" sx={{ height: 18, fontSize: '0.625rem', '& .MuiChip-label': { px: 0.75 } }} />
+                            : <Typography variant="caption" color="text.disabled">—</Typography>}
+                        </Box>
+                        <Box component="td" sx={{ py: 0.75, px: 1, fontWeight: 700, color: '#DC2626', textAlign: 'right' }}>
+                          {count.toLocaleString()}
+                        </Box>
+                        <Box component="td" sx={{ py: 0.75, px: 1, textAlign: 'right', color: 'text.secondary' }}>
+                          {pct.toFixed(1)}%
+                        </Box>
+                      </Box>
+                    );
+                  })}
                 </Box>
               </Box>
-              <Box component="tbody">
-                {DEFECT_LOG.map((row, i) => (
-                  <Box
-                    key={row.id}
-                    component="tr"
-                    sx={{
-                      borderBottom: '1px solid',
-                      borderColor: 'divider',
-                      bgcolor: i % 2 === 1 ? (t) => alpha(t.palette.primary.main, 0.01) : 'transparent',
-                      '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.03) },
-                    }}
-                  >
-                    <Box component="td" sx={{ py: 0.75, px: 1, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-                      {row.date}
-                    </Box>
-                    <Box component="td" sx={{ py: 0.75, px: 1, fontFamily: 'ui-monospace, monospace', fontWeight: 600, color: 'primary.main', whiteSpace: 'nowrap' }}>
-                      {row.productCode}
-                    </Box>
-                    <Box component="td" sx={{ py: 0.75, px: 1, fontFamily: 'ui-monospace, monospace', fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-                      {row.lotNo}
-                    </Box>
-                    <Box component="td" sx={{ py: 0.75, px: 1, fontFamily: 'ui-monospace, monospace', fontSize: 11, whiteSpace: 'nowrap' }}>
-                      {row.defectCode}
-                    </Box>
-                    <Box component="td" sx={{ py: 0.75, px: 1, whiteSpace: 'nowrap' }}>
-                      {row.defectName}
-                    </Box>
-                    <Box component="td" sx={{ py: 0.75, px: 1, fontWeight: 700, color: '#DC2626', textAlign: 'center' }}>
-                      {row.qty}
-                    </Box>
-                    <Box component="td" sx={{ py: 0.75, px: 1, whiteSpace: 'nowrap' }}>
-                      {row.operator}
-                    </Box>
-                    <Box component="td" sx={{ py: 0.75, px: 1, whiteSpace: 'nowrap' }}>
-                      <Chip
-                        label={row.disposition}
-                        size="small"
-                        sx={{
-                          height: 18,
-                          fontSize: '0.625rem',
-                          fontWeight: 600,
-                          bgcolor: row.disposition === 'Scrap'
-                            ? alpha('#DC2626', 0.1)
-                            : row.disposition === 'Rework'
-                              ? alpha('#D97706', 0.1)
-                              : alpha('#94A3B8', 0.1),
-                          color: row.disposition === 'Scrap'
-                            ? '#DC2626'
-                            : row.disposition === 'Rework'
-                              ? '#D97706'
-                              : '#64748B',
-                          border: 'none',
-                          '& .MuiChip-label': { px: 0.75 },
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
             </Box>
-          </Box>
-
-          <Divider sx={{ mt: 1.5, mb: 1 }} />
-          <Stack direction="row" sx={{ justifyContent: 'flex-end' }}>
-            <Button size="small" endIcon={<SolarIcon name="view" size={14} />} sx={{ fontSize: 12 }}>
-              View All Defects
-            </Button>
-          </Stack>
+          )}
         </CardContent>
       </Card>
     </PageRoot>
