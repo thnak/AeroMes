@@ -37,7 +37,7 @@ public class StockMovement : Entity
             CreatedBy = createdBy,
             CreatedAt = DateTime.UtcNow,
         };
-        m.RaiseDomainEvent(new StockMovementCreatedEvent(m.ProductCode, locationId, MovementType.Receive, quantity));
+        m.RaiseDomainEvent(new StockMovementCreatedEvent(m.ProductCode, m.LotNumber, locationId, MovementType.Receive, quantity));
         return m;
     }
 
@@ -58,7 +58,7 @@ public class StockMovement : Entity
             CreatedBy = createdBy,
             CreatedAt = DateTime.UtcNow,
         };
-        m.RaiseDomainEvent(new StockMovementCreatedEvent(m.ProductCode, locationId, MovementType.Adjust, delta));
+        m.RaiseDomainEvent(new StockMovementCreatedEvent(m.ProductCode, m.LotNumber, locationId, MovementType.Adjust, delta));
         return m;
     }
 
@@ -81,7 +81,7 @@ public class StockMovement : Entity
             CreatedBy = createdBy,
             CreatedAt = DateTime.UtcNow,
         };
-        m.RaiseDomainEvent(new StockMovementCreatedEvent(m.ProductCode, locationId, MovementType.Issue, quantity));
+        m.RaiseDomainEvent(new StockMovementCreatedEvent(m.ProductCode, m.LotNumber, locationId, MovementType.Issue, quantity));
         return m;
     }
 }

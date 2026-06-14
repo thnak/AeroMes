@@ -1,6 +1,8 @@
 using AeroMes.Application.Common;
 using AeroMes.Domain.Exceptions;
 using AeroMes.Domain.Production.Repositories;
+using AeroMes.Domain.Traceability;
+using AeroMes.Domain.Traceability.Repositories;
 using LiteBus.Commands.Abstractions;
 
 namespace AeroMes.Application.Production.Commands.RecordMaterialConsumption;
@@ -12,7 +14,9 @@ public record RecordMaterialConsumptionCommand(
     string IssuedBy,
     int LocationId) : ICommand<ValidationResult<Unit>>;
 
-public class RecordMaterialConsumptionHandler(IMaterialConsumptionRepository repo)
+public class RecordMaterialConsumptionHandler(
+    IMaterialConsumptionRepository repo,
+    ILotTraceabilityRepository traceRepo)
     : ICommandHandler<RecordMaterialConsumptionCommand, ValidationResult<Unit>>
 {
     public async Task<ValidationResult<Unit>> HandleAsync(
@@ -26,6 +30,17 @@ public class RecordMaterialConsumptionHandler(IMaterialConsumptionRepository rep
         {
             item.Confirm(cmd.LotNumber, cmd.ActualQty, cmd.IssuedBy, cmd.LocationId);
             await repo.SaveChangesAsync(ct);
+
+            if (!string.IsNullOrWhiteSpace(cmd.LotNumber) && cmd.ActualQty > 0)
+            {
+                var lotEvent = LotEvent.Append(
+                    LotEventType.Consumed, cmd.LotNumber, item.ProductCode,
+                    cmd.IssuedBy, DateTime.UtcNow,
+                    locationId: cmd.LocationId, quantity: cmd.ActualQty);
+                await traceRepo.AddEventAsync(lotEvent, ct);
+                await traceRepo.SaveChangesAsync(ct);
+            }
+
             return ValidationResult<Unit>.Ok(Unit.Value);
         }
         catch (DomainException ex)
