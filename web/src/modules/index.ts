@@ -179,6 +179,7 @@ export const MODULES: ModuleConfig[] = [
       { label: 'Inventory', path: '/warehouse/inventory' },
       { label: 'Receipts (GRN)', path: '/warehouse/grn' },
       { label: 'Purchase Orders', path: '/warehouse/purchase-orders' },
+      { label: 'Shipments', path: '/warehouse/shipments' },
     ],
   },
   {
