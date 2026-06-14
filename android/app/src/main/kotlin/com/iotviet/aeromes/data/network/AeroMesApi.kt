@@ -1,16 +1,29 @@
 package com.iotviet.aeromes.data.network
 
 import com.iotviet.aeromes.data.network.dto.CreateJobRequest
+import com.iotviet.aeromes.data.network.dto.CreateMaintenanceOrderRequest
+import com.iotviet.aeromes.data.network.dto.CreateMaterialRequisitionRequest
+import com.iotviet.aeromes.data.network.dto.CreateMaterialTransferRequest
 import com.iotviet.aeromes.data.network.dto.CreateProductionLogRequest
 import com.iotviet.aeromes.data.network.dto.FinishJobRequest
+import com.iotviet.aeromes.data.network.dto.HoldStatusDto
 import com.iotviet.aeromes.data.network.dto.InspectionOrderDto
 import com.iotviet.aeromes.data.network.dto.InspectionResultRequest
 import com.iotviet.aeromes.data.network.dto.InventoryItemDto
 import com.iotviet.aeromes.data.network.dto.JobDto
 import com.iotviet.aeromes.data.network.dto.LoginRequest
 import com.iotviet.aeromes.data.network.dto.LoginResponse
+import com.iotviet.aeromes.data.network.dto.LotTraceDto
+import com.iotviet.aeromes.data.network.dto.MaintenanceOrderDto
+import com.iotviet.aeromes.data.network.dto.MaterialRequisitionDto
+import com.iotviet.aeromes.data.network.dto.MaterialTransferDto
 import com.iotviet.aeromes.data.network.dto.MeResponse
+import com.iotviet.aeromes.data.network.dto.PlaceHoldRequest
 import com.iotviet.aeromes.data.network.dto.ProductionLogDto
+import com.iotviet.aeromes.data.network.dto.ReleaseHoldRequest
+import com.iotviet.aeromes.data.network.dto.SopDocumentDetailDto
+import com.iotviet.aeromes.data.network.dto.SopDocumentDto
+import com.iotviet.aeromes.data.network.dto.StorageLocationDto
 import com.iotviet.aeromes.data.network.dto.WorkOrderDto
 import retrofit2.Response
 import retrofit2.http.Body
@@ -111,4 +124,45 @@ interface AeroMesApi {
     suspend fun getAvailableInventory(
         @Query("productCode") productCode: String? = null
     ): Response<List<InventoryItemDto>>
+
+    // Lot Trace (Feature A + F)
+    @GET("api/v1/inventory/trace/{lotNumber}")
+    suspend fun getLotTrace(@Path("lotNumber") lotNumber: String): Response<LotTraceDto>
+
+    // Lot Holds (Feature A + B)
+    @GET("api/v1/trace/holds/lot/{lotNumber}/status")
+    suspend fun getLotHoldStatus(@Path("lotNumber") lotNumber: String): Response<HoldStatusDto>
+
+    @POST("api/v1/trace/holds")
+    suspend fun placeHold(@Body request: PlaceHoldRequest): Response<Unit>
+
+    @POST("api/v1/trace/holds/{id}/release")
+    suspend fun releaseHold(
+        @Path("id") id: String,
+        @Body request: ReleaseHoldRequest
+    ): Response<Unit>
+
+    // Maintenance (Feature C)
+    @POST("api/v1/maintenance/orders")
+    suspend fun createMaintenanceOrder(@Body request: CreateMaintenanceOrderRequest): Response<MaintenanceOrderDto>
+
+    // SOP Documents (Feature D)
+    @GET("api/v1/sop/documents")
+    suspend fun getSopDocuments(
+        @Query("productCode") productCode: String? = null
+    ): Response<List<SopDocumentDto>>
+
+    @GET("api/v1/sop/documents/{id}")
+    suspend fun getSopDocument(@Path("id") id: String): Response<SopDocumentDetailDto>
+
+    // Material Requisition (Feature E)
+    @POST("api/v1/material-requisitions")
+    suspend fun createMaterialRequisition(@Body request: CreateMaterialRequisitionRequest): Response<MaterialRequisitionDto>
+
+    // Stock Transfer (Feature F)
+    @GET("api/v1/master/storage-locations")
+    suspend fun getStorageLocations(): Response<List<StorageLocationDto>>
+
+    @POST("api/v1/material-transfer-slips")
+    suspend fun createMaterialTransfer(@Body request: CreateMaterialTransferRequest): Response<MaterialTransferDto>
 }

@@ -2,11 +2,19 @@ package com.iotviet.aeromes.di
 
 import com.iotviet.aeromes.data.repository.AuthRepositoryImpl
 import com.iotviet.aeromes.data.repository.InventoryRepositoryImpl
+import com.iotviet.aeromes.data.repository.LotRepositoryImpl
+import com.iotviet.aeromes.data.repository.MaintenanceRepositoryImpl
+import com.iotviet.aeromes.data.repository.MaterialRepositoryImpl
 import com.iotviet.aeromes.data.repository.QualityRepositoryImpl
+import com.iotviet.aeromes.data.repository.SopRepositoryImpl
 import com.iotviet.aeromes.data.repository.WorkRepositoryImpl
 import com.iotviet.aeromes.domain.repository.AuthRepository
 import com.iotviet.aeromes.domain.repository.InventoryRepository
+import com.iotviet.aeromes.domain.repository.LotRepository
+import com.iotviet.aeromes.domain.repository.MaintenanceRepository
+import com.iotviet.aeromes.domain.repository.MaterialRepository
 import com.iotviet.aeromes.domain.repository.QualityRepository
+import com.iotviet.aeromes.domain.repository.SopRepository
 import com.iotviet.aeromes.domain.repository.WorkRepository
 import dagger.Binds
 import dagger.Module
@@ -29,4 +37,16 @@ abstract class RepositoryModule {
 
     @Binds @Singleton
     abstract fun bindInventoryRepository(impl: InventoryRepositoryImpl): InventoryRepository
+
+    @Binds @Singleton
+    abstract fun bindLotRepository(impl: LotRepositoryImpl): LotRepository
+
+    @Binds @Singleton
+    abstract fun bindMaintenanceRepository(impl: MaintenanceRepositoryImpl): MaintenanceRepository
+
+    @Binds @Singleton
+    abstract fun bindSopRepository(impl: SopRepositoryImpl): SopRepository
+
+    @Binds @Singleton
+    abstract fun bindMaterialRepository(impl: MaterialRepositoryImpl): MaterialRepository
 }

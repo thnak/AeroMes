@@ -11,8 +11,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MoveDown
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Task
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Card
@@ -46,12 +51,24 @@ fun DashboardScreen(
     onNavigateToJobs: () -> Unit,
     onNavigateToQuality: () -> Unit,
     onNavigateToInventory: () -> Unit,
+    onNavigateToLotLookup: () -> Unit,
+    onNavigateToLotHold: () -> Unit,
+    onNavigateToMachineFault: () -> Unit,
+    onNavigateToSopViewer: () -> Unit,
+    onNavigateToMaterialIssue: () -> Unit,
+    onNavigateToStockTransfer: () -> Unit,
     onLogout: () -> Unit
 ) {
     val tiles = listOf(
         DashboardTile("My Jobs", Icons.Default.Task, onNavigateToJobs),
         DashboardTile("Quality", Icons.Default.VerifiedUser, onNavigateToQuality),
         DashboardTile("Inventory", Icons.Default.Inventory, onNavigateToInventory),
+        DashboardTile("Lot Lookup", Icons.Default.QrCodeScanner, onNavigateToLotLookup),
+        DashboardTile("Lot Hold", Icons.Default.Lock, onNavigateToLotHold),
+        DashboardTile("Machine Fault", Icons.Default.Build, onNavigateToMachineFault),
+        DashboardTile("SOP Docs", Icons.Default.Description, onNavigateToSopViewer),
+        DashboardTile("Issue Material", Icons.Default.MoveDown, onNavigateToMaterialIssue),
+        DashboardTile("Stock Transfer", Icons.Default.Inventory, onNavigateToStockTransfer),
     )
 
     Scaffold(

@@ -16,9 +16,16 @@ import com.iotviet.aeromes.ui.inventory.InventoryScreen
 import com.iotviet.aeromes.ui.jobs.JobDetailScreen
 import com.iotviet.aeromes.ui.jobs.JobListScreen
 import com.iotviet.aeromes.ui.jobs.JobViewModel
+import com.iotviet.aeromes.ui.lot.LotHoldScreen
+import com.iotviet.aeromes.ui.lot.LotLookupScreen
+import com.iotviet.aeromes.ui.maintenance.MachineFaultScreen
+import com.iotviet.aeromes.ui.material.MaterialIssueScreen
+import com.iotviet.aeromes.ui.material.StockTransferScreen
 import com.iotviet.aeromes.ui.production.ProductionLogScreen
 import com.iotviet.aeromes.ui.quality.QualityDetailScreen
 import com.iotviet.aeromes.ui.quality.QualityListScreen
+import com.iotviet.aeromes.ui.sop.SopDetailScreen
+import com.iotviet.aeromes.ui.sop.SopListScreen
 
 @Composable
 fun AeroMesNavGraph() {
@@ -47,6 +54,12 @@ fun AeroMesNavGraph() {
                 onNavigateToJobs = { navController.navigate(Screen.Jobs.route) },
                 onNavigateToQuality = { navController.navigate(Screen.Quality.route) },
                 onNavigateToInventory = { navController.navigate(Screen.Inventory.route) },
+                onNavigateToLotLookup = { navController.navigate(Screen.LotLookup.createRoute()) },
+                onNavigateToLotHold = { navController.navigate(Screen.LotHold.createRoute()) },
+                onNavigateToMachineFault = { navController.navigate(Screen.MachineFault.route) },
+                onNavigateToSopViewer = { navController.navigate(Screen.SopViewer.createRoute()) },
+                onNavigateToMaterialIssue = { navController.navigate(Screen.MaterialIssue.route) },
+                onNavigateToStockTransfer = { navController.navigate(Screen.StockTransfer.createRoute()) },
                 onLogout = {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
@@ -108,6 +121,79 @@ fun AeroMesNavGraph() {
 
         composable(Screen.Inventory.route) {
             InventoryScreen(onBack = { navController.popBackStack() })
+        }
+
+        // Feature A: Lot Lookup
+        composable(
+            route = Screen.LotLookup.route,
+            arguments = listOf(navArgument("lotNumber") { type = NavType.StringType; nullable = true; defaultValue = null })
+        ) { backStack ->
+            val lotNumber = backStack.arguments?.getString("lotNumber")
+            LotLookupScreen(
+                initialLotNumber = lotNumber,
+                onNavigateToHold = { lot -> navController.navigate(Screen.LotHold.createRoute(lot)) },
+                onNavigateToTransfer = { lot -> navController.navigate(Screen.StockTransfer.createRoute(lot)) },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // Feature B: Lot Hold/Release
+        composable(
+            route = Screen.LotHold.route,
+            arguments = listOf(navArgument("lotNumber") { type = NavType.StringType; nullable = true; defaultValue = null })
+        ) { backStack ->
+            val lotNumber = backStack.arguments?.getString("lotNumber")
+            LotHoldScreen(
+                initialLotNumber = lotNumber,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // Feature C: Machine Fault Report
+        composable(Screen.MachineFault.route) {
+            MachineFaultScreen(onBack = { navController.popBackStack() })
+        }
+
+        // Feature D: SOP Viewer (list)
+        composable(
+            route = Screen.SopViewer.route,
+            arguments = listOf(navArgument("woId") { type = NavType.StringType; nullable = true; defaultValue = null })
+        ) { backStack ->
+            val woId = backStack.arguments?.getString("woId")
+            SopListScreen(
+                initialWoId = woId,
+                onSopClick = { sopId -> navController.navigate(Screen.SopDetail.createRoute(sopId)) },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // Feature D: SOP Detail
+        composable(
+            route = Screen.SopDetail.route,
+            arguments = listOf(navArgument("sopId") { type = NavType.StringType })
+        ) { backStack ->
+            val sopId = backStack.arguments!!.getString("sopId")!!
+            SopDetailScreen(
+                sopId = sopId,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // Feature E: Material Issue
+        composable(Screen.MaterialIssue.route) {
+            MaterialIssueScreen(onBack = { navController.popBackStack() })
+        }
+
+        // Feature F: Stock Transfer
+        composable(
+            route = Screen.StockTransfer.route,
+            arguments = listOf(navArgument("lotNumber") { type = NavType.StringType; nullable = true; defaultValue = null })
+        ) { backStack ->
+            val lotNumber = backStack.arguments?.getString("lotNumber")
+            StockTransferScreen(
+                initialLotNumber = lotNumber,
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }

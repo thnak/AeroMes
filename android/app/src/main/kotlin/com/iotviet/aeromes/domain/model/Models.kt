@@ -48,3 +48,54 @@ data class InventoryItem(
     val quantity: Double,
     val unit: String?
 )
+
+data class LotTrace(
+    val lotNumber: String,
+    val productCode: String,
+    val productName: String,
+    val locationCode: String?,
+    val warehouseCode: String?,
+    val quantity: Double,
+    val unit: String?,
+    val expiryDate: String?
+)
+
+data class HoldStatus(
+    val isHeld: Boolean,
+    val holdId: String?,
+    val holdType: String?,
+    val reason: String?,
+    val heldAt: String?,
+    val heldBy: String?
+)
+
+data class SopDocument(
+    val id: String,
+    val title: String,
+    val productCode: String?,
+    val version: String?,
+    val status: String?
+)
+
+data class SopItem(
+    val sequence: Int,
+    val itemText: String,
+    val category: String?,
+    val spec: String?
+)
+
+data class SopDocumentDetail(
+    val id: String,
+    val title: String,
+    val productCode: String?,
+    val version: String?,
+    val status: String?,
+    val items: List<SopItem>
+)
+
+data class StorageLocation(
+    val id: String,
+    val code: String,
+    val name: String?,
+    val warehouseCode: String?
+)
