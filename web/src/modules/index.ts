@@ -206,8 +206,25 @@ export const MODULES: ModuleConfig[] = [
     icon: 'routing',
     color: '#65A30D',
     path: '/traceability',
-    available: false,
-    tabs: [],
+    available: true,
+    tabs: [
+      { label: 'Genealogy',      path: '/traceability/genealogy' },
+      { label: 'Hold Management', path: '/traceability/holds' },
+      { label: 'Recalls',        path: '/traceability/recalls' },
+    ],
+  },
+  {
+    id: 'cost',
+    label: 'Cost Management',
+    description: 'Quality cost, scrap Pareto, rework orders & profitability',
+    icon: 'reports',
+    color: '#DC2626',
+    path: '/cost',
+    available: true,
+    tabs: [
+      { label: 'Dashboard',        path: '/cost/dashboard' },
+      { label: 'Scrap & Rework',   path: '/cost/scrap' },
+    ],
   },
   {
     id: 'reminders',

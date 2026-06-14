@@ -98,6 +98,15 @@ const LabelTemplatesPage = lazy(() => import('./pages/labels/LabelTemplatesPage'
 // Reminders
 const RemindersPage = lazy(() => import('./pages/RemindersPage'));
 
+// Cost
+const CostDashboardPage = lazy(() => import('./pages/cost/CostDashboardPage'));
+const ScrapPage = lazy(() => import('./pages/cost/ScrapPage'));
+
+// Traceability
+const GenealogyPage = lazy(() => import('./pages/traceability/GenealogyPage'));
+const HoldsPage = lazy(() => import('./pages/traceability/HoldsPage'));
+const RecallsPage = lazy(() => import('./pages/traceability/RecallsPage'));
+
 // Admin
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
@@ -291,6 +300,19 @@ export default function App() {
             <Route path="admin/audit-log" element={<AuditLogPage />} />
             <Route path="admin/settings" element={<SettingsPage />} />
             <Route path="admin/release-notes" element={<ReleasePage />} />
+          </Route>
+
+          {/* ── Cost module ────────────────────────────────────── */}
+          <Route element={<ModuleLayout />}>
+            <Route path="cost/dashboard" element={<CostDashboardPage />} />
+            <Route path="cost/scrap" element={<ScrapPage />} />
+          </Route>
+
+          {/* ── Traceability module ───────────────────────────── */}
+          <Route element={<ModuleLayout />}>
+            <Route path="traceability/genealogy" element={<GenealogyPage />} />
+            <Route path="traceability/holds" element={<HoldsPage />} />
+            <Route path="traceability/recalls" element={<RecallsPage />} />
           </Route>
 
           {/* Reminders */}
