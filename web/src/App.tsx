@@ -52,6 +52,7 @@ const DowntimePage = lazy(() => import('./pages/production/DowntimePage'));
 const DowntimeDetailPage = lazy(() => import('./pages/production/DowntimeDetailPage'));
 const InventoryPage = lazy(() => import('./pages/production/InventoryPage'));
 const InventoryTracePage = lazy(() => import('./pages/production/InventoryTracePage'));
+const GrnPage = lazy(() => import('./pages/warehouse/GrnPage'));
 const SchedulePage = lazy(() => import('./pages/schedule/SchedulePage'));
 
 // Quality
@@ -201,6 +202,7 @@ export default function App() {
           <Route element={<ModuleLayout />}>
             <Route path="warehouse/inventory" element={<InventoryPage />} />
             <Route path="warehouse/inventory/trace" element={<InventoryTracePage />} />
+            <Route path="warehouse/grn" element={<GrnPage />} />
           </Route>
 
           {/* ── Master Data module ────────────────────────────── */}

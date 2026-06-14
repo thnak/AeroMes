@@ -177,6 +177,7 @@ export const MODULES: ModuleConfig[] = [
     available: true,
     tabs: [
       { label: 'Inventory', path: '/warehouse/inventory' },
+      { label: 'Receipts (GRN)', path: '/warehouse/grn' },
     ],
   },
   {
