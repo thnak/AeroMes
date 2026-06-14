@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AeroMes</string>
+    <string name="label_email">Email</string>
+    <string name="label_password">Password</string>
+    <string name="action_login">Log In</string>
+    <string name="action_logout">Log Out</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_scan">Scan</string>
+    <string name="action_submit">Submit</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_jobs">My Jobs</string>
+    <string name="nav_quality">Quality</string>
+    <string name="nav_inventory">Inventory</string>
+    <string name="label_work_order">Work Order</string>
+    <string name="label_qty_ok">Qty OK</string>
+    <string name="label_qty_ng">Qty NG</string>
+    <string name="label_notes">Notes</string>
+    <string name="label_machine">Machine</string>
+    <string name="label_shift">Shift</string>
+    <string name="label_status">Status</string>
+    <string name="label_target">Target</string>
+    <string name="label_actual">Actual</string>
+    <string name="msg_loading">Loading…</string>
+    <string name="msg_empty_jobs">No active jobs assigned to you.</string>
+    <string name="msg_login_failed">Login failed. Check your credentials.</string>
+    <string name="msg_session_expired">Session expired. Please log in again.</string>
+    <string name="msg_network_error">Network error. Check your connection.</string>
+    <string name="permission_camera_rationale">Camera access is required for barcode scanning.</string>
+</resources>
