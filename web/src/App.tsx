@@ -31,6 +31,10 @@ const OperationsPage = lazy(() => import('./pages/master/OperationsPage'));
 const RoutingsPage = lazy(() => import('./pages/master/RoutingsPage'));
 const RoutingStepsPage = lazy(() => import('./pages/master/RoutingStepsPage'));
 const StorageLocationsPage = lazy(() => import('./pages/master/StorageLocationsPage'));
+const MoldsPage = lazy(() => import('./pages/master/MoldsPage'));
+const ToolsPage = lazy(() => import('./pages/master/ToolsPage'));
+const SuppliersPage = lazy(() => import('./pages/master/SuppliersPage'));
+const CustomersPage = lazy(() => import('./pages/master/CustomersPage'));
 const DefectCodesPage = lazy(() => import('./pages/master/DefectCodesPage'));
 
 // Integration
@@ -210,6 +214,10 @@ export default function App() {
             <Route path="master/routings" element={<RoutingsPage />} />
             <Route path="master/routings/:id/steps" element={<RoutingStepsPage />} />
             <Route path="master/storage-locations" element={<StorageLocationsPage />} />
+            <Route path="master/molds" element={<MoldsPage />} />
+            <Route path="master/tools" element={<ToolsPage />} />
+            <Route path="master/suppliers" element={<SuppliersPage />} />
+            <Route path="master/customers" element={<CustomersPage />} />
           </Route>
 
           {/* ── Quality module ────────────────────────────────── */}

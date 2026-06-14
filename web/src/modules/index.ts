@@ -78,9 +78,13 @@ export const MODULES: ModuleConfig[] = [
       { label: 'Products',         path: '/master/products' },
       { label: 'Work Centers',     path: '/master/work-centers' },
       { label: 'Machines',         path: '/master/machines' },
+      { label: 'Molds',            path: '/master/molds' },
+      { label: 'Tools',            path: '/master/tools' },
       { label: 'Operations',       path: '/master/operations' },
       { label: 'Routings',         path: '/master/routings' },
       { label: 'Storage',          path: '/master/storage-locations' },
+      { label: 'Suppliers',        path: '/master/suppliers' },
+      { label: 'Customers',        path: '/master/customers' },
     ],
   },
   {
