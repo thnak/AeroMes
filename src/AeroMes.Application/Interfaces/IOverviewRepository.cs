@@ -89,6 +89,9 @@ public record MyDailyOutputDto(
     double TotalDowntimeMinutes,
     IReadOnlyList<MyJobSummaryDto> Jobs);
 
+public record StockByLocationDto(string LocationCode, string LocationName, decimal TotalQty, decimal ReservedQty, int LotCount);
+public record GrnTrendDto(DateOnly Date, int GrnCount, int LineCount, decimal TotalQty);
+
 public interface IOverviewRepository
 {
     Task<IncompleteOrdersResult> GetIncompleteOrdersAsync(DateTime? from, DateTime? to, CancellationToken ct);
@@ -111,4 +114,6 @@ public interface IOverviewRepository
     Task<SoFulfillmentDto> GetSoFulfillmentRateAsync(int year, int month, CancellationToken ct);
     Task<MyDailyOutputDto> GetMyDailyOutputAsync(string operatorId, DateOnly date, CancellationToken ct);
     Task<IReadOnlyList<MyDailyOutputDto>> GetMyOutputHistoryAsync(string operatorId, int days, CancellationToken ct);
+    Task<IReadOnlyList<StockByLocationDto>> GetStockByLocationAsync(CancellationToken ct);
+    Task<IReadOnlyList<GrnTrendDto>> GetGrnTrendAsync(DateOnly from, DateOnly to, CancellationToken ct);
 }

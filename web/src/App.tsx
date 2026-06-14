@@ -80,6 +80,10 @@ const RuleEnginePage           = lazy(() => import('./pages/iot/RuleEnginePage')
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const ManagerKpiDashboardPage = lazy(() => import('./pages/dashboard/ManagerKpiDashboardPage'));
 const EmployeeDashboardPage = lazy(() => import('./pages/dashboard/EmployeeDashboardPage'));
+const ProductionPerformancePage = lazy(() => import('./pages/dashboard/ProductionPerformancePage'));
+const QualityDashboardPage = lazy(() => import('./pages/dashboard/QualityDashboardPage'));
+const InventoryHealthPage = lazy(() => import('./pages/dashboard/InventoryHealthPage'));
+const OrderFulfillmentPage = lazy(() => import('./pages/dashboard/OrderFulfillmentPage'));
 
 // Lab
 const LabRequestsPage = lazy(() => import('./pages/lab/LabRequestsPage'));
@@ -199,6 +203,40 @@ export default function App() {
           element={
             <AuthGuard>
               <EmployeeDashboardPage />
+            </AuthGuard>
+          }
+        />
+
+        {/* Manager drill-down dashboards */}
+        <Route
+          path="/dashboard/production"
+          element={
+            <AuthGuard>
+              <ProductionPerformancePage />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/dashboard/quality"
+          element={
+            <AuthGuard>
+              <QualityDashboardPage />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/dashboard/inventory"
+          element={
+            <AuthGuard>
+              <InventoryHealthPage />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/dashboard/orders"
+          element={
+            <AuthGuard>
+              <OrderFulfillmentPage />
             </AuthGuard>
           }
         />

@@ -1,6 +1,7 @@
 using AeroMes.Application.Interfaces;
 using AeroMes.Domain.Integration;
 using AeroMes.Domain.Production;
+using AeroMes.Domain.Wms;
 using AeroMes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -565,5 +566,43 @@ public class OverviewRepository(AppDbContext db) : IOverviewRepository
             result.Add(await GetMyDailyOutputAsync(operatorId, d, ct));
         }
         return result;
+    }
+
+    public async Task<IReadOnlyList<StockByLocationDto>> GetStockByLocationAsync(CancellationToken ct)
+    {
+        return await db.InventoryStocks
+            .AsNoTracking()
+            .Where(s => s.Quantity > 0)
+            .GroupBy(s => new { s.LocationID })
+            .Select(g => new
+            {
+                g.Key.LocationID,
+                TotalQty = g.Sum(s => s.Quantity),
+                ReservedQty = g.Sum(s => s.ReservedQty),
+                LotCount = g.Select(s => s.LotNumber).Distinct().Count(),
+            })
+            .Join(db.StorageLocations.AsNoTracking(),
+                g => g.LocationID,
+                l => l.LocationID,
+                (g, l) => new StockByLocationDto(l.LocationCode, l.LocationName, g.TotalQty, g.ReservedQty, g.LotCount))
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<GrnTrendDto>> GetGrnTrendAsync(DateOnly from, DateOnly to, CancellationToken ct)
+    {
+        var fromDt = from.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var toDt = to.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+
+        return await db.GoodsReceiptNotes
+            .AsNoTracking()
+            .Where(g => g.Status == GrnStatus.Confirmed && g.ReceivedAt >= fromDt && g.ReceivedAt <= toDt)
+            .GroupBy(g => DateOnly.FromDateTime(g.ReceivedAt))
+            .Select(grp => new GrnTrendDto(
+                grp.Key,
+                grp.Count(),
+                grp.SelectMany(g => g.Lines).Count(),
+                grp.SelectMany(g => g.Lines).Sum(l => l.ReceivedQty)))
+            .OrderBy(d => d.Date)
+            .ToListAsync(ct);
     }
 }

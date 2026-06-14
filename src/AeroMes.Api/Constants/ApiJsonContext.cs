@@ -1431,6 +1431,12 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(MyDailyOutputDto))]
 [JsonSerializable(typeof(IReadOnlyList<MyDailyOutputDto>))]
 [JsonSerializable(typeof(List<MyDailyOutputDto>))]
+[JsonSerializable(typeof(StockByLocationDto))]
+[JsonSerializable(typeof(IReadOnlyList<StockByLocationDto>))]
+[JsonSerializable(typeof(List<StockByLocationDto>))]
+[JsonSerializable(typeof(GrnTrendDto))]
+[JsonSerializable(typeof(IReadOnlyList<GrnTrendDto>))]
+[JsonSerializable(typeof(List<GrnTrendDto>))]
 [JsonSerializable(typeof(SaveLayoutRequest))]
 // document print templates (#98)
 [JsonSerializable(typeof(DocumentTemplateDto))]
