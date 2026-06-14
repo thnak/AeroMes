@@ -6,6 +6,7 @@ import Box from '@mui/material/Box';
 import WebLayout from './layouts/WebLayout';
 import AuthLayout from './layouts/AuthLayout';
 import ModuleLayout from './layouts/ModuleLayout';
+import TabletLayout from './layouts/TabletLayout';
 import AuthGuard from './guards/AuthGuard';
 import ErrorPage from './pages/ErrorPage';
 
@@ -136,7 +137,7 @@ export default function App() {
         </Route>
 
         {/* ── Tablet OI (M5) ──────────────────────────────────── */}
-        <Route path="/tablet">
+        <Route path="/tablet" element={<TabletLayout />}>
           <Route index element={<TabletLaunchpad />} />
           <Route path="login" element={<TabletLoginPage />} />
           <Route path="station">
