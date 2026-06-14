@@ -39,7 +39,8 @@ public class UpdateAlertThresholdHandler(
         try
         {
             entity.UpdateDetails(cmd.MetricKey, cmd.Scope, cmd.ScopeId,
-                cmd.WarningLevel, cmd.CriticalLevel, cmd.IsActive, cmd.UpdatedBy);
+                cmd.WarningLevel, cmd.CriticalLevel, cmd.IsActive,
+                cmd.CooldownMinutes, cmd.EmailEnabled, cmd.UpdatedBy);
             await uow.SaveChangesAsync(ct);
             return ValidationResult<Unit>.Ok(Unit.Value);
         }

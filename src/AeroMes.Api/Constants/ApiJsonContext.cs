@@ -196,6 +196,7 @@ using AeroMes.Application.Cost.StandardCost.Queries.GetStandardCostDetail;
 using AeroMes.Application.Cost.StandardCost.Queries.GetStandardCosts;
 using AeroMes.Application.Production.MRP.Commands.UpdateMrp;
 using AeroMes.Domain.Production;
+using AeroMes.Domain.Alert;
 using AeroMes.Domain.Master;
 using AeroMes.Domain.Quality;
 using AeroMes.Domain.Quality.Repositories;
@@ -1499,6 +1500,12 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(MpsDataSource))]
 [JsonSerializable(typeof(MpsStatus))]
 [JsonSerializable(typeof(MpsDistributionStrategy))]
+// alert engine (#11)
+[JsonSerializable(typeof(AlertEventDto))]
+[JsonSerializable(typeof(IReadOnlyList<AlertEventDto>))]
+[JsonSerializable(typeof(List<AlertEventDto>))]
+[JsonSerializable(typeof(AlertLevel))]
+[JsonSerializable(typeof(AlertScope))]
 // detailed production plan (#61)
 [JsonSerializable(typeof(DetailedPlanSummaryDto))]
 [JsonSerializable(typeof(IReadOnlyList<DetailedPlanSummaryDto>))]

@@ -12,4 +12,6 @@ public record UpdateAlertThresholdCommand(
     decimal WarningLevel,
     decimal CriticalLevel,
     bool IsActive,
+    int CooldownMinutes,
+    bool EmailEnabled,
     string? UpdatedBy) : ICommand<ValidationResult<Unit>>;

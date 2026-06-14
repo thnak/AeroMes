@@ -13,4 +13,6 @@ public record AlertThresholdDto(
     decimal WarningLevel,
     decimal CriticalLevel,
     bool IsActive,
-    bool IsOrphaned);
+    bool IsOrphaned,
+    int CooldownMinutes = 30,
+    bool EmailEnabled = false);

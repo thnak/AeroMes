@@ -46,7 +46,8 @@ public class AlertThresholdsController(ICommandMediator commandMediator, IQueryM
     {
         var result = await commandMediator.SendAsync(
             new UpdateAlertThresholdCommand(id, req.MetricKey, req.Scope, req.ScopeId,
-                req.WarningLevel, req.CriticalLevel, req.IsActive, User.Identity?.Name), null, ct);
+                req.WarningLevel, req.CriticalLevel, req.IsActive,
+                req.CooldownMinutes, req.EmailEnabled, User.Identity?.Name), null, ct);
         if (!result.IsSuccess) return result.ToErrorResult();
         return NoContent();
     }
@@ -69,6 +70,7 @@ public record CreateAlertThresholdRequest(
 
 public record UpdateAlertThresholdRequest(
     string MetricKey, AlertScope Scope, string? ScopeId,
-    decimal WarningLevel, decimal CriticalLevel, bool IsActive);
+    decimal WarningLevel, decimal CriticalLevel, bool IsActive,
+    int CooldownMinutes = 30, bool EmailEnabled = false);
 
 public record AlertThresholdCreatedResult(int ThresholdId);

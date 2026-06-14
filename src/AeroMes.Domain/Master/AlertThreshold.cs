@@ -13,6 +13,8 @@ public class AlertThreshold : AuditableEntity
     public decimal WarningLevel { get; private set; }
     public decimal CriticalLevel { get; private set; }
     public bool IsActive { get; private set; } = true;
+    public int CooldownMinutes { get; private set; } = 30;
+    public bool EmailEnabled { get; private set; }
 
     private AlertThreshold() { }
 
@@ -30,6 +32,8 @@ public class AlertThreshold : AuditableEntity
             WarningLevel = warningLevel,
             CriticalLevel = criticalLevel,
             IsActive = true,
+            CooldownMinutes = 30,
+            EmailEnabled = false,
             CreatedBy = createdBy,
             CreatedAt = DateTime.UtcNow
         };
@@ -38,6 +42,7 @@ public class AlertThreshold : AuditableEntity
     public void UpdateDetails(
         string metricKey, AlertScope scope, string? scopeId,
         decimal warningLevel, decimal criticalLevel, bool isActive,
+        int cooldownMinutes, bool emailEnabled,
         string? updatedBy)
     {
         MetricKey = metricKey.Trim().ToUpperInvariant();
@@ -46,6 +51,8 @@ public class AlertThreshold : AuditableEntity
         WarningLevel = warningLevel;
         CriticalLevel = criticalLevel;
         IsActive = isActive;
+        CooldownMinutes = cooldownMinutes > 0 ? cooldownMinutes : 30;
+        EmailEnabled = emailEnabled;
         Touch(updatedBy);
     }
 }

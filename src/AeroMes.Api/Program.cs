@@ -66,6 +66,8 @@ builder.Services.AddSingleton<IotHubNotifier>();
 builder.Services.AddSingleton<IIotHubNotifier>(sp => sp.GetRequiredService<IotHubNotifier>());
 builder.Services.AddSingleton<AeroMes.Application.Interfaces.IIotSignalNotifier>(sp => sp.GetRequiredService<IotHubNotifier>());
 builder.Services.AddScoped<IShopFloorNotifier, ShopFloorHubNotifier>();
+builder.Services.AddScoped<AeroMes.Application.Interfaces.IAlertNotifier, AlertHubNotifier>();
+builder.Services.AddScoped<AeroMes.Application.Alert.AlertEvaluationService>();
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddHttpContextAccessor();

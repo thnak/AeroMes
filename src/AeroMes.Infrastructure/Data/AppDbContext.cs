@@ -63,6 +63,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<DowntimeReasonCode> DowntimeReasonCodes => Set<DowntimeReasonCode>();
     public DbSet<MachineProductConfig> MachineProductConfigs => Set<MachineProductConfig>();
     public DbSet<AlertThreshold> AlertThresholds => Set<AlertThreshold>();
+    public DbSet<AeroMes.Domain.Alert.AlertEvent> AlertEvents => Set<AeroMes.Domain.Alert.AlertEvent>();
     public DbSet<WorkOrderAutoRules> WorkOrderAutoRules => Set<WorkOrderAutoRules>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<ApprovedVendorItem> ApprovedVendorItems => Set<ApprovedVendorItem>();
@@ -1009,6 +1010,21 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
             e.Property(x => x.WarningLevel).HasColumnType("DECIMAL(10,4)");
             e.Property(x => x.CriticalLevel).HasColumnType("DECIMAL(10,4)");
             e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        b.Entity<Domain.Alert.AlertEvent>(e =>
+        {
+            e.ToTable("AlertEvents", "alert");
+            e.HasKey(x => x.AlertEventId);
+            e.Property(x => x.AlertEventId).UseIdentityColumn();
+            e.Property(x => x.Level).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.ScopeId).HasMaxLength(100);
+            e.Property(x => x.MetricValue).HasColumnType("DECIMAL(18,4)");
+            e.Property(x => x.AcknowledgedBy).HasMaxLength(100);
+            e.Property(x => x.Message).HasMaxLength(500);
+            e.HasOne(x => x.Threshold).WithMany().HasForeignKey(x => x.ThresholdId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.ThresholdId, x.TriggeredAt });
+            e.HasIndex(x => x.IsActive);
         });
 
         b.Entity<WorkOrderAutoRules>(e =>

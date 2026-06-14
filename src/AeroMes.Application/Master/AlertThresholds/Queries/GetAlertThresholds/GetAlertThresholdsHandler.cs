@@ -47,7 +47,8 @@ public class GetAlertThresholdsHandler(
             };
             return new AlertThresholdDto(
                 x.ThresholdId, x.MetricKey, x.Scope, x.ScopeId,
-                x.WarningLevel, x.CriticalLevel, x.IsActive, isOrphaned);
+                x.WarningLevel, x.CriticalLevel, x.IsActive, isOrphaned,
+                x.CooldownMinutes, x.EmailEnabled);
         }).ToList();
     }
 }
