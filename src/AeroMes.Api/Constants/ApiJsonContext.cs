@@ -11,9 +11,13 @@ using AeroMes.Application.Production.Queries.GetAvailableStock;
 using AeroMes.Application.Production.Queries.GetInventoryByExpiry;
 using AeroMes.Application.Storage.Commands.UploadFile;
 using AeroMes.Application.Storage.Queries.GetFileMetadata;
+using AeroMes.Application.Reports.Queries.GetDeliveryPerformance;
 using AeroMes.Application.Reports.Queries.GetDowntimeReport;
+using AeroMes.Application.Reports.Queries.GetInventorySnapshot;
+using AeroMes.Application.Reports.Queries.GetOeeTrend;
 using AeroMes.Application.Reports.Queries.GetProductionReport;
 using AeroMes.Application.Reports.Queries.GetQualityReport;
+using AeroMes.Application.Reports.Queries.GetShiftProductionReport;
 using AeroMes.Application.Integration.Commands.BatchCreateProductionOrders;
 using AeroMes.Application.Integration.Commands.CreateMultiProductionOrder;
 using AeroMes.Application.Integration.Commands.SaveErpSettings;
@@ -1439,6 +1443,24 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(IReadOnlyList<SearchResultDto>))]
 [JsonSerializable(typeof(List<SearchResultDto>))]
 [JsonSerializable(typeof(SearchResultPageDto))]
+// analytics reports (#13)
+[JsonSerializable(typeof(OeeTrendDto))]
+[JsonSerializable(typeof(OeeTrendPointDto))]
+[JsonSerializable(typeof(IReadOnlyList<OeeTrendPointDto>))]
+[JsonSerializable(typeof(List<OeeTrendPointDto>))]
+[JsonSerializable(typeof(OeeTrendGranularity))]
+[JsonSerializable(typeof(DeliveryPerformanceDto))]
+[JsonSerializable(typeof(DeliveryPerformanceRowDto))]
+[JsonSerializable(typeof(IReadOnlyList<DeliveryPerformanceRowDto>))]
+[JsonSerializable(typeof(List<DeliveryPerformanceRowDto>))]
+[JsonSerializable(typeof(InventorySnapshotDto))]
+[JsonSerializable(typeof(InventorySnapshotRowDto))]
+[JsonSerializable(typeof(IReadOnlyList<InventorySnapshotRowDto>))]
+[JsonSerializable(typeof(List<InventorySnapshotRowDto>))]
+[JsonSerializable(typeof(ShiftProductionReportDto))]
+[JsonSerializable(typeof(ShiftProductionRowDto))]
+[JsonSerializable(typeof(IReadOnlyList<ShiftProductionRowDto>))]
+[JsonSerializable(typeof(List<ShiftProductionRowDto>))]
 // extended reports (#68)
 [JsonSerializable(typeof(OrderProgressDto))]
 [JsonSerializable(typeof(IReadOnlyList<OrderProgressDto>))]

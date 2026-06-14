@@ -1,13 +1,18 @@
 using AeroMes.Api.Auth;
 using AeroMes.Application.Common;
+using AeroMes.Application.Reports.Queries.GetDeliveryPerformance;
 using AeroMes.Application.Reports.Queries.GetDowntimeReport;
+using AeroMes.Application.Reports.Queries.GetInventorySnapshot;
+using AeroMes.Application.Reports.Queries.GetOeeTrend;
 using AeroMes.Application.Reports.Queries.GetOrderProgressReport;
 using AeroMes.Application.Reports.Queries.GetOutputByEmployeeReport;
 using AeroMes.Application.Reports.Queries.GetOutputByProductReport;
 using AeroMes.Application.Reports.Queries.GetProductionReport;
 using AeroMes.Application.Reports.Queries.GetQualityReport;
+using AeroMes.Application.Reports.Queries.GetShiftProductionReport;
 using AeroMes.Application.Reports.Queries.GetSoProductionStatusReport;
 using AeroMes.Domain.Integration.Repositories;
+using AeroMes.Domain.Master;
 using AeroMes.Domain.Production.Repositories;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
@@ -106,4 +111,42 @@ public class ReportsController(IQueryMediator queryMediator) : ControllerBase
         [FromQuery] DateTime? to,
         CancellationToken ct)
         => Ok(await queryMediator.QueryAsync(new GetSoProductionStatusReportQuery(from, to), null, ct));
+
+    [HttpGet("oee/trend")]
+    [RequirePermission(Permissions.ReportRead)]
+    [ProducesResponseType<OeeTrendDto>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetOeeTrend(
+        [FromQuery] string machineCode,
+        [FromQuery] DateTime from,
+        [FromQuery] DateTime to,
+        [FromQuery] OeeTrendGranularity granularity = OeeTrendGranularity.Day,
+        CancellationToken ct = default)
+        => Ok(await queryMediator.QueryAsync(new GetOeeTrendQuery(machineCode, from, to, granularity), null, ct));
+
+    [HttpGet("delivery/performance")]
+    [RequirePermission(Permissions.ReportRead)]
+    [ProducesResponseType<DeliveryPerformanceDto>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetDeliveryPerformance(
+        [FromQuery] DateTime from,
+        [FromQuery] DateTime to,
+        CancellationToken ct)
+        => Ok(await queryMediator.QueryAsync(new GetDeliveryPerformanceQuery(from, to), null, ct));
+
+    [HttpGet("inventory/snapshot")]
+    [RequirePermission(Permissions.ReportRead)]
+    [ProducesResponseType<InventorySnapshotDto>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetInventorySnapshot(
+        [FromQuery] LocationType? locationType,
+        CancellationToken ct)
+        => Ok(await queryMediator.QueryAsync(new GetInventorySnapshotQuery(locationType), null, ct));
+
+    [HttpGet("shift/production")]
+    [RequirePermission(Permissions.ReportRead)]
+    [ProducesResponseType<ShiftProductionReportDto>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetShiftProduction(
+        [FromQuery] DateOnly shiftDate,
+        [FromQuery] string? shiftCode,
+        [FromQuery] int? workCenterId,
+        CancellationToken ct)
+        => Ok(await queryMediator.QueryAsync(new GetShiftProductionReportQuery(workCenterId, shiftDate, shiftCode), null, ct));
 }
