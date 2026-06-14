@@ -1,9 +1,12 @@
 using AeroMes.Api.Auth;
 using AeroMes.Api.Extensions;
 using AeroMes.Application.Common;
+using AeroMes.Application.Production.Commands.RecordMaterialConsumption;
+using AeroMes.Application.Production.Queries.GetWorkOrderMaterialConsumption;
 using AeroMes.Application.WorkOrders.Commands.StartWorkOrder;
 using AeroMes.Application.WorkOrders.Queries.GetWorkOrderDetail;
 using AeroMes.Application.WorkOrders.Queries.GetWorkOrders;
+using AeroMes.Domain.Production.Repositories;
 using LiteBus.Commands.Abstractions;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
@@ -59,6 +62,28 @@ public class WorkOrdersController(ICommandMediator commandMediator, IQueryMediat
         if (!cmdResult.IsSuccess) return cmdResult.ToErrorResult();
         return Ok(new ApiResponse<StartWorkOrderResult>(true, "Work Order started successfully.", cmdResult.Value!));
     }
+
+    [HttpGet("{id:int}/material-consumption")]
+    [RequirePermission(Permissions.WorkOrderRead)]
+    [ProducesResponseType<IReadOnlyList<MaterialConsumptionDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMaterialConsumption(int id, CancellationToken ct)
+        => Ok(await queryMediator.QueryAsync(new GetWorkOrderMaterialConsumptionQuery(id), null, ct));
+
+    [HttpPost("{id:int}/material-consumption/{consumptionId:long}")]
+    [RequirePermission(Permissions.WorkOrderStart)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RecordConsumption(
+        int id, long consumptionId, [FromBody] RecordConsumptionRequest req, CancellationToken ct)
+    {
+        var user = User.Identity?.Name ?? "system";
+        var result = await commandMediator.SendAsync(
+            new RecordMaterialConsumptionCommand(consumptionId, req.LotNumber, req.ActualQty, user, req.LocationId),
+            null, ct);
+        if (!result.IsSuccess) return result.ToErrorResult();
+        return Ok();
+    }
 }
 
 public record StartWorkOrderRequest(string OperatorId, DateTime? Timestamp);
+public record RecordConsumptionRequest(string LotNumber, decimal ActualQty, int LocationId);

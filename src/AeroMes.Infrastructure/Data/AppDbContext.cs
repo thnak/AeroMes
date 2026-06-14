@@ -163,6 +163,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
     public DbSet<DisassemblyOrder> DisassemblyOrders => Set<DisassemblyOrder>();
     public DbSet<ProductionPlanByOrder> ProductionPlansByOrder => Set<ProductionPlanByOrder>();
     public DbSet<ProductionPlanOrderLine> ProductionPlanOrderLines => Set<ProductionPlanOrderLine>();
+    public DbSet<MaterialConsumption> MaterialConsumptions => Set<MaterialConsumption>();
     public DbSet<MaterialRequirementsPlan> MaterialRequirementsPlans => Set<MaterialRequirementsPlan>();
     public DbSet<MrpLine> MrpLines => Set<MrpLine>();
     public DbSet<MaterialPurchaseRequest> MaterialPurchaseRequests => Set<MaterialPurchaseRequest>();
@@ -2173,6 +2174,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IEventMediator
                 .HasForeignKey(x => x.ReasonCode)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<MaterialConsumption>(e =>
+        {
+            e.ToTable("MaterialConsumptions", "prod");
+            e.HasKey(x => x.ConsumptionId);
+            e.Property(x => x.ConsumptionId).UseIdentityColumn();
+            e.Property(x => x.ProductCode).HasMaxLength(50).IsRequired();
+            e.Property(x => x.LotNumber).HasMaxLength(50);
+            e.Property(x => x.PlannedQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.ActualQty).HasColumnType("NUMERIC(18,4)");
+            e.Property(x => x.IssuedBy).HasMaxLength(50);
+            e.Property(x => x.IssuedAt).HasColumnType("datetime2(3)");
+            e.HasIndex(x => x.JobId);
         });
 
         b.Entity<InventoryStock>(e =>

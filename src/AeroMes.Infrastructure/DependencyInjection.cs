@@ -175,6 +175,7 @@ public static class DependencyInjection
         services.AddScoped<IMachineTcoRepository, MachineTcoRepository>();
         services.AddScoped<IMaintenancePlanRepository, MaintenancePlanRepository>();
         services.AddScoped<IMachineRuntimeRepository, MachineRuntimeRepository>();
+        services.AddScoped<AeroMes.Domain.Production.Repositories.IMaterialConsumptionRepository, MaterialConsumptionRepository>();
         services.AddScoped<IEnergyRepository, EnergyRepository>();
 
         // ERP client + background sync

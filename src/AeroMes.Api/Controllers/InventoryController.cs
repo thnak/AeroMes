@@ -2,8 +2,10 @@ using AeroMes.Api.Auth;
 using AeroMes.Application.Common;
 using AeroMes.Application.Inventory.Queries.GetInventoryStock;
 using AeroMes.Application.Inventory.Queries.GetLotTrace;
+using AeroMes.Application.Inventory.Queries.GetStockMovements;
 using AeroMes.Application.Production.Queries.GetAvailableStock;
 using AeroMes.Application.Production.Queries.GetInventoryByExpiry;
+using AeroMes.Domain.Wms.Repositories;
 using LiteBus.Queries.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -59,4 +61,16 @@ public class InventoryController(IQueryMediator queryMediator) : ControllerBase
         [FromQuery] int? locationId = null,
         CancellationToken ct = default)
         => Ok(await queryMediator.QueryAsync(new GetInventoryByExpiryQuery(daysToExpiry, locationId), null, ct));
+
+    [HttpGet("stock-movements")]
+    [RequirePermission(Permissions.InventoryRead)]
+    [ProducesResponseType<IReadOnlyList<StockMovementDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetStockMovements(
+        [FromQuery] string? productCode,
+        [FromQuery] string? lotNumber,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken ct = default)
+        => Ok(await queryMediator.QueryAsync(
+            new GetStockMovementsQuery(productCode, lotNumber, page, pageSize), null, ct));
 }

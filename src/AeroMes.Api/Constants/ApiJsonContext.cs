@@ -196,6 +196,8 @@ using AeroMes.Application.Cost.StandardCost.Queries.GetStandardCostDetail;
 using AeroMes.Application.Cost.StandardCost.Queries.GetStandardCosts;
 using AeroMes.Application.Production.MRP.Commands.UpdateMrp;
 using AeroMes.Domain.Production;
+using AeroMes.Domain.Production.Repositories;
+using AeroMes.Domain.Wms.Repositories;
 using AeroMes.Domain.Alert;
 using AeroMes.Domain.Maintenance;
 using AeroMes.Domain.Maintenance.Repositories;
@@ -1503,6 +1505,14 @@ namespace AeroMes.Api.Constants;
 [JsonSerializable(typeof(MpsDataSource))]
 [JsonSerializable(typeof(MpsStatus))]
 [JsonSerializable(typeof(MpsDistributionStrategy))]
+// material consumption & stock movements (#6)
+[JsonSerializable(typeof(MaterialConsumptionDto))]
+[JsonSerializable(typeof(IReadOnlyList<MaterialConsumptionDto>))]
+[JsonSerializable(typeof(List<MaterialConsumptionDto>))]
+[JsonSerializable(typeof(RecordConsumptionRequest))]
+[JsonSerializable(typeof(StockMovementDto))]
+[JsonSerializable(typeof(IReadOnlyList<StockMovementDto>))]
+[JsonSerializable(typeof(List<StockMovementDto>))]
 // preventive maintenance (#9)
 [JsonSerializable(typeof(PmTemplateDto))]
 [JsonSerializable(typeof(IReadOnlyList<PmTemplateDto>))]
